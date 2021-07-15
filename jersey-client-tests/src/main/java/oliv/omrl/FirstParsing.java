@@ -1,16 +1,15 @@
 package oliv.omrl;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class FirstParsing {
 
@@ -53,13 +52,30 @@ public class FirstParsing {
         // Dev Object
         List<Object> jsonDevMap = mapper.readValue(devResource.openStream(), List.class);
         // Tables Object
-        List<String> jsonTableMap = mapper.readValue(tablesResource.openStream(), List.class);
+        List<Object> jsonTableMap = mapper.readValue(tablesResource.openStream(), List.class);
 
         // Dump dev
+        System.out.printf("Dev has %d entries\n", jsonDevMap.size());
+
+        // Distinct db_id, and cardinality.
+        List<String> dbIds = jsonDevMap.stream().map(one -> (String)((Map) one).get("db_id")).distinct().collect(Collectors.toList());
+        System.out.printf("%d distinct DB_IDs\n", dbIds.size());
+        dbIds.stream().forEach(db -> {
+            long nb = jsonDevMap.stream().filter(one -> {
+                return db.equals((String) ((Map) one).get("db_id"));
+            }).count();
+            System.out.printf("%s - %d entries\n", db, nb);
+        });
+
+        // Longest query
+        Optional<Object> query = jsonDevMap.stream().max(Comparator.comparingInt(one -> ((String) ((Map) one).get("query")).length()));
+        Map<String, Object> theOne = (Map<String, Object>)query.get();
+        System.out.printf("Longest query, on %s, %s\n", theOne.get("db_id"), theOne.get("query"));
+
         jsonDevMap.stream()
-                .limit(10)
+//                .limit(10)
                 .forEach(oneElement -> {
-                    System.out.println("Got a " + oneElement.getClass().getName());
+//                    System.out.println("Got a " + oneElement.getClass().getName());
                     Map<String, Object> oneMap = (Map<String, Object>)oneElement;
                     System.out.printf("DB Id: %s\n", oneMap.get("db_id"));
                     System.out.printf("Query: %s\n", oneMap.get("query"));

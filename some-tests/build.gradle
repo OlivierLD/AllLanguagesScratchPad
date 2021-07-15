@@ -4,7 +4,7 @@ plugins {
     id 'groovy'
     id 'idea'
     id 'maven'
-//    id 'com.github.johnrengelman.shadow' // version '4.0.2'
+    id 'com.github.johnrengelman.shadow' // version '6.0.0'
 }
 group 'oliv.scratch.pad'
 version '0.0.1-SNAPSHOT'
@@ -46,9 +46,10 @@ dependencies {
 //    compile 'com.cibo:evilplot-repl_2.13:0.8.0'
 
 //    compile project(':common-utils')
-    implementation 'oliv.raspi.coffee:common-utils:1.0' // Java Celestial Almanac
-    // compile project(':system-utils') // Speech Stuff
+    implementation 'oliv.raspi.coffee:common-utils:1.0' // Java Celestial Almanac TODO remove...
+
     implementation group: 'org.xerial', name: 'sqlite-jdbc', version: '3.34.0'
+    implementation group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.5'
 
     // https://mvnrepository.com/artifact/org.apache.calcite/calcite-core
     implementation group: 'org.apache.calcite', name: 'calcite-core', version: '1.26.0'
