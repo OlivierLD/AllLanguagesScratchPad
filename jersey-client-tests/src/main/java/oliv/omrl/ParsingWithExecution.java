@@ -24,6 +24,8 @@ import java.util.stream.Collectors;
  */
 public class ParsingWithExecution {
 
+    private static boolean verbose = true;
+
     private final static String DEV_JSON = "dev.json"; // In the resource folder
     private final static String TABLES_JSON = "tables.json"; // In the resource folder
 
@@ -103,7 +105,7 @@ public class ParsingWithExecution {
                 Class.forName("org.sqlite.JDBC");
                 dbConnection = DriverManager.getConnection(dbURL);
 
-                if (true) {
+                if (verbose) {
                     DatabaseMetaData dm = dbConnection.getMetaData();
                     System.out.println("-------------------------------------");
                     System.out.println("Driver name: " + dm.getDriverName());
