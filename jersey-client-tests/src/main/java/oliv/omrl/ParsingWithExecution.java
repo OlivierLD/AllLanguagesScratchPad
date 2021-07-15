@@ -86,62 +86,69 @@ public class ParsingWithExecution {
         String toFind = "Show name, country, age for all singers ordered by age from the oldest to the youngest.";
 
         Optional<Object> query = jsonDevMap.stream().filter(one -> toFind.equals((String) ((Map) one).get("question"))).findFirst();
-        Map<String, Object> theOne = (Map<String, Object>) query.get();
-        String dbId = (String) theOne.get("db_id");
-        String dbQuery = (String) theOne.get("query");
-        String question = (String) theOne.get("question");
-        System.out.printf("Longest query, on %s, %s\n", dbId, dbQuery);
-        System.out.printf("Question is [%s]\n", question);
+        if (query.isPresent()) {
+            Map<String, Object> theOne = (Map<String, Object>) query.get();
+            String dbId = (String) theOne.get("db_id");
+            String dbQuery = (String) theOne.get("query");
+            String question = (String) theOne.get("question");
+            System.out.printf("Query, on %s, %s\n", dbId, dbQuery);
+            System.out.printf("Question is [%s]\n", question);
 
-        String dbPath = String.format(DEFAULT_SQLITE_DB_PATH, dbId, dbId);
+            String dbPath = String.format(DEFAULT_SQLITE_DB_PATH, dbId, dbId);
 
-        Connection dbConnection = null;
-        String dbURL = String.format("jdbc:sqlite:%s", dbPath);
+            Connection dbConnection = null;
+            String dbURL = String.format("jdbc:sqlite:%s", dbPath);
 
-        try {
-            Class.forName("org.sqlite.JDBC");
-            dbConnection = DriverManager.getConnection(dbURL);
+            try {
+                Class.forName("org.sqlite.JDBC");
+                dbConnection = DriverManager.getConnection(dbURL);
 
-            if (true) {
-                DatabaseMetaData dm = dbConnection.getMetaData();
-                System.out.println("-------------------------------------");
-                System.out.println("Driver name: " + dm.getDriverName());
-                System.out.println("Driver version: " + dm.getDriverVersion());
-                System.out.println("Product name: " + dm.getDatabaseProductName());
-                System.out.println("Product version: " + dm.getDatabaseProductVersion());
-                System.out.println("-------------------------------------");
-            }
-
-            String sqlStatement = dbQuery;
-            Statement statement = dbConnection.createStatement();
-            ResultSet rs = statement.executeQuery(sqlStatement);
-
-            ResultSetMetaData metaData = rs.getMetaData();
-            int columnCount = metaData.getColumnCount();
-
-
-            while (rs.next()) {
-                List<String> oneLine = new ArrayList<>();
-                for (int i=0; i<columnCount; i++) {
-                    String colName = metaData.getColumnName(i + 1);
-                    int columnType = metaData.getColumnType(i + 1);
-                    String colValue = "";
-                    if (columnType == JDBCType.INTEGER.getVendorTypeNumber()) {
-                        colValue = String.format("%d", rs.getInt(colName));
-                    } else if (columnType == JDBCType.VARCHAR.getVendorTypeNumber()) {
-                        colValue = String.format("%s", rs.getString(colName));
-                    }
-                    oneLine.add(String.format("%s: %s", colName, colValue));
+                if (true) {
+                    DatabaseMetaData dm = dbConnection.getMetaData();
+                    System.out.println("-------------------------------------");
+                    System.out.println("Driver name: " + dm.getDriverName());
+                    System.out.println("Driver version: " + dm.getDriverVersion());
+                    System.out.println("Product name: " + dm.getDatabaseProductName());
+                    System.out.println("Product version: " + dm.getDatabaseProductVersion());
+                    System.out.println("-------------------------------------");
                 }
-                System.out.println(oneLine.stream().collect(Collectors.joining(", ")));
+
+                // This is a dynamic execution, we do not know anything about the query, the columns it returns, etc.
+                String sqlStatement = dbQuery;
+                Statement statement = dbConnection.createStatement();
+                ResultSet rs = statement.executeQuery(sqlStatement);
+
+                ResultSetMetaData metaData = rs.getMetaData();
+                int columnCount = metaData.getColumnCount();
+
+
+                while (rs.next()) {
+                    List<String> oneLine = new ArrayList<>(); // One record.
+                    for (int i = 0; i < columnCount; i++) {
+                        String colName = metaData.getColumnName(i + 1);
+                        int columnType = metaData.getColumnType(i + 1);
+                        String colValue = "";
+                        if (columnType == JDBCType.INTEGER.getVendorTypeNumber()) {
+                            colValue = String.format("%d", rs.getInt(colName));
+                        } else if (columnType == JDBCType.VARCHAR.getVendorTypeNumber()) {
+                            colValue = String.format("%s", rs.getString(colName));
+                        } else {
+                            colValue = String.format("%s", rs.getObject(colName)); // Big fallback
+                        }
+                        oneLine.add(String.format("%s: %s", colName, colValue));
+                    }
+                    System.out.println(oneLine.stream().collect(Collectors.joining(", ")));
+                }
+                rs.close();
+                statement.close();
+
+                dbConnection.close();
+
+            } catch (Exception ex) {
+                ex.printStackTrace();
             }
-            rs.close();
-            statement.close();
-
-            dbConnection.close();
-
-        } catch (Exception ex) {
-            ex.printStackTrace();
+        } else {
+            System.out.println("Query not found...");
         }
 
         System.out.println("+-----------------------------------------------+");
