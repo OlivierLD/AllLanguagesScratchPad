@@ -6,7 +6,7 @@ plugins {
 group 'oliv.scratch.pad.http'
 version '0.0.1-SNAPSHOT'
 
-// Used bu y plugin 'application'
+// Used by plugin 'application'
 mainClassName = "rest.cli.CLI"
 
 repositories {
