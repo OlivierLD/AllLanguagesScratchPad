@@ -1,0 +1,6 @@
+hash/MurmurHash.java
+ hash.MurmurHash
+etag/ETagGenerator.java
+ etag.ETagGenerator
+etag/CollisionTester.java
+ etag.CollisionTester

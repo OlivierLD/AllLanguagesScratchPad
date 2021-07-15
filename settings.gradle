@@ -1,0 +1,11 @@
+rootProject.name = 'oliv-scratch-pad'
+
+// Scratch pad
+include "oliv-scratch-pad:some-tests"
+include "oliv-scratch-pad:http-test"
+include "oliv-scratch-pad:HLL"
+
+//include 'REST.clients'
+include 'oliv-scratch-pad:jersey-client-tests'
+findProject(':oliv-scratch-pad:jersey-client-tests')?.name = 'jersey-client-tests'
+
