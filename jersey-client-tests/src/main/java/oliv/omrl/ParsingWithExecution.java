@@ -5,14 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.DriverManager;
-import java.sql.JDBCType;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -26,8 +19,9 @@ public class ParsingWithExecution {
 
     private static boolean verbose = true;
 
-    private final static String DEV_JSON = "dev.json"; // In the resource folder
-    private final static String TABLES_JSON = "tables.json"; // In the resource folder
+    // In the resource folder
+    private final static String DEV_JSON = "dev.json";
+    private final static String TABLES_JSON = "tables.json";
 
     private final static String DEV_DOCUMENT_PREFIX = "--dev:";
     private final static String TABLES_STATEMENT_PREFIX = "--tables:";
@@ -88,74 +82,76 @@ public class ParsingWithExecution {
         String toFind = "Show name, country, age for all singers ordered by age from the oldest to the youngest.";
 
         Optional<Object> query = jsonDevMap.stream().filter(one -> toFind.equals((String) ((Map) one).get("question"))).findFirst();
+        Map<String, Object> theOne;
         if (query.isPresent()) {
-            Map<String, Object> theOne = (Map<String, Object>) query.get();
-            String dbId = (String) theOne.get("db_id");
-            String dbQuery = (String) theOne.get("query");
-            String question = (String) theOne.get("question");
-            System.out.printf("Query, on %s, %s\n", dbId, dbQuery);
-            System.out.printf("Question is [%s]\n", question);
-
-            String dbPath = String.format(DEFAULT_SQLITE_DB_PATH, dbId, dbId);
-
-            Connection dbConnection = null;
-            String dbURL = String.format("jdbc:sqlite:%s", dbPath);
-
-            try {
-                Class.forName("org.sqlite.JDBC");
-                dbConnection = DriverManager.getConnection(dbURL);
-
-                if (verbose) {
-                    DatabaseMetaData dm = dbConnection.getMetaData();
-                    System.out.println("-------------------------------------");
-                    System.out.println("Driver name: " + dm.getDriverName());
-                    System.out.println("Driver version: " + dm.getDriverVersion());
-                    System.out.println("Product name: " + dm.getDatabaseProductName());
-                    System.out.println("Product version: " + dm.getDatabaseProductVersion());
-                    System.out.println("-------------------------------------");
-                }
-
-                // This is a dynamic execution, we do not know anything about the query, the columns it returns, etc.
-                String sqlStatement = dbQuery;
-                Statement statement = dbConnection.createStatement();
-                ResultSet rs = statement.executeQuery(sqlStatement);
-
-                ResultSetMetaData metaData = rs.getMetaData();
-                int columnCount = metaData.getColumnCount();
-
-
-                while (rs.next()) {
-                    List<String> oneLine = new ArrayList<>(); // One record.
-                    for (int i = 0; i < columnCount; i++) {
-                        String colName = metaData.getColumnName(i + 1);
-                        int columnType = metaData.getColumnType(i + 1);
-                        String colValue = "";
-                        if (columnType == JDBCType.INTEGER.getVendorTypeNumber()) {
-                            colValue = String.format("%d", rs.getInt(colName));
-                        } else if (columnType == JDBCType.VARCHAR.getVendorTypeNumber()) {
-                            colValue = String.format("%s", rs.getString(colName));
-                        } else {
-                            colValue = String.format("%s", rs.getObject(colName)); // Big fallback
-                        }
-                        oneLine.add(String.format("%s: %s", colName, colValue));
-                    }
-                    System.out.println(oneLine.stream().collect(Collectors.joining(", ")));
-                }
-                rs.close();
-                statement.close();
-
-                dbConnection.close();
-
-            } catch (Exception ex) {
-                ex.printStackTrace();
-            }
+            theOne = (Map<String, Object>) query.get();
         } else {
-            System.out.println("Query not found...");
+            System.out.println("Query not found..., taking the first one");
+            theOne = (Map<String, Object>) jsonDevMap.stream().findFirst().get();
         }
+        String dbId = (String) theOne.get("db_id");
+        String dbQuery = (String) theOne.get("query");
+        String question = (String) theOne.get("question");
+        System.out.printf("Query, on %s, %s\n", dbId, dbQuery);
+        System.out.printf("Question is [%s]\n", question);
 
+        String dbPath = String.format(DEFAULT_SQLITE_DB_PATH, dbId, dbId);
+        // For oracle, would be like "jdbc:oracle:thin:@localhost:1521:xe","system","oracle"
+
+        Connection dbConnection = null;
+        String dbURL = String.format("jdbc:sqlite:%s", dbPath);
+
+        try {
+            // Class.forName("oracle.jdbc.driver.OracleDriver"); // Oracle
+            Class.forName("org.sqlite.JDBC"); // SQLite
+            dbConnection = DriverManager.getConnection(dbURL);
+
+            if (verbose) {
+                DatabaseMetaData dm = dbConnection.getMetaData();
+                System.out.println("-------------------------------------");
+                System.out.println("Driver name: " + dm.getDriverName());
+                System.out.println("Driver version: " + dm.getDriverVersion());
+                System.out.println("Product name: " + dm.getDatabaseProductName());
+                System.out.println("Product version: " + dm.getDatabaseProductVersion());
+                System.out.println("-------------------------------------");
+            }
+
+            // This is a dynamic execution, we do not know anything about the query, the columns it returns, etc.
+            String sqlStatement = dbQuery;
+            Statement statement = dbConnection.createStatement();
+            ResultSet rs = statement.executeQuery(sqlStatement);
+
+            ResultSetMetaData metaData = rs.getMetaData();
+            int columnCount = metaData.getColumnCount();
+
+
+            while (rs.next()) {
+                List<String> oneLine = new ArrayList<>(); // One record.
+                for (int i = 0; i < columnCount; i++) {
+                    String colName = metaData.getColumnName(i + 1);
+                    int columnType = metaData.getColumnType(i + 1);
+                    String colValue = "";
+                    if (columnType == JDBCType.INTEGER.getVendorTypeNumber()) {
+                        colValue = String.format("%d", rs.getInt(colName));
+                    } else if (columnType == JDBCType.VARCHAR.getVendorTypeNumber()) {
+                        colValue = String.format("%s", rs.getString(colName));
+                    } else {
+                        colValue = String.format("%s", rs.getObject(colName)); // Big fallback
+                    }
+                    oneLine.add(String.format("%s: %s", colName, colValue));
+                }
+                System.out.println(oneLine.stream().collect(Collectors.joining(", ")));
+            }
+            rs.close();
+            statement.close();
+
+            dbConnection.close();
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
         System.out.println("+-----------------------------------------------+");
 
         System.out.println("Done.");
     }
-
 }
