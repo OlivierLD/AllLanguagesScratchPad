@@ -26,8 +26,8 @@ import java.util.stream.Collectors;
  */
 public class UnparserTestOne {
 
-    private static boolean verbose = false;
-    private static boolean dumpQueries = true; // To visualize the available queries
+    private final static boolean verbose = false;
+    private final static boolean dumpQueries = true; // To visualize the available queries
 
     private final static String TABLE_JSON = "race_track_tables.json";
     private final static String TRAINED_JSON = "trained_race_track.json";
@@ -41,7 +41,7 @@ public class UnparserTestOne {
 
     public static String unparseToSQL(String dbId, List<Object> jsonTableMap, Map<String, Object> jsonOMRLMap) {
 
-        String finalQuery = null;
+        String finalQuery;
 
         // 1 - Find the right schema in table.json
         if (verbose) {
@@ -76,7 +76,7 @@ public class UnparserTestOne {
             }
             // Manage SELECT clause
             List<Object> select = (List<Object>)jsonOMRLMap.get("select");
-            boolean isDistinct = (Boolean)select.get(0); // TODO Manage that distinct
+            boolean isDistinct = (Boolean)select.get(0); // Global level?
             List<List<Object>> agg = (List<List<Object>>)select.get(1); // The column
             List<Object> schemaColumnList = (List<Object>)schema.get("column_names_original");
             List<String> schemaColumnTypeList = (List<String>)schema.get("column_types");
@@ -90,10 +90,11 @@ public class UnparserTestOne {
 
                 int colAggId = (int)colUnit1.get(0); // TODO What do we use that one for? aggId does the job
                 int colIndex = (int)colUnit1.get(1);
-                boolean colIsDistinct = (boolean)colUnit1.get(2); // TODO Manage that one
+                boolean colIsDistinct = (boolean)colUnit1.get(2); // TODO Manage that one?
                 String colName = (String)((List<Object>)schemaColumnList.get(colIndex)).get(1);
 
-                querySelect.add(String.format("%s",
+                querySelect.add(String.format("%s%s",
+                        (isDistinct ? "DISTINCT " : ""),
                         (aggId == 0 ? colName : String.format("%s(%s)", AGG_OPS.get(aggId), colName))));
 
                 if (colUnit2 != null) {
@@ -266,7 +267,7 @@ public class UnparserTestOne {
             jsonOMRLMap = mapper.readValue(ormlResource.openStream(), Map.class);
         } else {
             String indexPrm = System.getProperty("query.index", null);
-            // 16: group by, 0 where and order by, 4 min, max, 26 between
+            // 16: group by, 0 where and order by, 4 min, max, 26 between, 9 distinct
             Integer queryIndex = 0; // null; // Set it to the number of the query you want.
             if (indexPrm != null) {
                 try {
@@ -322,6 +323,7 @@ public class UnparserTestOne {
 
                 List<List<String>> queryResult = executeQuery(dbConnection, unparsedQuery);
                 if (queryResult != null) {
+                    System.out.printf("Returned %d row%s\n", queryResult.size(), (queryResult.size() > 1 ? "s" : ""));
                     System.out.println("----- R E S U L T -----");
                     queryResult.forEach(row -> {
                         System.out.println(row.stream().collect(Collectors.joining(", ")));
