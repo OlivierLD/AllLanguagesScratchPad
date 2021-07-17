@@ -5,7 +5,18 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.util.*;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.DriverManager;
+import java.sql.JDBCType;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -21,58 +32,17 @@ public class UnparserTestOne {
     private final static String TABLE_JSON = "race_track_tables.json";
     private final static String TRAINED_JSON = "trained_race_track.json";
     private final static String OMRL_JSON = "";
+    private final static String DEFAULT_SQLITE_DB_PATH = "/Users/olivierlediouris/repos/oracle/OMRL_v0_PoC/duorat/data/database/%s/%s.sqlite";
 
     private final static List<String> WHERE_OPS =
             Arrays.asList("not", "between", "=", ">", "<", ">=", "<=", "!=", "in", "like", "is", "exists");
     private final static List<String> AGG_OPS =
             Arrays.asList("none", "max", "min", "count", "sum", "avg");
 
-    public static void main(String... args) throws IOException {
+    public static String unparseToSQL(String dbId, List<Object> jsonTableMap, Map<String, Object> jsonOMRLMap) {
 
-        URL trainedResource = new File(TRAINED_JSON).toURI().toURL();
-        URL tablesResource = new File(TABLE_JSON).toURI().toURL();
-        URL ormlResource = null;
-        if (!OMRL_JSON.isEmpty()) {
-            ormlResource = new File(OMRL_JSON).toURI().toURL();
-        }
+        String finalQuery = null;
 
-        ObjectMapper mapper = new ObjectMapper();
-
-        List<Object> jsonTrainedMap = mapper.readValue(trainedResource.openStream(), List.class);
-
-        if (dumpQueries) {
-            AtomicInteger rank = new AtomicInteger(0);
-            jsonTrainedMap.forEach(query -> {
-                System.out.printf("Query #%d: %s\n", rank.getAndIncrement(), ((Map<String, Object>)query).get("query"));
-            });
-        }
-
-        List<Object> jsonTableMap = mapper.readValue(tablesResource.openStream(), List.class);
-        Map<String, Object> jsonOMRLMap;
-        if (ormlResource != null) {
-            jsonOMRLMap = mapper.readValue(ormlResource.openStream(), Map.class);
-        } else {
-            // 16: group by, 0 where and order by, 4 min. max
-            Integer queryIndex = 0; // null; // Set it to the number of the query you want.
-
-            Map<String, Object> firstOne;
-            if (queryIndex == null) {
-                firstOne = (Map<String, Object>) jsonTrainedMap.stream()
-                        .findFirst()
-                        .get();
-            } else {
-                firstOne = (Map<String, Object>) jsonTrainedMap.get(queryIndex);
-            }
-            String query = (String)firstOne.get("query");
-            jsonOMRLMap = (Map<String, Object>)firstOne.get("sql"); // We assume SQL
-            System.out.println("-------------------------------------------------------------");
-            System.out.printf("QUERY to Generate: %s\n", query);
-            System.out.println("-------------------------------------------------------------");
-        }
-        System.out.println(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(jsonOMRLMap));
-
-        // Let's go
-        String dbId = "race_track"; // Hard-coded for now
         // 1 - Find the right schema in table.json
         if (verbose) {
             System.out.println(">> One");
@@ -118,7 +88,7 @@ public class UnparserTestOne {
                 List<Object> colUnit1 = (List<Object>)valUnit.get(1);
                 List<Object> colUnit2 = (List<Object>)valUnit.get(2);
 
-                int colAggId = (int)colUnit1.get(0); // TODO WHat do we use that one for? aggId does the job
+                int colAggId = (int)colUnit1.get(0); // TODO What do we use that one for? aggId does the job
                 int colIndex = (int)colUnit1.get(1);
                 boolean colIsDistinct = (boolean)colUnit1.get(2); // TODO Manage that one
                 String colName = (String)((List<Object>)schemaColumnList.get(colIndex)).get(1);
@@ -154,10 +124,12 @@ public class UnparserTestOne {
                     String colType = schemaColumnTypeList.get(colIdx);
                     String op = WHERE_OPS.get(opId);
                     String value1 = val1.toString();
-                    String oneWhereCondition = String.format("%s %s %s",
+                    String oneWhereCondition = String.format("%s %s %s%s",
                             columnName,
                             op,
-                            ("text".equals(colType) ? String.format("'%s'", value1) : value1)); // Quotes around if text
+                            ("text".equals(colType) ? String.format("'%s'", value1) : value1), // Quotes around if text
+                            (opId == 1 ? String.format(" AND %s", ("text".equals(colType) ? String.format("'%s'", val2) : val2)) : "")
+                            );
                     whereClause.append((whereClause.length() == 0 ? "" : " DUH ") + oneWhereCondition); // TODO Find out the connector AND/OR with parenthesis...
                 });
                 finalWhereClause = whereClause.toString();
@@ -217,18 +189,155 @@ public class UnparserTestOne {
             // TODO having, limit, intersect, union, except
 
             // Final query
-            String finalQuery = String.format("SELECT %s FROM %s%s%s%s",
+            finalQuery = String.format("SELECT %s FROM %s%s%s%s",
                     querySelect.stream().collect(Collectors.joining(", ")),
                     queryTableNames.stream().collect(Collectors.joining(", ")),
                     (finalWhereClause.isEmpty() ? "" : " WHERE " + finalWhereClause),
                     (finalGroupByClause.isEmpty() ? "" : " GROUP BY " + finalGroupByClause),
                     (finalOrderByClause.isEmpty() ? "" : " ORDER BY " + finalOrderByClause));
-            System.out.println("-------------------------------------------------------------");
-            System.out.println("Final Query:\n" + finalQuery);
-            System.out.println("-------------------------------------------------------------");
         } else {
             System.out.println("Schema not found");
+            throw new RuntimeException(String.format("Schema [%s] not found.", dbId));
         }
+
+        return finalQuery;
+    }
+
+    public static List<List<String>> executeQuery(Connection dbConnection, String sqlQuery) throws Exception {
+
+        List<List<String>> result = new ArrayList<>();
+        try {
+            // This is a dynamic execution, we do not know anything about the query, the columns it returns, etc.
+            String sqlStatement = sqlQuery;
+            Statement statement = dbConnection.createStatement();
+            ResultSet rs = statement.executeQuery(sqlStatement);
+
+            ResultSetMetaData metaData = rs.getMetaData();
+            int columnCount = metaData.getColumnCount();
+
+            while (rs.next()) {
+                List<String> oneLine = new ArrayList<>(); // One row.
+                for (int i = 0; i < columnCount; i++) {
+                    String colName = metaData.getColumnName(i + 1);
+                    int columnType = metaData.getColumnType(i + 1);
+                    String colValue = "";
+                    if (columnType == JDBCType.INTEGER.getVendorTypeNumber()) {
+                        colValue = String.format("%d", rs.getInt(colName));
+                    } else if (columnType == JDBCType.VARCHAR.getVendorTypeNumber()) {
+                        colValue = String.format("%s", rs.getString(colName));
+                    } else {
+                        colValue = String.format("%s", rs.getObject(colName)); // Big fallback
+                    }
+                    oneLine.add(String.format("%s: %s", colName, colValue));
+                }
+                result.add(oneLine);
+            }
+            rs.close();
+            statement.close();
+        } catch (Exception ex) {
+            throw ex;
+        }
+        return result;
+    }
+
+    public static void main(String... args) throws IOException {
+
+        URL trainedResource = new File(TRAINED_JSON).toURI().toURL();
+        URL tablesResource = new File(TABLE_JSON).toURI().toURL();
+        URL ormlResource = null;
+        if (!OMRL_JSON.isEmpty()) {
+            ormlResource = new File(OMRL_JSON).toURI().toURL();
+        }
+
+        ObjectMapper mapper = new ObjectMapper();
+
+        List<Object> jsonTrainedMap = mapper.readValue(trainedResource.openStream(), List.class);
+
+        if (dumpQueries) {
+            AtomicInteger rank = new AtomicInteger(0);
+            jsonTrainedMap.forEach(query -> {
+                System.out.printf("Query #%d: %s\n", rank.getAndIncrement(), ((Map<String, Object>)query).get("query"));
+            });
+        }
+
+        List<Object> jsonTableMap = mapper.readValue(tablesResource.openStream(), List.class);
+        Map<String, Object> jsonOMRLMap;
+        if (ormlResource != null) {
+            jsonOMRLMap = mapper.readValue(ormlResource.openStream(), Map.class);
+        } else {
+            String indexPrm = System.getProperty("query.index", null);
+            // 16: group by, 0 where and order by, 4 min, max, 26 between
+            Integer queryIndex = 0; // null; // Set it to the number of the query you want.
+            if (indexPrm != null) {
+                try {
+                    queryIndex = Integer.parseInt(indexPrm);
+                } catch (NumberFormatException nfe) {
+                    System.err.println(nfe.toString());
+                }
+            }
+
+            Map<String, Object> firstOne;
+            if (queryIndex == null) {
+                firstOne = (Map<String, Object>) jsonTrainedMap.stream()
+                        .findFirst()
+                        .get();
+            } else {
+                firstOne = (Map<String, Object>) jsonTrainedMap.get(queryIndex);
+            }
+            String query = (String)firstOne.get("query");
+            jsonOMRLMap = (Map<String, Object>)firstOne.get("sql"); // We assume SQL
+            System.out.println("-------------------------------------------------------------");
+            System.out.printf("QUERY to Generate: %s\n", query);
+            System.out.println("-------------------------------------------------------------");
+        }
+        System.out.println(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(jsonOMRLMap));
+
+        // Let's go
+        String dbId = "race_track"; // Hard-coded for now
+
+        try {
+            String unparsedQuery = unparseToSQL(dbId, jsonTableMap, jsonOMRLMap);
+
+            System.out.println("-------------------------------------------------------------");
+            System.out.println("Final Query:\n" + unparsedQuery);
+            System.out.println("-------------------------------------------------------------");
+
+            // Execution
+            String dbPath = String.format(DEFAULT_SQLITE_DB_PATH, dbId, dbId);
+            // For oracle, would be like "jdbc:oracle:thin:@localhost:1521:xe","system","oracle"
+            String dbURL = String.format("jdbc:sqlite:%s", dbPath);
+            try {
+                // Class.forName("oracle.jdbc.driver.OracleDriver"); // Oracle
+                Class.forName("org.sqlite.JDBC"); // SQLite
+                Connection dbConnection = DriverManager.getConnection(dbURL);
+                if (verbose) {
+                    DatabaseMetaData dm = dbConnection.getMetaData();
+                    System.out.println("-------------------------------------");
+                    System.out.println("Driver name: " + dm.getDriverName());
+                    System.out.println("Driver version: " + dm.getDriverVersion());
+                    System.out.println("Product name: " + dm.getDatabaseProductName());
+                    System.out.println("Product version: " + dm.getDatabaseProductVersion());
+                    System.out.println("-------------------------------------");
+                }
+
+                List<List<String>> queryResult = executeQuery(dbConnection, unparsedQuery);
+                if (queryResult != null) {
+                    System.out.println("----- R E S U L T -----");
+                    queryResult.forEach(row -> {
+                        System.out.println(row.stream().collect(Collectors.joining(", ")));
+                    });
+                    System.out.println("-----------------------");
+                } else {
+                    System.out.println("No row returned.");
+                }
+                dbConnection.close();
+            } catch (Exception sqlEx) {
+                sqlEx.printStackTrace();
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+
         System.out.println("Done");
     }
 }
