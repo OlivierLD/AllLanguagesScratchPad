@@ -1,11 +1,16 @@
+pluginManagement {
+    repositories {
+        maven { url "https://plugins.gradle.org/m2/" }
+        gradlePluginPortal()
+    }
+}
+
 rootProject.name = 'oliv-scratch-pad'
 
-// Scratch pad
-include "some-tests"
-include "http-test"
-include "HLL"
+include ":some-tests"
+include ":http-test"
+include ":HLL"
 
-//include 'REST.clients'
-include 'jersey-client-tests'
+include ':jersey-client-tests'
 findProject(':jersey-client-tests')?.name = 'jersey-client-tests'
 

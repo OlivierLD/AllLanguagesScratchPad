@@ -1,9 +1,9 @@
 plugins {
-  id 'java'
-  id 'scala'
-  id 'idea'
-  id 'maven'
-  id 'com.github.johnrengelman.shadow' version '6.0.0'  // '5.2.0'
+    id 'java'
+    id 'scala'
+    id 'idea'
+    id 'maven-publish'
+    id 'com.github.johnrengelman.shadow' version '7.0.0'  // '5.2.0'
 }
 
 compileJava.options.encoding = 'ISO-8859-1'
@@ -35,7 +35,7 @@ repositories {
     mavenLocal()
     mavenCentral()
 //    maven { url "https://raw.githubusercontent.com/OlivierLD/raspberry-coffee/repository" }
-    maven { url "http://lediouris.net/maven2" }
+//    maven { url "http://lediouris.net/maven2" }
 //    maven { url "https://plugins.gradle.org/m2/" }
     maven { url "https://www.datanucleus.org/downloads/maven2" } // Contains xmlparserv2 from Oracle
     maven { url "https://mvnrepository.com/artifact" }

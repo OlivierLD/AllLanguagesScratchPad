@@ -3,7 +3,7 @@ plugins {
     id 'com.github.johnrengelman.shadow' // version '4.0.2'
 }
 
-group 'oliv.raspi.coffee'
+group 'oliv.scratch.pad'
 version '1.0'
 
 sourceCompatibility = 9
@@ -14,17 +14,17 @@ repositories {
 }
 
 dependencies {
-    compile 'org.glassfish.jersey.core:jersey-client:2.25.1'
-    compile 'org.glassfish.jersey.media:jersey-media-json-jackson:2.25.1'
+    implementation 'org.glassfish.jersey.core:jersey-client:2.25.1'
+    implementation 'org.glassfish.jersey.media:jersey-media-json-jackson:2.25.1'
     // https://mvnrepository.com/artifact/org.apache.calcite/calcite-core
-    compile 'org.apache.calcite:calcite-core:1.26.0'
+    implementation 'org.apache.calcite:calcite-core:1.26.0'
 
     implementation group: 'org.xerial', name: 'sqlite-jdbc', version: '3.34.0'
     // implementation group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.5'
     implementation("com.oracle.database.jdbc:ojdbc8-production:21.1.0.0")
     // implementation("com.oracle.database.jdbc:ojdbc11:21.1.0.0")
 
-    testCompile group: 'junit', name: 'junit', version: '4.13'
+    testImplementation group: 'junit', name: 'junit', version: '4.13'
 }
 
 shadowJar {

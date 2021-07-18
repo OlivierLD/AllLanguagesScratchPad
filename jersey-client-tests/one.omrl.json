@@ -1,0 +1,77 @@
+{
+  "from": {
+    "table_units": [
+      [
+        "table_unit",
+        1
+      ]
+    ],
+    "conds": []
+  },
+  "select": [
+    false,
+    [
+      [
+        0,
+        [
+          0,
+          [
+            0,
+            7,
+            false
+          ],
+          null
+        ]
+      ],
+      [
+        0,
+        [
+          0,
+          [
+            0,
+            9,
+            false
+          ],
+          null
+        ]
+      ]
+    ]
+  ],
+  "where": [
+    [
+      false,
+      3,
+      [
+        0,
+        [
+          0,
+          10,
+          false
+        ],
+        null
+      ],
+      2000.0,
+      null
+    ]
+  ],
+  "groupBy": [],
+  "having": [],
+  "orderBy": [
+    "asc",
+    [
+      [
+        0,
+        [
+          0,
+          9,
+          false
+        ],
+        null
+      ]
+    ]
+  ],
+  "limit": null,
+  "intersect": null,
+  "union": null,
+  "except": null
+}
