@@ -47,6 +47,9 @@ public class TestOnOracleDB {
 //        String sqlStatement = "select * from race"; // No final semi-column
 
         System.out.println(">> Executing query");
+        System.out.println(sqlStatement);
+        System.out.println("-------------------------------------");
+
         Statement statement = connection.createStatement();
         ResultSet rs = statement.executeQuery(sqlStatement);
 

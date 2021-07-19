@@ -4,7 +4,7 @@ plugins {
     id 'groovy'
     id 'idea'
     id 'maven-publish'
-    id 'com.github.johnrengelman.shadow' // version '7.0.0'
+    id 'com.github.johnrengelman.shadow' version '7.0.0'
 }
 
 group 'oliv.scratch.pad'
@@ -50,6 +50,11 @@ dependencies {
     implementation group: 'org.apache.calcite', name: 'calcite-core', version: '1.26.0'
 
     implementation group: 'com.jayway.jsonpath', name: 'json-path', version: '2.4.0'
+
+    implementation group: 'org.xerial', name: 'sqlite-jdbc', version: '3.34.0'
+    // implementation group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.5'
+    implementation("com.oracle.database.jdbc:ojdbc8-production:21.1.0.0")
+    // implementation("com.oracle.database.jdbc:ojdbc11:21.1.0.0")
 
     // Require tools.jar, from the JDK (Doclet and Co)
 //    compile files(org.gradle.internal.jvm.Jvm.current().toolsJar)
