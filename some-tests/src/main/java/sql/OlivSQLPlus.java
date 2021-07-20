@@ -4,8 +4,14 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.InputStreamReader;
 import java.sql.*;
+import java.util.Arrays;
 
 public class OlivSQLPlus {
+
+    private final static String HOST_NAME_PREFIX = "--host-name:";
+    private final static String PORT_PREFIX = "--port:";
+    private final static String SERVICE_NAME_PREFIX = "--service-name:";
+    private final static String USER_PSWD_PREFIX = "--connect:";
 
     private final static String JDBC_HOSTNAME = "100.111.136.104";
     //    private final static String JDBC_HOSTNAME = "100.102.84.101";
@@ -15,7 +21,7 @@ public class OlivSQLPlus {
     //    private final static String USERNAME = "sys as SYSDBA"; // ""OMCE_BOTS";
 //    private final static String PASSWORD = "DBA4bots12345678!";
     private final static String USERNAME = "races";
-    private final static String PASSWORD = "races";
+    private final static String PASSWORD = "racesracesracesraces";
 
     private static final BufferedReader stdin = new BufferedReader(new InputStreamReader(System.in));
     private static BufferedReader input = stdin;
@@ -43,22 +49,34 @@ public class OlivSQLPlus {
     private static Connection connection = null;
     private static boolean keepworking = true;
 
+    private static String hostName = "";
+    private static int port = -1;
     private static String serviceName = "";
     private static String username = "";
     private static String password = "";
 
     public static void main(String... args) throws Exception {
-        if (args.length > 0) {
-            if (args.length > 0) {
-                serviceName = args[0];
-            }
-            if (args.length > 1) {
-                username = args[1];
-            }
-            if (args.length > 2) {
-                password = args[2];
-            }
-        }
+
+        Arrays.asList(args).stream()
+                .forEach(arg -> {
+                    if (arg.startsWith(HOST_NAME_PREFIX)) {
+                        hostName = arg.substring(HOST_NAME_PREFIX.length());
+                    } else if (arg.startsWith(PORT_PREFIX)) {
+                        port = Integer.parseInt(arg.substring(PORT_PREFIX.length()));
+                    } else if (arg.startsWith(SERVICE_NAME_PREFIX)) {
+                        serviceName = arg.substring(SERVICE_NAME_PREFIX.length());
+                    } else if (arg.startsWith(USER_PSWD_PREFIX)) {
+                        String[] userPswd = arg.substring(USER_PSWD_PREFIX.length()).split("/");
+                        if (userPswd.length == 2) {
+                            username = userPswd[0];
+                            password = userPswd[1];
+                        } else {
+                            throw new RuntimeException(String.format("Invalid connection parameter %s", arg));
+                        }
+                    }
+                });
+
+
         if (serviceName.isEmpty()) {
             serviceName = JDBC_SERVICE_NAME;
         }
@@ -68,15 +86,23 @@ public class OlivSQLPlus {
         if (password.isEmpty()) {
             password = PASSWORD;
         }
+        if (port == -1) {
+            port = JDBC_PORT;
+        }
+        if (hostName.isEmpty()) {
+            hostName = JDBC_HOSTNAME;
+        }
+
+        System.out.println("Type 'help' for help...");
 
         while (keepworking) {
-            String str = userInput("Sql > ");
+            String str = userInput("SQL > ");
             manageCommand(str);
         }
+
         if (connected) {
             // disconnect
             connection.close();
-//            SQLUtil.shutdown(connection);
         }
         System.out.println("Bye...");
     }
@@ -90,26 +116,41 @@ public class OlivSQLPlus {
         } else if (str.trim().toUpperCase().equals("HELP") ||
                 str.trim().toUpperCase().equals("HELP;")) {
             displayHelp();
+        } else if (str.trim().toUpperCase().equals("SHOW") ||
+                str.trim().toUpperCase().equals("SHOW;")) {
+            System.out.println("Hostname: " + hostName);
+            System.out.println("Port    : " + port);
+            System.out.println("Service : " + serviceName);
+            System.out.println("UserName: " + username);
+            System.out.println("Password: " + password);
         } else if (str.trim().toUpperCase().equals("CONNECT") ||
+                str.trim().toUpperCase().startsWith("CONNECT ") ||
                 str.trim().toUpperCase().equals("CONNECT;")) {
+            if (str.trim().toUpperCase().startsWith("CONNECT ") && str.trim().length() > "CONNECT ".length()) {
+                String connect = str.trim().substring("CONNECT ".length()).trim();
+                String[] userPswd = connect.split("/");
+                username = userPswd[0];
+                password = userPswd[1];
+            }
+            if (connected) {
+                connection.close();
+            }
             if (!serviceName.isEmpty()) {
                 String jdbcUrl = String.format("jdbc:oracle:thin:@//%s:%d/%s",
-//                USERNAME,
-//                PASSWORD,
-                        JDBC_HOSTNAME,
-                        JDBC_PORT,
-                        JDBC_SERVICE_NAME);
-
-                Class.forName("oracle.jdbc.driver.OracleDriver");
-                System.out.println(">> Driver loaded");
-                System.out.printf("Connecting with [%s]\n", jdbcUrl);
-                connection = DriverManager.getConnection(jdbcUrl, USERNAME, PASSWORD);
-                System.out.println(">> Connected");
-            } else {
-                // connection = SQLUtil.getConnection();
-                System.out.println("What??");
+                        hostName,
+                        port,
+                        serviceName);
+                try {
+                    Class.forName("oracle.jdbc.driver.OracleDriver");
+                    System.out.println(">> Driver loaded");
+                    System.out.printf("Connecting with [%s] as %s/%s\n", jdbcUrl, username, password);
+                    connection = DriverManager.getConnection(jdbcUrl, username, password);
+                    System.out.println(">> Connected");
+                    connected = true;
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
             }
-            connected = true;
         } else if (str.toUpperCase().startsWith("ECHO ")) {
             System.out.println(str.substring("ECHO ".length()));
         } else if (str.toUpperCase().startsWith("--") || str.toUpperCase().startsWith("REM ")) {
@@ -229,8 +270,12 @@ public class OlivSQLPlus {
     }
 
     private static void displayHelp() {
+        System.out.println("-- CLI parameters --");
+        System.out.printf("%s<host name or IP> %sPortNum %s<service-name> %suser/pswd\n", HOST_NAME_PREFIX, PORT_PREFIX, SERVICE_NAME_PREFIX, USER_PSWD_PREFIX);
+        System.out.println("-- Commands --");
         // Commands are case insensitive
         System.out.println("connect[;]");
+        System.out.println("connect user/pswd");
         System.out.println("select ... ;");
         System.out.println("commit;");
         System.out.println("rollback;");
@@ -238,6 +283,7 @@ public class OlivSQLPlus {
         System.out.println("@<SQL Command File>");
         System.out.println("-- Comment");
         System.out.println("rem Comment");
+        System.out.println("show[;]");
         System.out.println("help[;]");
         System.out.println("exit[;]");
         System.out.println("quit[;]");
