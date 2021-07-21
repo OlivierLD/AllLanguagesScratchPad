@@ -1,0 +1,17 @@
+{
+  "to-generate (comment)": "SELECT min(seating) ,  max(seating) ,  avg(seating) FROM track",
+
+  "from" : {
+    "table_units" : [ [ "table_unit", 1 ] ],
+    "conds" : [ ]
+  },
+  "select" : [ false, [ [ 2, [ 0, [ 0, 9, false ], null ] ], [ 1, [ 0, [ 0, 9, false ], null ] ], [ 5, [ 0, [ 0, 9, false ], null ] ] ] ],
+  "where" : [ ],
+  "groupBy" : [ ],
+  "having" : [ ],
+  "orderBy" : [ ],
+  "limit" : null,
+  "intersect" : null,
+  "union" : null,
+  "except" : null
+}

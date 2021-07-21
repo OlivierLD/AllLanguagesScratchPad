@@ -5,26 +5,20 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.DriverManager;
-import java.sql.JDBCType;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.sql.*;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 /**
  * See the spec:
  * Spider ASDL at https://github.com/ElementAI/duorat/blob/master/duorat/asdl/lang/spider/Spider.asdl
+ *
+ * Get the query # as System Property -Dquery.index (defaulted to 0)
  */
 public class UnparserTestOne {
+
+    private final static boolean ORACLE_ALIASES = true;
 
     private final static boolean verbose = false;
     private final static boolean dumpQueries = true; // To visualize the available queries
@@ -38,6 +32,14 @@ public class UnparserTestOne {
             Arrays.asList("not", "between", "=", ">", "<", ">=", "<=", "!=", "in", "like", "is", "exists");
     private final static List<String> AGG_OPS =
             Arrays.asList("none", "max", "min", "count", "sum", "avg");
+
+    private static String getQualifiedColumnName(int colIdx, List<Object> schemaColumnList) {
+        int tableIdx = (int)((List<Object>) schemaColumnList.get(colIdx)).get(0);
+        String columnName = (String) ((List<Object>) schemaColumnList.get(colIdx)).get(1);
+        String qualifiedName = (tableIdx == -1) ? columnName : String.format("T%d.%s", (tableIdx + 1), columnName);
+
+        return qualifiedName;
+    }
 
     public static String unparseToSQL(String dbId, List<Object> jsonTableMap, Map<String, Object> jsonOMRLMap) {
 
@@ -56,6 +58,10 @@ public class UnparserTestOne {
             if (verbose) {
                 System.out.println(">> Two");
             }
+            // 2 lists used several times below
+            List<Object> schemaColumnList = (List<Object>)schema.get("column_names_original");
+            List<String> schemaColumnTypeList = (List<String>)schema.get("column_types");
+
             // Get the table name(s)
             List<List<Object>> tableUnits = (List<List<Object>>)((Map<String, Object>) jsonOMRLMap.get("from")).get("table_units");
             // Table Units contain the index(es) of the tables in the schema["table_names_original"]
@@ -67,10 +73,54 @@ public class UnparserTestOne {
                     queryTableNames.add(schemaTableNames.get((int)tu.get(1)));
                 }
             });
-            if (verbose) {
-                System.out.println("FROM TABLE(S): " + queryTableNames.stream().collect(Collectors.joining(", ")));
+            // jsonOMRLMap.get("from")).get("conds"). Joins?
+            StringBuffer joinClause = new StringBuffer();
+            String finalJoin = "";
+            List<List<Object>> conds = (List<List<Object>>)((Map<String, Object>)jsonOMRLMap.get("from")).get("conds");
+            if (conds != null && conds.size() > 0) {
+                conds.stream().forEach(cond -> {
+                    boolean notOp = (boolean) cond.get(0); // -, +, x, / . TODO See that
+                    int opId = (int) cond.get(1);
+                    List<Object> valUnit = (List<Object>) cond.get(2);
+                    Object val1 = cond.get(3);
+                    Object val2 = cond.get(4);
+                    int colIdx = (int) ((List<Object>) valUnit.get(1)).get(1);
+
+//                    String tableName = schemaTableNames.get((int) ((List<Object>) schemaColumnList.get(colIdx)).get(0));
+                    String columnName = getQualifiedColumnName(colIdx, schemaColumnList);
+//                            (String) ((List<Object>) schemaColumnList.get(colIdx)).get(1);
+                    String colType = schemaColumnTypeList.get(colIdx);
+                    String op = WHERE_OPS.get(opId);
+                    String value1;
+                    boolean columnNameOnRight = false;
+                    if (val1 instanceof List) {
+                        // A valUnit
+                        int rightColIdx = (int) ((List<Object>) val1).get(1);
+                        // String righTableName = schemaTableNames.get((int) ((List<Object>) schemaColumnList.get(rightColIdx)).get(0));
+                        String rightColumnName = getQualifiedColumnName(rightColIdx, schemaColumnList);
+                        // (String) ((List<Object>) schemaColumnList.get(rightColIdx)).get(1);
+                        value1 = /*righTableName + "." + */ rightColumnName;
+                        columnNameOnRight = true;
+                    } else {
+                        value1 = val1.toString();
+                    }
+                    String oneWhereCondition = String.format("%s %s %s%s",
+                            columnName,
+                            op,
+                            ((!columnNameOnRight && "text".equals(colType)) ? String.format("'%s'", value1) : value1), // Quotes around if text
+                            (opId == 1 ? String.format(" AND %s", ("text".equals(colType) ? String.format("'%s'", val2) : val2)) : "")
+                    );
+                    joinClause.append((joinClause.length() == 0 ? "" : " DUH ") + oneWhereCondition); // TODO Find out the connector AND/OR with parenthesis...
+                });
+                finalJoin = joinClause.toString();
             }
-            // TODO jsonOMRLMap.get("from")).get("conds") ?
+
+            if (verbose) {
+                String tableList = queryTableNames.stream()
+                        .map(tName -> String.format("%s %sT%d", tName, ORACLE_ALIASES ? "" : "AS ",schemaTableNames.indexOf(tName) + 1))
+                        .collect(Collectors.joining(", "));
+                System.out.println("FROM TABLE(S): " + tableList);
+            }
             if (verbose) {
                 System.out.println(">> Three");
             }
@@ -78,8 +128,6 @@ public class UnparserTestOne {
             List<Object> select = (List<Object>)jsonOMRLMap.get("select");
             boolean isDistinct = (Boolean)select.get(0); // Global level?
             List<List<Object>> agg = (List<List<Object>>)select.get(1); // The column
-            List<Object> schemaColumnList = (List<Object>)schema.get("column_names_original");
-            List<String> schemaColumnTypeList = (List<String>)schema.get("column_types");
             List<String> querySelect = new ArrayList<>();
             agg.stream().forEach(one -> {
                 int aggId = (int)one.get(0);
@@ -91,14 +139,19 @@ public class UnparserTestOne {
                 int colAggId = (int)colUnit1.get(0); // TODO What do we use that one for? aggId does the job
                 int colIndex = (int)colUnit1.get(1);
                 boolean colIsDistinct = (boolean)colUnit1.get(2); // TODO Manage that one?
-                String colName = (String)((List<Object>)schemaColumnList.get(colIndex)).get(1);
+                int tableIndex = (Integer)((List<Object>)schemaColumnList.get(colIndex)).get(0);
+//                String tableName = schemaTableNames.get(tableIndex);
+                String colName = getQualifiedColumnName(colIndex, schemaColumnList);
+//                        (String)((List<Object>)schemaColumnList.get(colIndex)).get(1);
+                String fullColumnName = colName; // tableIndex > -1 ? String.format("%s.%s", schemaTableNames.get(tableIndex), colName) : colName;
 
                 querySelect.add(String.format("%s%s",
                         (isDistinct ? "DISTINCT " : ""),
-                        (aggId == 0 ? colName : String.format("%s(%s)", AGG_OPS.get(aggId), colName))));
+                        (aggId == 0 ? fullColumnName : String.format("%s(%s)", AGG_OPS.get(aggId), fullColumnName))));
 
                 if (colUnit2 != null) {
                     // TODO Do it.
+                    System.out.println("Bam.");
                 }
 //                System.out.println("Let's loop");
             });
@@ -121,7 +174,8 @@ public class UnparserTestOne {
                     Object val1 = cond.get(3);
                     Object val2 = cond.get(4);
                     int colIdx = (int)((List<Object>)valUnit.get(1)).get(1);
-                    String columnName = (String) ((List<Object>) schemaColumnList.get(colIdx)).get(1);
+                    String columnName = getQualifiedColumnName(colIdx, schemaColumnList);
+//                            (String) ((List<Object>) schemaColumnList.get(colIdx)).get(1);
                     String colType = schemaColumnTypeList.get(colIdx);
                     String op = WHERE_OPS.get(opId);
                     String value1 = val1.toString();
@@ -148,12 +202,16 @@ public class UnparserTestOne {
             if (orderBy != null && orderBy.size() > 0) { // order_by = (order order, val_unit* val_units). TODO Why an order at the top level? -- 'orderBy': ('asc'/'desc', [val_unit1, val_unit2, ...])
                 String globalOrder = (String)orderBy.get(0);
                 List<List<Object>> orderByColumns = (List<List<Object>>)orderBy.get(1); // valUnits
-                List<String> queryWhereClause = new ArrayList<>();
+                List<String> queryOrderByClause = new ArrayList<>();
                 orderByColumns.stream().forEach(col -> {
-                    String columnName = (String) ((List<Object>) schemaColumnList.get((int)(((List<Object>)col.get(1)).get(1)))).get(1);
-                    queryWhereClause.add(columnName + " " + globalOrder); // TODO Not good
+                    int colIdx = (int)(((List<Object>)col.get(1)).get(1));
+                    int aggIdx = (int)(((List<Object>)col.get(1)).get(0));
+                    String columnName = getQualifiedColumnName(colIdx, schemaColumnList);
+                            // (String) ((List<Object>) schemaColumnList.get((int)(((List<Object>)col.get(1)).get(1)))).get(1);
+                    queryOrderByClause.add(String.format("%s",
+                            (aggIdx == 0 ? columnName : String.format("%s(%s)", AGG_OPS.get(aggIdx), columnName))) + " " + globalOrder); // TODO Not good
                 });
-                finalOrderByClause = queryWhereClause.stream().collect(Collectors.joining(", "));
+                finalOrderByClause = queryOrderByClause.stream().collect(Collectors.joining(", "));
             }
             if (verbose) {
                 System.out.println("ORDER BY: " + finalOrderByClause);
@@ -172,7 +230,8 @@ public class UnparserTestOne {
                     int aggId = (int)gb.get(0); // See AGG_OPS
                     int colIdx = (int)gb.get(1);
                     boolean distinct = (boolean)gb.get(2);
-                    String colName = (String)((List<Object>)schemaColumnList.get(colIdx)).get(1);
+                    String colName = getQualifiedColumnName(colIdx, schemaColumnList);
+//                            (String)((List<Object>)schemaColumnList.get(colIdx)).get(1);
 
                     groupByQuery.add(String.format("%s",
                             (aggId == 0 ? colName : String.format("%s(%s)", AGG_OPS.get(aggId), colName))));
@@ -190,9 +249,21 @@ public class UnparserTestOne {
             // TODO having, limit, intersect, union, except
 
             // Final query
-            finalQuery = String.format("SELECT %s FROM %s%s%s%s",
+            String tableList = queryTableNames.stream()
+                    .map(tName -> String.format("%s %sT%d", tName, ORACLE_ALIASES ? "" : "AS ",schemaTableNames.indexOf(tName) + 1))
+                    .collect(Collectors.joining(", "));
+
+            finalQuery = String.format("SELECT %s FROM %s%s%s%s%s",
+                    //                         |       | | | | |
+                    //                         |       | | | | Order By
+                    //                         |       | | | Group By
+                    //                         |       | | where
+                    //                         |       | Join
+                    //                         |       Table list
+                    //                         Column list
                     querySelect.stream().collect(Collectors.joining(", ")),
-                    queryTableNames.stream().collect(Collectors.joining(", ")),
+                    tableList, // With Aliases
+                    (finalJoin.isEmpty() ? "" : " WHERE " + finalJoin),                       // JOIN !!!! TODO Concatenate with WHERE?
                     (finalWhereClause.isEmpty() ? "" : " WHERE " + finalWhereClause),
                     (finalGroupByClause.isEmpty() ? "" : " GROUP BY " + finalGroupByClause),
                     (finalOrderByClause.isEmpty() ? "" : " ORDER BY " + finalOrderByClause));
@@ -200,13 +271,12 @@ public class UnparserTestOne {
             System.out.println("Schema not found");
             throw new RuntimeException(String.format("Schema [%s] not found.", dbId));
         }
-
         return finalQuery;
     }
 
-    public static List<List<String>> executeQuery(Connection dbConnection, String sqlQuery) throws Exception {
+    public static List<Map<String, Object>> executeQuery(Connection dbConnection, String sqlQuery) throws Exception {
 
-        List<List<String>> result = new ArrayList<>();
+        List<Map<String, Object>> result = new ArrayList<>();
         try {
             // This is a dynamic execution, we do not know anything about the query, the columns it returns, etc.
             String sqlStatement = sqlQuery;
@@ -217,19 +287,20 @@ public class UnparserTestOne {
             int columnCount = metaData.getColumnCount();
 
             while (rs.next()) {
-                List<String> oneLine = new ArrayList<>(); // One row.
+                Map<String, Object> oneLine = new HashMap<>(); // One row.
                 for (int i = 0; i < columnCount; i++) {
                     String colName = metaData.getColumnName(i + 1);
                     int columnType = metaData.getColumnType(i + 1);
-                    String colValue = "";
+                    // TODO Ensure column name unicity, with col aliases?
+                    Object colValue;
                     if (columnType == JDBCType.INTEGER.getVendorTypeNumber()) {
-                        colValue = String.format("%d", rs.getInt(colName));
+                        colValue = rs.getInt(colName);    // String.format("%d", rs.getInt(colName));
                     } else if (columnType == JDBCType.VARCHAR.getVendorTypeNumber()) {
-                        colValue = String.format("%s", rs.getString(colName));
+                        colValue = rs.getString(colName); // String.format("%s", rs.getString(colName));
                     } else {
-                        colValue = String.format("%s", rs.getObject(colName)); // Big fallback
+                        colValue = rs.getObject(colName); // String.format("%s", rs.getObject(colName)); // Big fallback
                     }
-                    oneLine.add(String.format("%s: %s", colName, colValue));
+                    oneLine.put(colName, colValue);
                 }
                 result.add(oneLine);
             }
@@ -267,7 +338,7 @@ public class UnparserTestOne {
             jsonOMRLMap = mapper.readValue(ormlResource.openStream(), Map.class);
         } else {
             String indexPrm = System.getProperty("query.index", null);
-            // 16: group by, 0 where and order by, 4 min, max, 26 between, 9 distinct
+            // 16: group by, 0 where and order by, 4 min, max, 26 between, 9 distinct, 28 join, 30, 32, another JOIN
             Integer queryIndex = 0; // null; // Set it to the number of the query you want.
             if (indexPrm != null) {
                 try {
@@ -321,12 +392,13 @@ public class UnparserTestOne {
                     System.out.println("-------------------------------------");
                 }
 
-                List<List<String>> queryResult = executeQuery(dbConnection, unparsedQuery);
+                List<Map<String, Object>> queryResult = executeQuery(dbConnection, unparsedQuery);
                 if (queryResult != null) {
                     System.out.printf("Returned %d row%s\n", queryResult.size(), (queryResult.size() > 1 ? "s" : ""));
                     System.out.println("----- R E S U L T -----");
                     queryResult.forEach(row -> {
-                        System.out.println(row.stream().collect(Collectors.joining(", ")));
+//                        System.out.println(row.stream().collect(Collectors.joining(", ")));
+                        System.out.println(row);
                     });
                     System.out.println("-----------------------");
                 } else {

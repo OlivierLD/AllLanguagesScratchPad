@@ -1,0 +1,17 @@
+{
+  "to-generate (comment)": "SELECT T2.name, count(*) FROM race AS T1 JOIN track AS T2 ON T1.track_id = T2.track_id GROUP BY T1.track_id",
+
+  "from" : {
+    "table_units" : [ [ "table_unit", 0 ], [ "table_unit", 1 ] ],
+    "conds" : [ [ false, 2, [ 0, [ 0, 5, false ], null ], [ 0, 6, false ], null ] ]
+  },
+  "select" : [ false, [ [ 0, [ 0, [ 0, 7, false ], null ] ], [ 3, [ 0, [ 0, 0, false ], null ] ] ] ],
+  "where" : [ ],
+  "groupBy" : [ [ 0, 5, false ] ],
+  "having" : [ ],
+  "orderBy" : [ ],
+  "limit" : null,
+  "intersect" : null,
+  "union" : null,
+  "except" : null
+}
