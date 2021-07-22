@@ -6,10 +6,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.sql.*;
-import java.util.*;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.DriverManager;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 import static oliv.omrl.utils.OMRLUtils.executeQuery;
 import static oliv.omrl.utils.OMRLUtils.unparseToSQL;
@@ -20,13 +22,13 @@ import static oliv.omrl.utils.OMRLUtils.unparseToSQL;
  *
  * Get the query # as System Property -Dquery.index (defaulted to 0)
  */
-public class UnparserTestOne {
+public class UnparserTestTwo {
 
     private final static boolean verbose = false;
     private final static boolean dumpQueries = true; // To visualize the available queries
 
-    private final static String TABLE_JSON = "race_track_tables.json";
-    private final static String TRAINED_JSON = "trained_race_track.json";
+    private final static String TABLE_JSON = "/Users/olivierlediouris/repos/oracle/OMRL_v0_PoC/spider_sample_data/tables.json";
+    private final static String TRAINED_JSON = "/Users/olivierlediouris/repos/oracle/OMRL_v0_PoC/spider_sample_data/train_spider.json";
     private final static String OMRL_JSON = "";
     private final static String DEFAULT_SQLITE_DB_PATH = "/Users/olivierlediouris/repos/oracle/OMRL_v0_PoC/duorat/data/database/%s/%s.sqlite";
 
@@ -52,11 +54,11 @@ public class UnparserTestOne {
 
         List<Object> jsonTableMap = mapper.readValue(tablesResource.openStream(), List.class);
         Map<String, Object> jsonOMRLMap;
-        if (ormlResource != null) {
+        Map<String, Object> firstOne = null;
+        if (ormlResource != null) { // Should always be null
             jsonOMRLMap = mapper.readValue(ormlResource.openStream(), Map.class);
         } else {
             String indexPrm = System.getProperty("query.index", null);
-            // 16: group by, 0 where and order by, 4 min, max, 26 between, 9 distinct, 28 join, 30, 32, another JOIN
             Integer queryIndex = 0; // null; // Set it to the number of the query you want.
             if (indexPrm != null) {
                 try {
@@ -65,8 +67,12 @@ public class UnparserTestOne {
                     System.err.println(nfe.toString());
                 }
             }
+            // queryIndex = 137; // multiple where clause
+            // queryIndex = 209; // Auto-join . Problem.
+            // queryIndex = 6945; // where on text column
+            // queryIndex = 6942; // multiple where and join, group by, having
+            queryIndex = 6986; // limit
 
-            Map<String, Object> firstOne;
             if (queryIndex == null) {
                 firstOne = (Map<String, Object>) jsonTrainedMap.stream()
                         .findFirst()
@@ -83,7 +89,8 @@ public class UnparserTestOne {
         System.out.println(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(jsonOMRLMap));
 
         // Let's go
-        String dbId = "race_track"; // Hard-coded for now
+        String dbId = (String)firstOne.get("db_id"); // "race_track";
+        System.out.println("DB id: " + dbId);
 
         try {
             String unparsedQuery = unparseToSQL(dbId, jsonTableMap, jsonOMRLMap);
