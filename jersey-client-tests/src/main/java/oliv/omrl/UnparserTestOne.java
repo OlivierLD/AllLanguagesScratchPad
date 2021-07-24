@@ -25,7 +25,8 @@ public class UnparserTestOne {
     private final static boolean verbose = false;
     private final static boolean dumpQueries = true; // To visualize the available queries
 
-    private final static String TABLE_JSON = "race_track_tables.json";
+//    private final static String TABLE_JSON = "race_track_tables.json";
+    private final static String TABLE_JSON = "tables.viraj.json";
     private final static String TRAINED_JSON = "trained_race_track.json";
     private final static String OMRL_JSON = "";
     private final static String DEFAULT_SQLITE_DB_PATH = "/Users/olivierlediouris/repos/oracle/OMRL_v0_PoC/duorat/data/database/%s/%s.sqlite";

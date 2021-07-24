@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 public class OMRLUtils {
 
     private final static boolean ORACLE_ALIASES = true;
+    private final static boolean ORACLE_LIMIT = true;  // Replace LIMIT x with WHERE ... ROWNUM <= x.
 
     private final static boolean verbose = false; // This is for debug.
 
@@ -23,14 +24,25 @@ public class OMRLUtils {
         return qualifiedName;
     }
 
-    private static String buildWhereClause(String join, String where) {
+    private static String buildWhereClause(String join, String where, Integer limit) {
         String finalWhere = "";
         if (!join.isEmpty() && !where.isEmpty()) {
-            finalWhere = String.format(" WHERE (%s) AND (%s)", join, where);
+            finalWhere = String.format("(%s) AND (%s)", join, where);
         } else if (!join.isEmpty()) {
-            finalWhere = String.format(" WHERE %s", join);
+            finalWhere = String.format("%s", join);
         } else if (!where.isEmpty()) {
-            finalWhere = String.format(" WHERE %s", where);
+            finalWhere = String.format("%s", where);
+        }
+        if (limit != null && ORACLE_LIMIT) {
+            if (!finalWhere.isEmpty()) {
+                finalWhere = String.format("(%s) AND ROWNUM <= %d", finalWhere, limit);
+            } else {
+                finalWhere = String.format("ROWNUM <= %d", limit);
+            }
+        }
+        // Add WHERE keyword
+        if (!finalWhere.isEmpty()) {
+            finalWhere = " WHERE " + finalWhere;
         }
         return finalWhere;
     }
@@ -85,7 +97,7 @@ public class OMRLUtils {
 //                    String tableName = schemaTableNames.get((int) ((List<Object>) schemaColumnList.get(colIdx)).get(0));
                         String columnName = getQualifiedColumnName(colIdx, schemaColumnList);
 //                            (String) ((List<Object>) schemaColumnList.get(colIdx)).get(1);
-                        String colType = schemaColumnTypeList.get(colIdx);
+                        // String colType = schemaColumnTypeList.get(colIdx);
                         String op = WHERE_OPS.get(opId);
                         String value1;
                         boolean columnNameOnRight = false;
@@ -184,7 +196,7 @@ public class OMRLUtils {
 //                            (String) ((List<Object>) schemaColumnList.get(colIdx)).get(1);
                         String columnName = String.format("%s",
                                 (aggIdx == 0 ? colName : String.format("%s(%s)", AGG_OPS.get(aggIdx), colName)));
-                        String colType = schemaColumnTypeList.get(colIdx);
+                        // String colType = schemaColumnTypeList.get(colIdx);
                         String op = WHERE_OPS.get(opId);
                         String value1 = val1.toString();
                         String oneWhereCondition = String.format("%s %s %s%s",
@@ -279,7 +291,7 @@ public class OMRLUtils {
 //                            (String) ((List<Object>) schemaColumnList.get(colIdx)).get(1);
                         String columnName = String.format("%s",
                                 (aggIdx == 0 ? colName : String.format("%s(%s)", AGG_OPS.get(aggIdx), colName)));
-                        String colType = schemaColumnTypeList.get(colIdx);
+                        // String colType = schemaColumnTypeList.get(colIdx);
                         String op = WHERE_OPS.get(opId);
                         String value1 = val1.toString();
                         String oneWhereCondition = String.format("%s %s %s%s",
@@ -301,10 +313,10 @@ public class OMRLUtils {
                 System.out.println("HAVING: " + finalHavingClause);
             }
 
-            // LIMIT (does Oracle support it?)
+            // LIMIT (Oracle not support it?)
             Integer limit = (Integer)jsonOMRLMap.get("limit");
             String queryLimit = "";
-            if (limit != null) {
+            if (limit != null && !ORACLE_LIMIT) {
                 queryLimit = String.format(" LIMIT %d", limit);
             }
 
@@ -317,7 +329,7 @@ public class OMRLUtils {
 
             finalQuery = String.format("SELECT %s FROM %s%s%s%s%s%s",
                     //                         |       | | | | | |
-                    //                         |       | | | | | Limit
+                    //                         |       | | | | | Limit (Not Oracle supported)
                     //                         |       | | | | Order By
                     //                         |       | | | Having
                     //                         |       | | Group By
@@ -326,7 +338,7 @@ public class OMRLUtils {
                     //                         Column list
                     querySelect.stream().collect(Collectors.joining(", ")),
                     tableList, // With Aliases
-                    buildWhereClause(finalJoin, finalWhereClause), // WHERE
+                    buildWhereClause(finalJoin, finalWhereClause, limit), // WHERE
                     (finalGroupByClause.isEmpty() ? "" : " GROUP BY " + finalGroupByClause),
                     (finalHavingClause.isEmpty() ? "" : " HAVING " + finalHavingClause),
                     (finalOrderByClause.isEmpty() ? "" : " ORDER BY " + finalOrderByClause),
