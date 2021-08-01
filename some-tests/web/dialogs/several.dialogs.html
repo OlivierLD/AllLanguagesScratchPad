@@ -4,11 +4,21 @@
     <meta charset="UTF-8">
     <title>Several Dialogs</title>
     <style type="text/css">
+
+dialog {
+  /* margin: 0; */
+  position: absolute;
+  z-index: 50;
+} 
+
 .dialog-header {
+    line-height: 32px;
     font-size: 16px;
     font-family: 'Courier New', Courier, monospace;
     font-weight: 700;
     background-color: silver;
+    padding: 0 8px 0 8px; 
+    margin: -16px -16px 0 -16px;
 }
 
 .dialog-header-close {
@@ -55,17 +65,17 @@ let closeDialogTwo = () => {
 <body>
 
 <!-- Dialog -->
-<dialog id="dialog-1" style="position: absolute; top: 10vh; min-height: 300px; min-width: 400px; z-index: 50; border-radius: 10px; background-color: rgba(0, 255, 0, 0.85);">
+<dialog id="dialog-1" style="top: 10vh; min-height: 300px; min-width: 400px; border-radius: 0px; background-color: rgba(0, 255, 0, 0.85);">
   <div class="dialog-header">
     <span>Dialog One content</span>
     <span class="dialog-header-close" onclick="closeDialogOne();">&times</span>
   </div>
   <div style="text-align: left; max-height: 300px; overflow-y: scroll;">
-    <pre><span id="content-one">Akeu Coucou</span></pre>
+    <pre><span id="content-one">This is some content</span></pre>
   </div>
 </dialog>
 
-<dialog id="dialog-2" style="position: absolute; top: 16vh; min-height: 200px; min-width: 400px; max-width: 600px; z-index: 50; border-radius: 10px; background-color: rgba(0, 0, 255, 0.85); color: cyan;">
+<dialog id="dialog-2" style="top: 16vh; min-height: 200px; min-width: 400px; max-width: 600px; border-radius: 0px; background-color: rgba(0, 0, 255, 0.85); color: cyan;">
   <div class="dialog-header">
     <span>Dialog Two content</span>
     <span class="dialog-header-close" onclick="closeDialogTwo();">&times</span>
@@ -95,9 +105,9 @@ let closeDialogTwo = () => {
 <!-- End of Dialogs -->
 
 <!-- Body -->
-<button onclick="showDialogOne();">Dialog One</button>
+<button style="margin: 10px;" onclick="showDialogOne();">Dialog One</button>
 <br/>
-<button onclick="showDialogTwo();">Dialog Two</button>
+<button style="margin: 10px;" onclick="showDialogTwo();">Dialog Two</button>
 
 </body>
 </html>
