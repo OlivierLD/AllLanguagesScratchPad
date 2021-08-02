@@ -66,18 +66,18 @@ body {
 showDialogButton = document.getElementById('show-dialog');
 statusDialog = document.getElementById('dialog-status');
 
-let dialog; 
+let dialogBox; 
 
 let showDialog = () => { // invoked on lick
 	statusDialog.textContent = 'Dialog showed...';
 	showDialogButton.disabled = true;
-	if (!dialog) {
+	if (!dialogBox) {
 		let id = 'dialog';
 		// Instanciate the Dialog Box
-		dialog = new DialogBox(id, callbackDialog);
+		dialogBox = new DialogBox(id, callbackDialog);
 	}
 	// Show Dialog Box
-	dialog.showDialog();
+	dialogBox.showDialog();
 
 	// Receive result from Dialog Box
 	function callbackDialog(btnName) {
@@ -97,7 +97,7 @@ If you add buttons you need additional elements with class "buttonpane" and "but
 width and height are optional.
 -->
 <div id="dialog" class="dialog" style="min-width:400px; min-height:280px;">
-	<div class="titlebar">Dialog Title...</div>
+	<div class="titlebar">Dialog Title goes here</div>
 	<button name="close"><!-- enter symbol here like &times; or &#x1f6c8; or use the default X if empty --></button>
 	<div class="content">
 		<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
