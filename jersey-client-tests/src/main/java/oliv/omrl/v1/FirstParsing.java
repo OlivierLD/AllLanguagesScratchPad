@@ -1,4 +1,4 @@
-package oliv.omrl;
+package oliv.omrl.v1;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 

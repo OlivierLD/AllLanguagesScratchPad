@@ -1,4 +1,4 @@
-package oliv.omrl;
+package oliv.omrl.v1;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -9,10 +9,9 @@ import java.net.URL;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
-import static oliv.omrl.utils.OMRLUtils.executeQuery;
-import static oliv.omrl.utils.OMRLUtils.unparseToSQL;
+import static oliv.omrl.v1.utils.OMRLUtils.executeQuery;
+import static oliv.omrl.v1.utils.OMRLUtils.unparseToSQL;
 
 /**
  * See the spec:

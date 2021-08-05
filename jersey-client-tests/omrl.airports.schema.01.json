@@ -1,0 +1,33 @@
+{
+  "tables": [
+    {
+      "table_name": "Airports",
+      "columns": [
+        {
+          "column_name": "City"
+        },
+        {
+          "column_name": "AirportCode"
+        }
+      ]
+    },
+    {
+      "table_name": "Flights",
+      "columns": [
+        {
+          "column_name": "FlightNumber"
+        }
+      ],
+      "links": [
+        {
+          "link_name": "SourceAirport",
+          "linked_table": "Airports"
+        },
+        {
+          "link_name": "DestAirport",
+          "linked_table": "Airports"
+        }
+      ]
+    }
+  ]
+}
