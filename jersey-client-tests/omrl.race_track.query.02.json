@@ -1,0 +1,12 @@
+{
+  "utterance": "List the races by name and date, along with the track name",
+  "sql": "SELECT race.name, race.race_date, track.name FROM race JOIN track ON race.track_id = track.track_id",
+
+  "select": [
+    [ "name" ],
+    [ "race_date" ],
+    [ "track", "name" ]
+  ],
+  "from": "race",
+  "where": []
+}

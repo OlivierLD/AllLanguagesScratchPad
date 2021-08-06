@@ -1,0 +1,150 @@
+{
+  "race_track" : {
+    "entities" : [ {
+      "name" : "race",
+      "attributes" : [ {
+        "name" : "race id",
+        "type" : "number",
+        "@column" : "Race_ID"
+      }, {
+        "name" : "name",
+        "type" : "text",
+        "@column" : "Name"
+      }, {
+        "name" : "class",
+        "type" : "text",
+        "@column" : "Class"
+      }, {
+        "name" : "date",
+        "type" : "text",
+        "@column" : "Date"
+        }, {
+          "name" : "track",
+          "type" : "CompositeEntity",
+          "entity" : "track",
+          "@foreignKey" : "Track_ID",
+          "@targetForeignKey" : "Track_ID"
+        } ],
+      "@database" : "race_track",
+      "@table" : "race",
+      "@primaryKey" : "Race_ID"
+    }, {
+      "name" : "track",
+      "attributes" : [ {
+        "name" : "races",
+        "type" : "CompositeArray",
+        "entity" : "race",
+        "@foreignKey" : "Track_ID",
+        "@targetForeignKey" : "Track_ID"
+      }, {
+        "name" : "track id",
+        "type" : "number",
+        "@column" : "Track_ID"
+      }, {
+        "name" : "name",
+        "type" : "text",
+        "@column" : "Name"
+      }, {
+        "name" : "location",
+        "type" : "text",
+        "@column" : "Location"
+      }, {
+        "name" : "seating",
+        "type" : "number",
+        "@column" : "Seating"
+      }, {
+        "name" : "year opened",
+        "type" : "number",
+        "@column" : "Year_Opened"
+      } ],
+      "@database" : "race_track",
+      "@table" : "track",
+      "@primaryKey" : "Track_ID"
+    } ]
+  },
+  "flight_2" : {
+    "entities" : [ {
+      "name" : "airlines",
+      "attributes" : [ {
+        "name" : "airline id",
+        "type" : "number",
+        "@column" : "uid"
+      }, {
+        "name" : "airline name",
+        "type" : "text",
+        "@column" : "Airline"
+      }, {
+        "name" : "abbreviation",
+        "type" : "text",
+        "@column" : "Abbreviation"
+      }, {
+        "name" : "country",
+        "type" : "text",
+        "@column" : "Country"
+      } ],
+      "@database" : "flight_2",
+      "@table" : "airlines",
+      "@primaryKey" : "uid"
+    }, {
+      "name" : "airports",
+      "attributes" : [ {
+        "name" : "city",
+        "type" : "text",
+        "@column" : "City"
+      }, {
+        "name" : "airport code",
+        "type" : "text",
+        "@column" : "AirportCode"
+      }, {
+        "name" : "airport name",
+        "type" : "text",
+        "@column" : "AirportName"
+      }, {
+        "name" : "country",
+        "type" : "text",
+        "@column" : "Country"
+      }, {
+        "name" : "country abbrev",
+        "type" : "text",
+        "@column" : "CountryAbbrev"
+      }, {
+        "name" : "departing flights",
+        "type" : "CompositeArray",
+        "entity" : "flights",
+        "@foreignKey" : "SourceAirport"
+      }, {
+        "name" : "arriving flights",
+        "type" : "CompositeArray",
+        "entity" : "flights",
+        "@foreignKey" : "DestAirport"
+      } ],
+      "@database" : "flight_2",
+      "@table" : "airports",
+      "@primaryKey" : "AirportCode"
+    }, {
+      "name" : "flights",
+      "attributes" : [ {
+        "name" : "airline",
+        "type" : "number",
+        "@column" : "Airline"
+      }, {
+        "name" : "flight number",
+        "type" : "number",
+        "@column" : "FlightNo"
+      }, {
+        "name" : "source airport",
+        "type" : "CompositeEntity",
+        "entity" : "airports",
+        "@foreignKey" : "SourceAirport"
+      }, {
+        "name" : "destination airport",
+        "type" : "CompositeEntity",
+        "entity" : "airports",
+        "@foreignKey" : "DestAirport"
+      } ],
+      "@database" : "flight_2",
+      "@table" : "flights",
+      "@primaryKey" : "Airline"
+    } ]
+  }
+}

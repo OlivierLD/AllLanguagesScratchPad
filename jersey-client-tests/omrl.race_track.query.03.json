@@ -1,0 +1,19 @@
+{
+  "utterance": "List the races happening in Chicagoland Speedway,by name and date.",
+  "sql": "SELECT race.name, race.race_date, track.name FROM race JOIN track ON track.Track_ID = race.Track_ID WHERE track.name = 'Chicagoland Speedway'",
+
+  "select": [
+    [ "name" ],
+    [ "race_date" ],
+    [ "track", "name" ]
+  ],
+  "from": "race",
+  "where": [
+    "=",
+    [
+      "track",
+      "name"
+    ],
+    "Chicagoland Speedway"
+  ]
+}

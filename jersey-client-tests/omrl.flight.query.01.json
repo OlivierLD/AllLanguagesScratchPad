@@ -1,0 +1,17 @@
+{
+  "select": [
+    [
+      "#COUNT",
+      "*"
+    ]
+  ],
+  "from": "Flights",
+  "where": [
+    "=",
+    [
+      "DestAirport",
+      "City"
+    ],
+    "Aberdeen"
+  ]
+}

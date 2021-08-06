@@ -1,0 +1,20 @@
+{
+  "utterance": "How many races happened at Chicagoland Speedway?",
+  "sql": "SELECT count(*) FROM race JOIN track ON race.track_id = track.track_id WHERE track.name = 'Chicagoland Speedway'",
+
+  "select": [
+    [
+      "#COUNT",
+      "*"
+    ]
+  ],
+  "from": "race",
+  "where": [
+    "=",
+    [
+      "track",
+      "name"
+    ],
+    "Chicagoland Speedway"
+  ]
+}
