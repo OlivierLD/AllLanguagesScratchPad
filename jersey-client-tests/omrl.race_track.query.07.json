@@ -1,0 +1,28 @@
+{
+  "warning": "GROUP BY and HAVING not available (yet) in the OMRL spec.",
+  "utterance": "List the tracks hosting more than one race, and the number of races for each one.",
+  "sql": "SELECT track.name, COUNT(race.race_id), COUNT(*) FROM race JOIN track ON track.Track_ID = race.Track_ID GROUP BY track.name HAVING COUNT(race.race_id) > 1;",
+
+  "select": [
+    [
+      "track",
+      "name"
+    ], [
+      "#COUNT",
+      "race_id"
+    ], [
+      "#COUNT",
+      "*"
+    ]
+  ],
+  "from": "race",
+  "group-by": [[
+    "track",
+    "name"
+  ]],
+  "order-by": [],
+  "having": [">", [
+    "#COUNT",
+    "race_id"
+  ], 1]
+}

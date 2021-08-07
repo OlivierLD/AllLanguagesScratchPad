@@ -1,0 +1,22 @@
+{
+  "utterance": "For each track, get min, max, and average seating.",
+  "sql": "SELECT MIN(track.seating), MAX(track.seating), AVG(track.seating) FROM track",
+
+  "select": [
+    [
+      "#MIN",
+      "seating"
+    ], [
+      "#MAX",
+      "seating"
+    ], [
+      "#AVG",
+      "seating"
+    ]
+  ],
+  "from": "track",
+  "having": [">", [
+    "#MIN",
+    "seating"
+  ], 60000]
+}

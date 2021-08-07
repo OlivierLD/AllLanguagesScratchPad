@@ -1,0 +1,17 @@
+{
+  "utterance": "List the track where seating is greater than 70000 and opened after 1970, or with seating above 5000 and opened before 1970.",
+  "sql": "SELECT track.name, track.location FROM track WHERE ((track.seating > 70000) AND (track.year_opened > 1970)) OR ((track.seating > 50000) AND (track.year_opened < 1970))",
+
+  "select": [
+    [ "name" ],
+    [ "location" ]
+  ],
+  "from": "track",
+  "where": [ "OR", [ "AND",
+    [ ">", [ "seating" ], 70000 ],
+    [ ">", [ "year_opened" ], 1970 ]
+  ], [ "AND",
+    [ ">", [ "seating" ], 50000 ],
+    [ "<", [ "year_opened" ], 1970 ]
+  ] ]
+}

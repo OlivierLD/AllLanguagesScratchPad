@@ -20,7 +20,7 @@ public class TestOnOracleDB {
     //    private final static String USERNAME = "sys as SYSDBA"; // ""OMCE_BOTS";
 //    private final static String PASSWORD = "DBA4bots12345678!";
     private final static String USERNAME = "races";
-    private final static String PASSWORD = "races";
+    private final static String PASSWORD = "racesracesracesraces";
 
     public static void main(String... args) throws ClassNotFoundException, SQLException {
 

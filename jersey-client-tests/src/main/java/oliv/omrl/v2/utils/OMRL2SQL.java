@@ -6,7 +6,15 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+/**
+ * The method to invoke is omrlToSQLQuery.
+ *
+ * TODO ORDER-BY
+ */
 public class OMRL2SQL {
+
+    private final static boolean VERBOSE = false;
+
     /**
      * Finds and returns the (full) entity holding the expected CompositeEntity attribute
      * @param name name of the expected CompositeEntity
@@ -39,8 +47,158 @@ public class OMRL2SQL {
                 findFirst().orElse(null);
     }
 
-    private static String expandWhereClause() {
-        return "";
+    private static String resolveCompositeEntity(String relationName, String columnName, Map<String, Object> schema, List<String> joinClause) {
+        String expandedItem = "";
+        Map<String, Object> holdingEntity = getCompositeEntity(relationName, schema);
+        if (holdingEntity != null) {
+                            /* Find the CompositeEntity in the returned entity, like
+                               {
+                                  "name" : "track",
+                                  "type" : "CompositeEntity",
+                                  "entity" : "track",
+                                  "@foreignKey" : "Track_ID",
+                                  "@targetForeignKey" : "Track_ID"
+                                }
+                             */
+            Map<String, Object> compositeEntityDefinition = ((List<Map<String, Object>>) holdingEntity.get("attributes")).stream()
+                    .filter(att -> "CompositeEntity".equals(att.get("type")) &&
+                            relationName.equals(att.get("name"))).findFirst().orElse(null);
+            if (compositeEntityDefinition == null) {
+                throw new RuntimeException(String.format("Should not happen, %s was found, and then gone.", relationName));
+            } else {
+                // WHERE condition, and JOIN
+                // 1 - WHERE
+                String dbTableName = findDBTableByEntityName((String) compositeEntityDefinition.get("entity"), schema);
+                expandedItem = String.format("%s.%s",
+                        dbTableName,
+                        columnName);
+                // 2 - JOIN
+                String oneJoinClause = String.format("JOIN %s ON %s.%s = %s.%s",
+                        dbTableName,
+                        dbTableName,
+                        compositeEntityDefinition.get("@foreignKey"),
+                        findDBTableByEntityName((String) holdingEntity.get("name"), schema),
+                        compositeEntityDefinition.get("@targetForeignKey"));
+                if (!joinClause.contains(oneJoinClause)) {
+                    joinClause.add(oneJoinClause);
+                }
+            }
+        } else {
+            System.out.println("Keep searching..."); // TODO Raise that, or getCompositeArray
+        }
+        return expandedItem;
+    }
+
+    private static String expandWhereHavingClauseItem(Object oneMember, Map<String, Object> schema, String tableRef, List<String> joinClause) {
+        String expandedItem = "";
+        if (oneMember instanceof List) {
+            List<String> oneElem = (List<String>)oneMember;
+            if (((List<String>)oneMember).size() == 2) {
+                if (oneElem.get(0).startsWith("#")) {
+                    String aggFunc = oneElem.get(0).substring(1);
+                    if ("*".equals(oneElem.get(1))) {
+                        expandedItem = String.format("%s(%s)", aggFunc, oneElem.get(1));
+                    } else {
+                        if (oneElem.size() == 2) { // Current table
+                            expandedItem = String.format("%s(%s.%s)", aggFunc, tableRef, oneElem.get(1));
+                        } else { // Composite Entity
+                            String relationName = oneElem.get(1);
+                            String columnName = oneElem.get(2);
+                            String resolved = resolveCompositeEntity(relationName, columnName, schema, joinClause);
+                            expandedItem = String.format("%s(%s)", aggFunc, resolved);
+                        }
+                    }
+                } else { // CompositeEntity. table.column, and join.
+                    // look for a relationship
+                    String relationName = (String) ((List) oneMember).get(0);
+                    String columnName = (String) ((List) oneMember).get(1);
+                    //
+                    expandedItem = resolveCompositeEntity(relationName, columnName, schema, joinClause);
+                }
+            } else { // One column, in the current table.
+                String colName = (String) ((List) oneMember).get(0);
+                String tableName = findDBTableByEntityName(tableRef, schema);
+                expandedItem = String.format("%s.%s", tableName, colName);
+            }
+        } else if (oneMember instanceof String) {
+            expandedItem = String.format("'%s'", oneMember);
+        } else {
+            expandedItem = String.format("%s", oneMember);
+        }
+        return expandedItem;
+    }
+
+    private static String expandWhereHavingClause(List<Object> where, Map<String, Object> schema, String tableRef, List<String> joinClause) {
+
+        String sqlWhereClause = "";
+        if (where.size() == 0) {
+            return sqlWhereClause;
+        }
+
+        int i = 0;
+        String cond = (String)where.get(i);
+        if ("AND".equals(cond) || "OR".equals(cond)) {
+            // Expect 2 Lists after that. Recurse.
+            String left = expandWhereHavingClause((List<Object>)where.get(i + 1), schema, tableRef, joinClause);
+            String right = expandWhereHavingClause((List<Object>)where.get(i + 2), schema, tableRef, joinClause);
+            sqlWhereClause = String.format("(%s) %s (%s)", left, cond, right);
+        } else {
+            String unaryOp = cond;
+            Object left = where.get(i+1);
+            Object right = where.get(i+2);
+
+            String leftItem = expandWhereHavingClauseItem(left, schema, tableRef, joinClause);
+            String rightItem = expandWhereHavingClauseItem(right, schema, tableRef, joinClause);
+
+            sqlWhereClause = String.format("%s %s %s", leftItem, unaryOp, rightItem);
+        }
+        return sqlWhereClause;
+    }
+
+    private static String expandOneItem(Object item, Map<String, Object> schema, String tableRef, List<String> joinClause) {
+        if (VERBOSE) {
+            System.out.printf("Item is a %s\n", item.getClass().getName());
+        }
+        if (item instanceof List) {
+            List<String> oneElem = (List<String>)item;
+            if (oneElem.size() == 1) {
+                String oneClause = String.format("%s.%s",
+                        findDBTableByEntityName(tableRef, schema),
+                        oneElem.get(0));
+                return oneClause;
+            } else { // Agg function or CompositeEntity (join), size = 2
+                if (oneElem.get(0).startsWith("#")) {
+                    String aggFunc = oneElem.get(0).substring(1);
+                    String oneClause;
+                    if ("*".equals(oneElem.get(1))) {
+                        oneClause = String.format("%s(%s)", aggFunc, oneElem.get(1));
+                    } else {
+                        if (oneElem.size() == 2) { // Current table
+                            oneClause = String.format("%s(%s.%s)", aggFunc, tableRef, oneElem.get(1));
+                        } else { // Composite Entity
+                            String relationName = oneElem.get(1);
+                            String columnName = oneElem.get(2);
+                            String resolved = resolveCompositeEntity(relationName, columnName, schema, joinClause);
+                            oneClause = String.format("%s(%s)", aggFunc, resolved);
+                        }
+                    }
+                    return oneClause;
+                } else { // CompositeEntity. table.column, and join.
+                    if (VERBOSE) {
+                        System.out.println("CompositeEntity...");
+                    }
+                    // look for a relationship
+                    String relationName = oneElem.get(0);
+                    String columnName = oneElem.get(1);
+                    //
+                    String expandedItem = resolveCompositeEntity(relationName, columnName, schema, joinClause);
+                    return expandedItem;
+                }
+            }
+        } else {
+            throw new RuntimeException(String.format("Un-managed %s in select\n", item.getClass().getName()));
+        }
+//        return null;
     }
 
     /**
@@ -60,68 +218,8 @@ public class OMRL2SQL {
 
         List<String> selectClause = new ArrayList<>();
         select.forEach(one -> {
-//            System.out.printf("one is a %s\n", one.getClass().getName());
-            if (one instanceof List) {
-                List<String> oneElem = (List<String>)one;
-                if (oneElem.size() == 1) {
-                    String oneClause = String.format("%s.%s",
-                            findDBTableByEntityName((String)from, schema),
-                            oneElem.get(0));
-                    selectClause.add(oneClause);
-                } else { // Agg function or CompositeEntity (join), size = 2
-                    if (oneElem.get(0).startsWith("#")) {
-                        String aggFunc = oneElem.get(0).substring(1);
-                        String oneClause = String.format("%s(%s)", aggFunc, oneElem.get(1));
-                        selectClause.add(oneClause);
-                    } else { // CompositeEntity. table.column, and join.
-                        System.out.println("CompositeEntity...");
-                        // look for a relationship
-                        String relationName = oneElem.get(0);
-                        String columnName = oneElem.get(1);
-                        //
-                        Map<String, Object> holdingEntity = getCompositeEntity(relationName, schema);
-                        if (holdingEntity != null) {
-                                /* Find the CompositeEntity in the returned entity, like
-                                   {
-                                      "name" : "track",
-                                      "type" : "CompositeEntity",
-                                      "entity" : "track",
-                                      "@foreignKey" : "Track_ID",
-                                      "@targetForeignKey" : "Track_ID"
-                                    }
-                                 */
-                            Map<String, Object> compositeEntityDefinition = ((List<Map<String, Object>>) holdingEntity.get("attributes")).stream()
-                                    .filter(att -> "CompositeEntity".equals(att.get("type")) &&
-                                            relationName.equals(att.get("name"))).findFirst().orElse(null);
-                            if (compositeEntityDefinition == null) {
-                                throw new RuntimeException(String.format("Should not happen, %s was found, and then gone.", relationName));
-                            } else {
-                                // WHERE condition, and JOIN
-                                // 1 - WHERE
-                                String dbTableName = findDBTableByEntityName((String)compositeEntityDefinition.get("entity"), schema);
-                                String oneClause = String.format("%s.%s",
-                                        dbTableName,
-                                        columnName);
-                                selectClause.add(oneClause);
-                                // 2 - JOIN
-                                String oneJoinClause = String.format("JOIN %s ON %s.%s = %s.%s",
-                                        dbTableName,
-                                        dbTableName,
-                                        compositeEntityDefinition.get("@foreignKey"),
-                                        findDBTableByEntityName((String)holdingEntity.get("name"), schema),
-                                        compositeEntityDefinition.get("@targetForeignKey"));
-                                if (!joinClause.contains(oneJoinClause)) {
-                                    joinClause.add(oneJoinClause);
-                                }
-                            }
-                        } else {
-                            System.out.println("Keep searching...");
-                        }
-                    }
-                }
-            } else {
-                System.out.printf("Un-managed %s in select\n", one.getClass().getName());
-            }
+            String expanded = expandOneItem(one, schema, (String)from, joinClause);
+            selectClause.add(expanded);
         });
         String sqlSelectClause = selectClause.stream()
                 .collect(Collectors.joining(", "));
@@ -141,98 +239,46 @@ public class OMRL2SQL {
                 String tableName = (String)entityMap.get("@table");
                 fromClause.add(tableName);
             }
-            System.out.println("");
         } else {
-            System.out.printf("FROM Un-managed [%s]\n", from.getClass().getName());
+            if (VERBOSE) {
+                System.out.printf("FROM Un-managed [%s]\n", from.getClass().getName());
+            }
+            throw new RuntimeException(String.format("FROM Un-managed [%s]", from.getClass().getName()));
         }
         String sqlFromClause = fromClause.stream()
                 .collect(Collectors.joining(", "));
 
         // WHERE (and JOIN)
         List<Object> where = (List<Object>)query.get("where");
+        String expandedWhere = (where != null ?
+                expandWhereHavingClause(where, schema, (String)from, joinClause) :
+                "");
 
+        // GROUP-BY
+        List<Object> groupBy = (List<Object>)query.get("group-by");
+        String sqlGroupByClause = "";
+        if (groupBy != null) {
+            List<String> groupByClause = new ArrayList<>();
+            groupBy.forEach(one -> {
+                String expanded = expandOneItem(one, schema, (String) from, joinClause);
+                groupByClause.add(expanded);
+            });
+            sqlGroupByClause = groupByClause.stream()
+                    .collect(Collectors.joining(", "));
+        }
 
-
-        List<String> whereClause = new ArrayList<>();
-
-        for (int i=0; i<where.size(); i++) {
-            Object cond = where.get(i);
-            if (cond instanceof String) {
-                if ("AND".equals(cond) || "OR".equals(cond)) {
-                    System.out.println("Later");
-                } else {
-                    if ("=".equals(cond)) { // TODO other comparison operators
-                        // Look for a relationship
-                        Object left = where.get(i+1);
-                        Object right = where.get(i+2);
-
-                        String leftItem = "";
-                        String rightItem = "";
-
-                        // manage left item
-                        if (left instanceof List) {
-                            // look for a relationship
-                            String relationName = (String)((List)left).get(0);
-                            String columnName = (String)((List)left).get(1);
-                            //
-                            Map<String, Object> holdingEntity = getCompositeEntity(relationName, schema);
-                            if (holdingEntity != null) {
-                                /* Find the CompositeEntity in the returned entity, like
-                                   {
-                                      "name" : "track",
-                                      "type" : "CompositeEntity",
-                                      "entity" : "track",
-                                      "@foreignKey" : "Track_ID",
-                                      "@targetForeignKey" : "Track_ID"
-                                    }
-                                 */
-                                Map<String, Object> compositeEntityDefinition = ((List<Map<String, Object>>) holdingEntity.get("attributes")).stream()
-                                        .filter(att -> "CompositeEntity".equals(att.get("type")) &&
-                                                relationName.equals(att.get("name"))).findFirst().orElse(null);
-                                if (compositeEntityDefinition == null) {
-                                    throw new RuntimeException(String.format("Should not happen, %s was found, and then gone.", relationName));
-                                } else {
-                                    // WHERE condition, and JOIN
-                                    // 1 - WHERE
-                                    String dbTableName = findDBTableByEntityName((String)compositeEntityDefinition.get("entity"), schema);
-                                    leftItem = String.format("%s.%s",
-                                            dbTableName,
-                                            columnName);
-                                    // 2 - JOIN
-                                    String oneJoinClause = String.format("JOIN %s ON %s.%s = %s.%s",
-                                            dbTableName,
-                                            dbTableName,
-                                            compositeEntityDefinition.get("@foreignKey"),
-                                            findDBTableByEntityName((String)holdingEntity.get("name"), schema),
-                                            compositeEntityDefinition.get("@targetForeignKey"));
-                                    if (!joinClause.contains(oneJoinClause)) {
-                                        joinClause.add(oneJoinClause);
-                                    }
-                                }
-                            } else {
-                                System.out.println("Keep searching...");
-                            }
-                        } else {
-                            System.out.println("Left cond is not a list...");
-                        }
-                        // manage right item
-                        if (right instanceof String) {
-                            rightItem = String.format("'%s'", right);
-                        } else {
-                            System.out.println("Right is not a String");
-                        }
-                        whereClause.add(String.format("%s = %s", leftItem, rightItem));
-                    } // end '='
-                }
-            }
-        } // for, all the where
-        String sqlWhereClause = whereClause.stream()
-                .collect(Collectors.joining(", ")); // TODO tweak that. not correct.
+        // HAVING
+        List<Object> having = (List<Object>)query.get("having");
+        String expandedHaving = (having != null ?
+                expandWhereHavingClause(having, schema, (String)from, joinClause) :
+                "");
 
         String sqlJoinClause = joinClause.stream()
                 .collect(Collectors.joining(" "));
-        sql = String.format("SELECT %s FROM %s%s%s",
-                //                  |       | | |
+        sql = String.format("SELECT %s FROM %s%s%s%s%s",
+                //                  |       | | | | |
+                //                  |       | | | | having
+                //                  |       | | | group by clause
                 //                  |       | | where clause
                 //                  |       | join clause
                 //                  |       from
@@ -240,7 +286,9 @@ public class OMRL2SQL {
                 sqlSelectClause,
                 sqlFromClause,
                 (sqlJoinClause.isEmpty() ? "" : String.format(" %s", sqlJoinClause)),
-                (sqlWhereClause.isEmpty() ? "" : String.format(" WHERE %s", sqlWhereClause)));
+                (expandedWhere.isEmpty() ? "" : String.format(" WHERE %s", expandedWhere)),
+                (sqlGroupByClause.isEmpty() ? "" : String.format(" GROUP BY %s", sqlGroupByClause)),
+                (expandedHaving.isEmpty() ? "" : String.format(" HAVING %s", expandedHaving)));
         return sql;
     }
 }
