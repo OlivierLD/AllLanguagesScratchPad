@@ -7,16 +7,28 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
- * The method to invoke is omrlToSQLQuery.
+ * The method to invoke is {@link #omrlToSQLQuery(Map, Map)}.
  *
- * TODO ORDER-BY
+ * OMRL: Oracle Meaning Representation Language
+ *
+ * TODO ORDER-BY, LIMIT
  */
 public class OMRL2SQL {
 
     private final static boolean VERBOSE = false;
 
     /**
-     * Finds and returns the (full) entity holding the expected CompositeEntity attribute
+     * Finds and returns the (full) entity holding the expected CompositeEntity attribute.
+     * The corresponding "attribute" look like this:
+     * <pre>
+     *     {
+     *       "name" : "track",
+     *       "type" : "CompositeEntity",
+     *       "entity" : "track",
+     *       "@foreignKey" : "Track_ID",
+     *       "@targetForeignKey" : "Track_ID"
+     *     }
+     * </pre>
      * @param name name of the expected CompositeEntity
      * @param schema the full schema
      * @return the entity
@@ -35,9 +47,9 @@ public class OMRL2SQL {
 
     /**
      * Get the DB table name (entity.@table) from the entity name (entity.name)
-     * @param entityName
-     * @param schema
-     * @return the DB table name
+     * @param entityName member "name" of the "entity".
+     * @param schema The one to refer to.
+     * @return the DB table name, as in "@table"
      */
     private static String findDBTableByEntityName(String entityName, Map<String, Object> schema) {
         List<Map<String, Object>> entities = (List<Map<String, Object>>)schema.get("entities");
@@ -47,19 +59,28 @@ public class OMRL2SQL {
                 findFirst().orElse(null);
     }
 
+    /**
+     * Resolve entity-name.column-name to db-table-name.column-name
+     *
+     * @param relationName
+     * @param columnName
+     * @param schema
+     * @param joinClause
+     * @return
+     */
     private static String resolveCompositeEntity(String relationName, String columnName, Map<String, Object> schema, List<String> joinClause) {
         String expandedItem = "";
         Map<String, Object> holdingEntity = getCompositeEntity(relationName, schema);
         if (holdingEntity != null) {
-                            /* Find the CompositeEntity in the returned entity, like
-                               {
-                                  "name" : "track",
-                                  "type" : "CompositeEntity",
-                                  "entity" : "track",
-                                  "@foreignKey" : "Track_ID",
-                                  "@targetForeignKey" : "Track_ID"
-                                }
-                             */
+            /* Find the CompositeEntity in the returned entity, like
+               {
+                  "name" : "track",
+                  "type" : "CompositeEntity",
+                  "entity" : "track",
+                  "@foreignKey" : "Track_ID",
+                  "@targetForeignKey" : "Track_ID"
+                }
+             */
             Map<String, Object> compositeEntityDefinition = ((List<Map<String, Object>>) holdingEntity.get("attributes")).stream()
                     .filter(att -> "CompositeEntity".equals(att.get("type")) &&
                             relationName.equals(att.get("name"))).findFirst().orElse(null);

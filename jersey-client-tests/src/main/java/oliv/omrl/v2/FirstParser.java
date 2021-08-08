@@ -18,11 +18,11 @@ import java.util.stream.Collectors;
 
 /**
  * Hard coded file names.
- * Invokes OMRL2SQL.omrlToSQLQuery
+ * Invokes OMRL2SQL.omrlToSQLQuery {@link oliv.omrl.v2.utils.OMRL2SQL#omrlToSQLQuery(Map, Map)}
  */
 public class FirstParser {
 
-    private final static boolean EXECUTE_QUERY = true;
+    private final static boolean EXECUTE_QUERY = false;
 
     private final static String OMRL_SCHEMA_PATH = "omrl.mapping.schema.01.json";
 
@@ -39,8 +39,7 @@ public class FirstParser {
 
     private final static String SCHEMA_NAME = "race_track";
 
-    private final static String JDBC_HOSTNAME = "100.111.136.104";
-//    private final static String JDBC_HOSTNAME = "100.102.84.101";
+    private final static String JDBC_HOSTNAME = "100.111.136.104";  // "100.102.84.101";
     private final static int JDBC_PORT = 1521;
     private final static String JDBC_SERVICE_NAME = "BOTS.localdomain";
 
