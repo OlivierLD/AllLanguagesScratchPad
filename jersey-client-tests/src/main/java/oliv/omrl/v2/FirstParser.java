@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
  */
 public class FirstParser {
 
-    private final static boolean EXECUTE_QUERY = false;
+    private final static boolean EXECUTE_QUERY = true;
 
     private final static String OMRL_SCHEMA_PATH = "omrl.mapping.schema.01.json";
 
@@ -33,9 +33,10 @@ public class FirstParser {
             "omrl.race_track.query.04.json",  // 3
             "omrl.race_track.query.05.json",  // 4
             "omrl.race_track.query.06.json",  // 5
-            "omrl.race_track.query.07.json"   // 6
+            "omrl.race_track.query.07.json",  // 6
+            "omrl.race_track.query.08.json"   // 7
     };
-    private final static int PATH_INDEX = 6;
+    private final static int PATH_INDEX = 7;
 
     private final static String SCHEMA_NAME = "race_track";
 
@@ -112,11 +113,11 @@ public class FirstParser {
                         int columnType = metaData.getColumnType(i + 1);
                         String colValue = "";
                         if (columnType == JDBCType.INTEGER.getVendorTypeNumber()) {
-                            colValue = String.format("%d", rs.getInt(colName));
+                            colValue = String.format("%d", rs.getInt(i+1)); //  colName));
                         } else if (columnType == JDBCType.VARCHAR.getVendorTypeNumber()) {
-                            colValue = String.format("%s", rs.getString(colName));
+                            colValue = String.format("%s", rs.getString(i+1)); // colName));
                         } else {
-                            colValue = String.format("%s", rs.getObject(colName)); // Big fallback
+                            colValue = String.format("%s", rs.getObject(i+1)); // colName)); // Big fallback
                         }
                         oneLine.add(String.format("%s: %s", colName, colValue));
                     }

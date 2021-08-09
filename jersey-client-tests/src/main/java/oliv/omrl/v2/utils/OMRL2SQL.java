@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
  *
  * OMRL: Oracle Meaning Representation Language
  *
- * TODO ORDER-BY, LIMIT
+ * TODO ORDER-BY, ALIASES
  */
 public class OMRL2SQL {
 
@@ -46,6 +46,34 @@ public class OMRL2SQL {
     }
 
     /**
+     * Finds and returns the (full) entity holding the expected CompositeArray attribute.
+     * The corresponding "attribute" look like this:
+     * <pre>
+     *     {
+     *       "name" : "races",
+     *       "type" : "CompositeArray",
+     *       "entity" : "race",
+     *       "@foreignKey" : "Track_ID",
+     *       "@targetForeignKey" : "Track_ID"
+     *     }
+     * </pre>
+     * @param name name of the expected CompositeArray
+     * @param schema the full schema
+     * @return the entity
+     */
+    private static Map<String, Object> getCompositeArray(String name, Map<String, Object> schema) {
+
+        List<Map<String, Object>> entities = (List<Map<String, Object>>)schema.get("entities");
+        return entities.stream().filter(ent -> {
+            List<Map<String, Object>> attributes = (List<Map<String, Object>>)((Map<String, Object>)ent).get("attributes");
+            Optional<Map<String, Object>> compositeEntityAttribute = attributes.stream()
+                    .filter(att -> "CompositeArray".equals(att.get("type")) &&
+                            name.equals(att.get("name"))).findFirst();
+            return compositeEntityAttribute.isPresent(); // the filter condition
+        }).findFirst().orElse(null);
+    }
+
+    /**
      * Get the DB table name (entity.@table) from the entity name (entity.name)
      * @param entityName member "name" of the "entity".
      * @param schema The one to refer to.
@@ -62,7 +90,7 @@ public class OMRL2SQL {
     /**
      * Resolve entity-name.column-name to db-table-name.column-name
      *
-     * @param relationName
+     * @param relationName find the "type": "CompositeEntity" or "CompositeArray" with "name" = relationName, find the "entity" , and get the corresponding "@table"
      * @param columnName
      * @param schema
      * @param joinClause
@@ -105,7 +133,44 @@ public class OMRL2SQL {
                 }
             }
         } else {
-            System.out.println("Keep searching..."); // TODO Raise that, or getCompositeArray
+            holdingEntity = getCompositeArray(relationName, schema);
+            if (holdingEntity != null) {
+            /* Find the CompositeArray in the returned entity, like
+               {
+                  "name" : "track",
+                  "type" : "CompositeArray",
+                  "entity" : "track",
+                  "@foreignKey" : "Track_ID",
+                  "@targetForeignKey" : "Track_ID"
+                }
+             */
+                Map<String, Object> compositeArrayDefinition = ((List<Map<String, Object>>) holdingEntity.get("attributes")).stream()
+                        .filter(att -> "CompositeArray".equals(att.get("type")) &&
+                                relationName.equals(att.get("name"))).findFirst().orElse(null);
+                if (compositeArrayDefinition == null) {
+                    throw new RuntimeException(String.format("Should not happen, %s was found, and then gone.", relationName));
+                } else {
+                    // WHERE condition, and JOIN
+                    // 1 - WHERE
+                    String dbTableName = findDBTableByEntityName((String) compositeArrayDefinition.get("entity"), schema);
+                    expandedItem = String.format("%s.%s",
+                            dbTableName,
+                            columnName);
+                    // 2 - JOIN
+                    String oneJoinClause = String.format("JOIN %s ON %s.%s = %s.%s",
+                            dbTableName,
+                            dbTableName,
+                            compositeArrayDefinition.get("@foreignKey"),
+                            findDBTableByEntityName((String) holdingEntity.get("name"), schema),
+                            compositeArrayDefinition.get("@targetForeignKey"));
+                    if (!joinClause.contains(oneJoinClause)) {
+                        joinClause.add(oneJoinClause);
+                    }
+                }
+            } else {
+                // Raise Exception
+                throw new RuntimeException(String.format("Relation name %s not found in the schema.", relationName));
+            }
         }
         return expandedItem;
     }
@@ -294,13 +359,29 @@ public class OMRL2SQL {
                 expandWhereHavingClause(having, schema, (String)from, joinClause) :
                 "");
 
+        // LIMIT
+        String sqlLimit = "";
+        Object limit = query.get("limit");
+        if (limit != null) {
+            sqlLimit = String.format("ROWNUM <= %s", limit);
+        }
+
         String sqlJoinClause = joinClause.stream()
                 .collect(Collectors.joining(" "));
+
+        if (!sqlLimit.isEmpty()) {
+            if (!expandedWhere.isEmpty()) {
+                expandedWhere = String.format("(%s) AND (%s)", expandedWhere, sqlLimit);
+            } else {
+                expandedWhere = sqlLimit;
+            }
+        }
+
         sql = String.format("SELECT %s FROM %s%s%s%s%s",
                 //                  |       | | | | |
                 //                  |       | | | | having
                 //                  |       | | | group by clause
-                //                  |       | | where clause
+                //                  |       | | where clause (and limit)
                 //                  |       | join clause
                 //                  |       from
                 //                  select

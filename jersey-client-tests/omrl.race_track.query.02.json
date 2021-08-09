@@ -8,5 +8,6 @@
     [ "track", "name" ]
   ],
   "from": "race",
-  "where": []
+  "where": [],
+  "limit": 50
 }

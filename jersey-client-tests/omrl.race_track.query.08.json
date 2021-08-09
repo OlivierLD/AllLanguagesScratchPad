@@ -1,0 +1,13 @@
+{
+  "utterance": "List the tracks name and location, along with the races happening at their location",
+  "sql": "SELECT track.name, track.location, race.name FROM track JOIN race ON race.Track_ID = track.Track_ID WHERE ROWNUM <= 50",
+
+  "select": [
+    [ "name" ],
+    [ "location" ],
+    [ "races", "name" ]
+  ],
+  "from": "track",
+  "where": [],
+  "limit": 50
+}
