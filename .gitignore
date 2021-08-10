@@ -17,3 +17,5 @@ gradle-app.setting
 **/build/
 **/*.jar
 **/tmp/**
+
+**/.DS_Store
