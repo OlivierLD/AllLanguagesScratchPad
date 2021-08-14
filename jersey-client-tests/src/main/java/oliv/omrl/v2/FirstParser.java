@@ -12,6 +12,7 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -27,14 +28,14 @@ public class FirstParser {
     private final static String OMRL_SCHEMA_PATH = "omrl.mapping.schema.01.json";
 
     private final static String[] OMRL_QUERY_PATH = {
-            "omrl.race_track.query.01.json",  // 0
-            "omrl.race_track.query.02.json",  // 1
-            "omrl.race_track.query.03.json",  // 2
-            "omrl.race_track.query.04.json",  // 3
-            "omrl.race_track.query.05.json",  // 4
-            "omrl.race_track.query.06.json",  // 5
-            "omrl.race_track.query.07.json",  // 6
-            "omrl.race_track.query.08.json"   // 7
+            "omrl.race_track.query.01.json",  // index 0
+            "omrl.race_track.query.02.json",  // index 1
+            "omrl.race_track.query.03.json",  // index 2
+            "omrl.race_track.query.04.json",  // index 3
+            "omrl.race_track.query.05.json",  // index 4
+            "omrl.race_track.query.06.json",  // index 5
+            "omrl.race_track.query.07.json",  // index 6
+            "omrl.race_track.query.08.json"   // index 7
     };
     private final static int PATH_INDEX = 7;
 
@@ -64,16 +65,16 @@ public class FirstParser {
             Map<String, Object> query = mapper.readValue(queryResource.openStream(), Map.class);
             System.out.println("Done generating resources, processing the OMRL query.");
 
-            String sql = "";
+            Map<String, Object> omrlSql = null;
             Map<String, Object> schema = schemas.get(SCHEMA_NAME);
             if (schema != null) {
-                sql = OMRL2SQL.omrlToSQLQuery(schema, query);
+                omrlSql = OMRL2SQL.omrlToSQLQuery(schema, query);
             } else {
                 System.out.printf("Schema [%s] not found.\n", SCHEMA_NAME);
             }
 
             System.out.println("SQL Query:");
-            System.out.println(sql);
+            System.out.println(omrlSql.get("query"));
 
             // Execution?
             if (EXECUTE_QUERY) {
@@ -92,7 +93,8 @@ public class FirstParser {
                 System.out.println(">> Connected");
 
                 // Try the select stmt generated above
-                String sqlStatement = sql; // No final semi-column
+                String sqlStatement = (String)omrlSql.get("query"); // No final semi-column
+                List<String> rsMap = (List<String>)omrlSql.get("rs-map");
 
                 System.out.println(">> Executing query");
                 System.out.println(sqlStatement);
@@ -105,9 +107,11 @@ public class FirstParser {
                 int columnCount = metaData.getColumnCount();
 
                 int nbRows = 0;
+                List<Map<String, Object>> finalResultSet = new ArrayList<>();
                 while (rs.next()) {
                     nbRows++;
                     List<String> oneLine = new ArrayList<>(); // One record.
+                    Map<String, Object> oneRow = new HashMap<>();
                     for (int i = 0; i < columnCount; i++) {
                         String colName = metaData.getColumnName(i + 1);
                         int columnType = metaData.getColumnType(i + 1);
@@ -120,7 +124,24 @@ public class FirstParser {
                             colValue = String.format("%s", rs.getObject(i+1)); // colName)); // Big fallback
                         }
                         oneLine.add(String.format("%s: %s", colName, colValue));
+                        // the RS Map
+                        String rsMapValue = rsMap.get(i);
+                        // System.out.println(rsMapValue + ":" + colValue);
+                        if (rsMapValue.contains(".")) { // nested
+                            String entity = rsMapValue.substring(0, rsMapValue.indexOf("."));
+                            String column = rsMapValue.substring(rsMapValue.indexOf(".") + 1);
+                            // Get the entity subMap, if it exists
+                            Map entityMap = (Map)oneRow.get(entity);
+                            if (entityMap == null) {
+                                entityMap = new HashMap<>();
+                                oneRow.put(entity, entityMap);
+                            }
+                            entityMap.put(column, colValue);
+                        } else { // in the from, top level, not nested.
+                            oneRow.put(rsMapValue, colValue);
+                        }
                     }
+                    finalResultSet.add(oneRow);
                     System.out.println(oneLine.stream().collect(Collectors.joining(", ")));
                 }
                 rs.close();
@@ -131,6 +152,9 @@ public class FirstParser {
                 System.out.println("-------------------------------------");
 
                 connection.close();
+                // ResultSet
+                String finalRS = mapper.writeValueAsString(finalResultSet);
+                System.out.println(finalRS);
             }
 
         } catch (Exception ex) {

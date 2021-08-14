@@ -9,6 +9,12 @@ import java.util.stream.Collectors;
 /**
  * The method to invoke is {@link #omrlToSQLQuery(Map, Map)}.
  *
+ * See https://confluence.oraclecorp.com/confluence/display/IBS/ORML+to+SQL%2C+step+2
+ * Earlier version, see https://confluence.oraclecorp.com/confluence/display/IBS/OMRL+to+SQL+-+Scratch+pad
+ *
+ * Steve's page: https://confluence.oraclecorp.com/confluence/pages/viewpage.action?spaceKey=IBS&title=Learnings+from+OMRL+v0+and+Next+Steps
+ * OMRL Current spec: https://confluence.oraclecorp.com/confluence/display/AARCH/OMRL+v0+Representations+and+Schema
+ *
  * OMRL: Oracle Meaning Representation Language
  *
  * TODO ORDER-BY, ALIASES
@@ -16,6 +22,8 @@ import java.util.stream.Collectors;
 public class OMRL2SQL {
 
     private final static boolean VERBOSE = false;
+
+    private final static boolean ADD_WHERE_CLAUSE_COLUMNS_TO_SELECT = false;
 
     /**
      * Finds and returns the (full) entity holding the expected CompositeEntity attribute.
@@ -175,6 +183,16 @@ public class OMRL2SQL {
         return expandedItem;
     }
 
+    private static boolean thereIsNoAggFuncIn(List<String> clause) {
+
+        Optional<String> firstAgg = clause.stream().filter(item -> item.startsWith("COUNT(") ||
+                        item.startsWith("MIN(") ||
+                        item.startsWith("MAX(") ||
+                        item.startsWith("AVG("))
+                .findFirst();
+        return !firstAgg.isPresent();
+    }
+
     private static String expandWhereHavingClauseItem(Object oneMember, Map<String, Object> schema, String tableRef, List<String> joinClause) {
         String expandedItem = "";
         if (oneMember instanceof List) {
@@ -214,7 +232,7 @@ public class OMRL2SQL {
         return expandedItem;
     }
 
-    private static String expandWhereHavingClause(List<Object> where, Map<String, Object> schema, String tableRef, List<String> joinClause) {
+    private static String expandWhereHavingClause(List<Object> where, Map<String, Object> schema, String tableRef, List<String> selectClause, List<String> joinClause) {
 
         String sqlWhereClause = "";
         if (where.size() == 0) {
@@ -225,8 +243,8 @@ public class OMRL2SQL {
         String cond = (String)where.get(i);
         if ("AND".equals(cond) || "OR".equals(cond)) {
             // Expect 2 Lists after that. Recurse.
-            String left = expandWhereHavingClause((List<Object>)where.get(i + 1), schema, tableRef, joinClause);
-            String right = expandWhereHavingClause((List<Object>)where.get(i + 2), schema, tableRef, joinClause);
+            String left = expandWhereHavingClause((List<Object>)where.get(i + 1), schema, tableRef, selectClause, joinClause);
+            String right = expandWhereHavingClause((List<Object>)where.get(i + 2), schema, tableRef, selectClause, joinClause);
             sqlWhereClause = String.format("(%s) %s (%s)", left, cond, right);
         } else {
             String unaryOp = cond;
@@ -236,6 +254,19 @@ public class OMRL2SQL {
             String leftItem = expandWhereHavingClauseItem(left, schema, tableRef, joinClause);
             String rightItem = expandWhereHavingClauseItem(right, schema, tableRef, joinClause);
 
+            if (ADD_WHERE_CLAUSE_COLUMNS_TO_SELECT) {
+                // see if the item is in the select clause already
+                if (left instanceof List) { // Means it is not a literal
+                    if (!selectClause.contains(leftItem) && thereIsNoAggFuncIn(selectClause)) {
+                        selectClause.add(leftItem);
+                    }
+                }
+                if (right instanceof List) { // Means it is not a literal
+                    if (!selectClause.contains(rightItem) && thereIsNoAggFuncIn(selectClause)) {
+                        selectClause.add(rightItem);
+                    }
+                }
+            }
             sqlWhereClause = String.format("%s %s %s", leftItem, unaryOp, rightItem);
         }
         return sqlWhereClause;
@@ -293,7 +324,7 @@ public class OMRL2SQL {
      * @param query the OMRL representation of the query
      * @return a String containing the SQL query to perform.
      */
-    public static String omrlToSQLQuery(Map<String, Object> schema, Map<String, Object> query) {
+    public static Map<String, Object> omrlToSQLQuery(Map<String, Object> schema, Map<String, Object> query) {
         String sql = "";
 
         List<String> joinClause = new ArrayList<>();
@@ -307,8 +338,8 @@ public class OMRL2SQL {
             String expanded = expandOneItem(one, schema, (String)from, joinClause);
             selectClause.add(expanded);
         });
-        String sqlSelectClause = selectClause.stream()
-                .collect(Collectors.joining(", "));
+//        String sqlSelectClause = selectClause.stream()
+//                .collect(Collectors.joining(", "));
 
         // FROM
         List<String> fromClause = new ArrayList<>();
@@ -337,7 +368,7 @@ public class OMRL2SQL {
         // WHERE (and JOIN)
         List<Object> where = (List<Object>)query.get("where");
         String expandedWhere = (where != null ?
-                expandWhereHavingClause(where, schema, (String)from, joinClause) :
+                expandWhereHavingClause(where, schema, (String)from, selectClause, joinClause) :
                 "");
 
         // GROUP-BY
@@ -356,8 +387,23 @@ public class OMRL2SQL {
         // HAVING
         List<Object> having = (List<Object>)query.get("having");
         String expandedHaving = (having != null ?
-                expandWhereHavingClause(having, schema, (String)from, joinClause) :
+                expandWhereHavingClause(having, schema, (String)from, selectClause, joinClause) :
                 "");
+
+        String sqlSelectClause = selectClause.stream()
+                .collect(Collectors.joining(", "));
+
+        // Build result-set map
+        List<String> resultSetMap = new ArrayList<>();
+        final String fromPrefix = String.format("%s.", from);
+        selectClause.stream()
+                .forEach(one -> {
+                    if (one.startsWith(fromPrefix)) {
+                        resultSetMap.add(one.substring(fromPrefix.length()));
+                    } else {
+                        resultSetMap.add(one);
+                    }
+                });
 
         // LIMIT
         String sqlLimit = "";
@@ -391,6 +437,6 @@ public class OMRL2SQL {
                 (expandedWhere.isEmpty() ? "" : String.format(" WHERE %s", expandedWhere)),
                 (sqlGroupByClause.isEmpty() ? "" : String.format(" GROUP BY %s", sqlGroupByClause)),
                 (expandedHaving.isEmpty() ? "" : String.format(" HAVING %s", expandedHaving)));
-        return sql;
+        return Map.of("query", sql, "rs-map", resultSetMap);
     }
 }
