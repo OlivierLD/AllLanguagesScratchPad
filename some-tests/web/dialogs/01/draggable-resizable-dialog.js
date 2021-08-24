@@ -88,10 +88,12 @@ function DialogBox(id, callback) { // This is like an Object. TODO Move to ES 6,
 	
 	_adjustFocus = (evt) => {
 		evt = evt || window.event;
-		if (evt.target === _dialogTitle) {
-			_buttons[_buttons.length - 1].focus();
-		} else {
-			_buttons[0].focus();
+		if (_buttons.length > 0) {
+			if (evt.target === _dialogTitle) {
+				_buttons[_buttons.length - 1].focus();
+			} else {
+				_buttons[0].focus();
+			}
 		}
 		return _returnEvent(evt);
 	},
@@ -472,12 +474,14 @@ function DialogBox(id, callback) { // This is like an Object. TODO Move to ES 6,
 	_setCursor = (cur) => {
 		_dialog.style.cursor = cur;
 		_dialogTitle.style.cursor = cur;
-		_buttons[0].style.cursor = cur;
+		if (_buttons.length > 0) {
+			_buttons[0].style.cursor = cur;
+		}
 	},
 	
 	_setDialogContent = () => {
 		// Let's try to get rid of some of constants in javascript but use values from css
-		let	_dialogContentStyle = getComputedStyle(_dialogContent),
+		let	_dialogContentStyle = _dialogContent !== null ? getComputedStyle(_dialogContent) : null,
 			_dialogButtonPaneStyle,
 			_dialogButtonPaneStyleBefore;
 		if (_buttons.length > 1) {
@@ -486,11 +490,11 @@ function DialogBox(id, callback) { // This is like an Object. TODO Move to ES 6,
 		}
 
 		let w = _dialog.clientWidth 
-				- parseInt( _dialogContentStyle.left) // .dialog .content { left: 16px; }
+				- (_dialogContentStyle !== null ? parseInt( _dialogContentStyle.left) : 0) // .dialog .content { left: 16px; }
 				- 16 // right margin?
 				,
 			h = _dialog.clientHeight - (
-				parseInt(_dialogContentStyle.top) // .dialog .content { top: 48px } 
+				(_dialogContentStyle !== null ? parseInt(_dialogContentStyle.top) : 0) // .dialog .content { top: 48px } 
 				+ 16 // ?
 				+ (_buttons.length > 1 ? 
 					+ parseInt(_dialogButtonPaneStyleBefore.borderBottom) // .dialog .buttonpane:before { border-bottom: 1px; }
@@ -499,21 +503,26 @@ function DialogBox(id, callback) { // This is like an Object. TODO Move to ES 6,
 					+ parseInt(_dialogButtonPaneStyle.bottom) // .dialog .buttonpane { bottom: 16px; }
 					: 0 )
 				); // Ensure to get minimal height
-		_dialogContent.style.width = w + 'px';
-		_dialogContent.style.height = h + 'px';
-
+		if (_dialogContent !== null) {			
+			_dialogContent.style.width = w + 'px';
+			_dialogContent.style.height = h + 'px';
+		}
 		if (_dialogButtonPane) { // The buttonpane is optional
 			_dialogButtonPane.style.width = w + 'px';
 		}
-		_dialogTitle.style.width = (w - 16) + 'px';
+		if (_dialogTitle) {
+			_dialogTitle.style.width = (w - 16) + 'px';
+		}
 	},
 	
 	_showDialog = () => {
 		_dialog.style.display = 'block';
-		if (_buttons[1]) { // buttons are optional
-			_buttons[1].focus();
-		} else {
-			_buttons[0].focus();
+		if (_buttons.length > 0) {
+			if (_buttons[1]) { // buttons are optional
+				_buttons[1].focus();
+			} else {
+				_buttons[0].focus();
+			}
 		}
 	},
 	
@@ -534,8 +543,8 @@ function DialogBox(id, callback) { // This is like an Object. TODO Move to ES 6,
 
 		// Let's try to get rid of some of constants in javascript but use values from css
 		let _dialogStyle = getComputedStyle(_dialog),
-			_dialogTitleStyle = getComputedStyle(_dialogTitle),
-			_dialogContentStyle = getComputedStyle(_dialogContent),
+			_dialogTitleStyle = _dialogTitle !== null ? getComputedStyle(_dialogTitle) : null,
+			_dialogContentStyle = _dialogContent !== null ? getComputedStyle(_dialogContent) : null,
 			_dialogButtonPaneStyle,
 			_dialogButtonPaneStyleBefore,
 			_dialogButtonStyle;
@@ -558,8 +567,8 @@ function DialogBox(id, callback) { // This is like an Object. TODO Move to ES 6,
 		
 		// Calculate minimal height
 		_minH = Math.max(_dialog.clientHeight, _minH, 
-			+ parseInt(_dialogContentStyle.top) // .dialog .content { top: 48px } 
-			+ (2 * parseInt(_dialogStyle.border)) // .dialog { border: 1px }
+			+ (_dialogContentStyle !== null ? parseInt(_dialogContentStyle.top) : 0) // .dialog .content { top: 48px } 
+			+ (2 * (_dialogStyle !== null ? parseInt(_dialogStyle.border) : 0)) // .dialog { border: 1px }
 			+ 16 // ?
 			+ 12 // .p { margin-block-start: 1em; } // default
 			+ 12 // .dialog { font-size: 12px; } // 1em = 12px
@@ -583,7 +592,9 @@ function DialogBox(id, callback) { // This is like an Object. TODO Move to ES 6,
 		_dialog.style.display = 'none'; // Let's hide it again..
 		_dialog.style.visibility = 'visible'; // and undo visibility = 'hidden'
 
-		_dialogTitle.tabIndex = '0';
+		if (_dialogTitle) {
+			_dialogTitle.tabIndex = '0';
+		}
 
 		_tabBoundary = document.createElement('div');
 		_tabBoundary.tabIndex = '0';
@@ -598,16 +609,22 @@ function DialogBox(id, callback) { // This is like an Object. TODO Move to ES 6,
 		// attach the event to the whole document, but we need to take care not to mess 
 		// up normal events outside of the dialog.
 		_addEvent(document, 'mouseup', _onMouseUp);
-		if (_buttons[0].textContent == '') { // Use default symbol X if no other symbol is provided
-			_buttons[0].innerHTML = '&#x2716;'; // use of innerHTML is required to show  Unicode characters
+		if (_buttons.length > 0) {
+			if (_buttons[0].textContent == '') { // Use default symbol X if no other symbol is provided
+				_buttons[0].innerHTML = '&#x2716;'; // use of innerHTML is required to show  Unicode characters
+			}
 		}
 		for (let i = 0; i < _buttons.length; i++) {
 			_addEvent(_buttons[i], 'click', _onClick);
 			_addEvent(_buttons[i], 'focus', _onFocus);
 			_addEvent(_buttons[i], 'blur', _onBlur);
 		}
-		_addEvent(_dialogTitle, 'focus', _adjustFocus);
-		_addEvent(_tabBoundary, 'focus', _adjustFocus);
+		if (_dialogTitle) {
+			_addEvent(_dialogTitle, 'focus', _adjustFocus);
+		}
+		if (_tabBoundary) {
+			_addEvent(_tabBoundary, 'focus', _adjustFocus);
+		}
 
 		_zIndex = _dialog.style.zIndex;
 	};

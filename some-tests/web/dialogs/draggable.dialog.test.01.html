@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Tests One</title>
+
+    <link rel="stylesheet" href="./01/draggable-resizable-dialog.css" />
+    <script type="text/javascript" src="./01/draggable-resizable-dialog.js"></script>
+
+    <script type="text/javascript">
+let dialogBox;
+
+let callbackDialog = () => {
+    console.log("Callback dialog");
+};
+
+let showDialogOne = () => {
+
+    let id = 'dialog-1';
+    // Instantiate the Dialog Box
+    dialogBox = new DialogBox(id, callbackDialog);
+
+	// Show Dialog Box
+	dialogBox.showDialog();
+};
+
+let closeDialogOne = () => {
+    let dialog = document.getElementById("dialog-1");
+    dialog.close();
+};
+
+let showDialogTwo = () => {
+
+    let id = 'dialog-2';
+    // Instantiate the Dialog Box
+    dialogBox = new DialogBox(id, callbackDialog);
+
+	// Show Dialog Box
+	dialogBox.showDialog();
+};
+
+let closeDialogTwo = () => {
+    let dialog = document.getElementById("dialog-2");
+    dialog.close();
+};
+    </script>
+</head>
+<body>
+
+<!-- Dialog -->
+<dialog id="dialog-1" style="top: 10vh; min-height: 300px; min-width: 400px; border-radius: 0px; background-color: rgba(0, 255, 0, 0.85);">
+    <div class="titlebar dialog-header">
+        <span>Dialog One content</span>
+        <span class="dialog-header-close" onclick="closeDialogOne();">&times</span>
+    </div>
+    <div style="text-align: left; max-height: 300px; overflow-y: scroll;">
+        <pre><span id="content-one">This is some content</span></pre>
+    </div>
+</dialog>
+
+<dialog id="dialog-2" style="top: 16vh; min-height: 200px; min-width: 400px; max-width: 600px; border-radius: 0px; background-color: rgba(0, 0, 255, 0.85); color: cyan;">
+    <div class="titlebar dialog-header">
+        <span>Dialog Two content</span>
+        <span class="dialog-header-close" onclick="closeDialogTwo();">&times</span>
+    </div>
+    <div style="text-align: left; max-height: 180px; overflow-y: scroll;">
+    <span id="content-two">
+      <p>
+          Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+          Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+          Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+          Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+      </p>
+      <p>
+          Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam,
+          eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.
+          Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit,
+          sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt.
+          Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit,
+          sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem.
+          Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur?
+          Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur,
+          vel illum qui dolorem eum fugiat quo voluptas nulla pariatur?
+      </p>
+    </span>
+    </div>
+</dialog>
+<!-- End of Dialogs -->
+
+<!-- Body -->
+<button style="margin: 10px;" onclick="showDialogOne();">Dialog One</button>
+<br/>
+<button style="margin: 10px;" onclick="showDialogTwo();">Dialog Two</button>
+
+</body>
+</html>
