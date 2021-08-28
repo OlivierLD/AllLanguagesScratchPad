@@ -1,4 +1,5 @@
 #!/bin/bash
+echo -e "Packaging Chat Server!"
 FROM_DIR=$(pwd)
 echo -e "Packaging the server..."
 rm -rf classes
