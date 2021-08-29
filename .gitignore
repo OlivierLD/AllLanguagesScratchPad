@@ -16,6 +16,7 @@ gradle-app.setting
 **/source-classes-mapping.txt
 **/build/
 **/*.jar
+**/*.class
 **/tmp/**
 
 **/.DS_Store
