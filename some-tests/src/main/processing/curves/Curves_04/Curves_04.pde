@@ -3,6 +3,9 @@
  * See doc at https://processing.org/reference/bezier_.html
  *
  * see bezierPoint(), curvePoint()...
+ * https://processing.org/reference/curvePoint_.html
+ *
+ * Bezier Vertex are Control Points
  */
  
 // Below: Change at will 
@@ -13,8 +16,8 @@ void setup() {
   size(150, 150);
   background(255);
   smooth();
-  // Don't show where control points are
   noFill();
+
   // stroke(0);
   beginShape();
   if (OPTION == 1) {  

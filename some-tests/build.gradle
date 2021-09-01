@@ -3,9 +3,9 @@ plugins {
     id 'scala'
     id 'groovy'
     id 'idea'
-    id 'maven-publish'
+//    id 'maven-publish'
 
-    id 'com.github.johnrengelman.shadow' // version '7.0.0'
+//    id 'com.github.johnrengelman.shadow' // version '6.0.0' // version '7.0.0'
 }
 
 group 'oliv.scratch.pad'
@@ -17,11 +17,12 @@ version '1.0'
 repositories {
     mavenLocal()
     mavenCentral()
-    maven { url "https://www.datanucleus.org/downloads/maven2" }
-    // maven { url "https://nexus.corp.com/content/repositories/releases" }
-    maven { url "https://mvnrepository.com/artifact" }
-    maven { url "https://dl.bintray.com/cibotech/public" }
-    maven { url "https://raw.githubusercontent.com/OlivierLD/raspberry-coffee/repository" }
+//    maven { url "https://www.datanucleus.org/downloads/maven2" }
+//    // maven { url "https://nexus.corp.com/content/repositories/releases" }
+//    maven { url "https://mvnrepository.com/artifact" }
+//    maven { url "https://oss.sonatype.org/content/groups/public" }
+//    maven { url "https://dl.bintray.com/cibotech/public" }
+//    maven { url "https://raw.githubusercontent.com/OlivierLD/raspberry-coffee/repository" }
 }
 
 dependencies {
@@ -75,12 +76,18 @@ task SQLiteBLOBTest(type: JavaExec, dependsOn: classes, description: 'Runs a SQL
     classpath configurations.runtimeClasspath
 }
 
+task BezierTest(type: JavaExec, dependsOn: classes, description: 'Runs a Bezier sample') {
+    main = 'oliv.curves.bezier.Bezier'
+    classpath sourceSets.main.runtimeClasspath
+    classpath configurations.runtimeClasspath
+}
+
 build.doFirst {
     println "-------------------------------------------------------"
     println ">>> Using JAVA_HOME: ${System.getProperty('java.home')}"
     println "-------------------------------------------------------"
 }
 
-shadowJar {
-    zip64 true
-}
+//shadowJar {
+//    zip64 true
+//}

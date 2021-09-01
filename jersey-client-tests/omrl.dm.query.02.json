@@ -1,0 +1,10 @@
+{
+  "sql" : "SELECT name ,  born_state ,  age FROM head ORDER BY age",
+
+    "select" : [ [ "NAME" ], [ "BORN_STATE" ], [ "AGE" ] ],
+    "from" : "head",
+    "where" : [ ],
+    "orderBy" : [ [ "AGE" ] ],
+    "having" : [ ],
+    "groupBy" : [ ]
+}

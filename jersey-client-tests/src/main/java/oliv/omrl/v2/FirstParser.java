@@ -5,16 +5,13 @@ import oliv.omrl.v2.utils.OMRL2SQL;
 
 import java.io.File;
 import java.net.URL;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.JDBCType;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -23,9 +20,11 @@ import java.util.stream.Collectors;
  */
 public class FirstParser {
 
-    private final static boolean EXECUTE_QUERY = true;
+    private final static boolean EXECUTE_QUERY = false; // true;
 
-    private final static String OMRL_SCHEMA_PATH = "omrl.mapping.schema.01.json";
+    private final static String OMRL_SCHEMA_PATH = // "omrl.mapping.schema.01.json";
+//            "omrl.mapping.schema.02.json";
+            "omrl.mapping.schema.generated.03.json";
 
     private final static String[] OMRL_QUERY_PATH = {
             "omrl.race_track.query.01.json",  // index 0
@@ -35,11 +34,13 @@ public class FirstParser {
             "omrl.race_track.query.05.json",  // index 4
             "omrl.race_track.query.06.json",  // index 5
             "omrl.race_track.query.07.json",  // index 6
-            "omrl.race_track.query.08.json"   // index 7
+            "omrl.race_track.query.08.json",  // index 7
+            "omrl.dm.query.01.json",          // index 8
+            "omrl.dm.query.02.json"           // index 9
     };
-    private final static int PATH_INDEX = 7;
+    private final static int PATH_INDEX = 9;
 
-    private final static String SCHEMA_NAME = "race_track";
+    private final static String SCHEMA_NAME = "department_management"; // "race_track";
 
     private final static String JDBC_HOSTNAME = "100.111.136.104";  // "100.102.84.101";
     private final static int JDBC_PORT = 1521;
@@ -49,6 +50,9 @@ public class FirstParser {
 //    private final static String PASSWORD = "DBA4bots12345678!";
     private final static String USERNAME = "races";
     private final static String PASSWORD = "racesracesracesraces";
+
+    private final static String FUNC_REGEX = "^(\\w+)\\(([^\\)]+)\\)";
+    private final static Pattern FUNC_PATTERN = Pattern.compile(FUNC_REGEX, Pattern.MULTILINE);
 
     public static void main(String... args) {
         URL schemaResource;
@@ -126,10 +130,36 @@ public class FirstParser {
                         oneLine.add(String.format("%s: %s", colName, colValue));
                         // the RS Map
                         String rsMapValue = rsMap.get(i);
-                        // System.out.println(rsMapValue + ":" + colValue);
+                        System.out.println(rsMapValue + ":" + colValue);
+                        // See if there are parenthesis -> that would be a function
+                        String func = null;
+                        String funcArg = null;
+                        Matcher matcher = FUNC_PATTERN.matcher(rsMapValue);
+                        if (matcher.find()) {
+                            func = matcher.group(1);
+                            funcArg = matcher.group(2);
+                            if (func != null) {
+                                func = func.trim();
+                            }
+                            if (funcArg != null) {
+                                funcArg = funcArg.trim();
+                            }
+                            System.out.println("Full match: " + matcher.group(0));
+                            for (int x = 1; x <= matcher.groupCount(); x++) {
+                                System.out.println("Group " + x + ": " + matcher.group(x));
+                            }
+                        }
+                        String entity = null;
+                        String column = null;
+
                         if (rsMapValue.contains(".")) { // nested
-                            String entity = rsMapValue.substring(0, rsMapValue.indexOf("."));
-                            String column = rsMapValue.substring(rsMapValue.indexOf(".") + 1);
+                            if (func == null) {
+                                entity = rsMapValue.substring(0, rsMapValue.indexOf(".")).trim();
+                                column = rsMapValue.substring(rsMapValue.indexOf(".") + 1).trim();
+                            } else {
+                                entity = funcArg.substring(0, funcArg.indexOf(".")).trim();
+                                column = func + "_" + funcArg.substring(funcArg.indexOf(".") + 1).trim();
+                            }
                             // Get the entity subMap, if it exists
                             Map entityMap = (Map)oneRow.get(entity);
                             if (entityMap == null) {

@@ -1,0 +1,10 @@
+{
+  "sql" : "SELECT count(*) FROM head WHERE age  >  56",
+
+    "select" : [ [ "#COUNT", [ "*" ] ] ],
+    "from" : "head",
+    "where" : [ ">", [ "AGE" ], "56" ],
+    "orderBy" : [ ],
+    "having" : [ ],
+    "groupBy" : [ ]
+}
