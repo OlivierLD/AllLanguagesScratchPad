@@ -1,0 +1,10 @@
+{
+  "sql" : "SELECT Age ,  COUNT(*) FROM editor GROUP BY Age",
+
+    "select" : [ [ "AGE" ], [ "#COUNT", [ "*" ] ] ],
+    "from" : "editor",
+    "where" : [ ],
+    "orderBy" : [ ],
+    "having" : [ ],
+    "groupBy" : [ [ "AGE" ] ]
+}

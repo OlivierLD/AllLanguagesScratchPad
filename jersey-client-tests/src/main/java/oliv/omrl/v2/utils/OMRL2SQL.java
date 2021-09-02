@@ -287,8 +287,10 @@ public class OMRL2SQL {
                 if (oneElem.get(0).startsWith("#")) {
                     String aggFunc = oneElem.get(0).substring(1);
                     String oneClause;
-                    if ("*".equals(oneElem.get(1))) {
-                        oneClause = String.format("%s(%s)", aggFunc, oneElem.get(1));
+                    Object prm1 = oneElem.get(1);
+//                    System.out.println("oneElem.get(1) type:" + prm1);
+                    if ((prm1 instanceof List && "*".equals(((List)prm1).get(0))) || "*".equals(prm1)) {
+                        oneClause = String.format("%s(%s)", aggFunc, "*"); // oneElem.get(1));
                     } else {
                         if (oneElem.size() == 2) { // Current table
                             oneClause = String.format("%s(%s.%s)", aggFunc, tableRef, oneElem.get(1));
@@ -372,7 +374,7 @@ public class OMRL2SQL {
                 "");
 
         // GROUP-BY
-        List<Object> groupBy = (List<Object>)query.get("group-by");
+        List<Object> groupBy = (List<Object>)query.get("groupBy"); // ""group-by");
         String sqlGroupByClause = "";
         if (groupBy != null) {
             List<String> groupByClause = new ArrayList<>();

@@ -27,20 +27,23 @@ public class FirstParser {
             "omrl.mapping.schema.generated.03.json";
 
     private final static String[] OMRL_QUERY_PATH = {
-            "omrl.race_track.query.01.json",  // index 0
-            "omrl.race_track.query.02.json",  // index 1
-            "omrl.race_track.query.03.json",  // index 2
-            "omrl.race_track.query.04.json",  // index 3
-            "omrl.race_track.query.05.json",  // index 4
-            "omrl.race_track.query.06.json",  // index 5
-            "omrl.race_track.query.07.json",  // index 6
-            "omrl.race_track.query.08.json",  // index 7
-            "omrl.dm.query.01.json",          // index 8
-            "omrl.dm.query.02.json"           // index 9
+            "omrl.race_track.query.01.json",  // index  0
+            "omrl.race_track.query.02.json",  // index  1
+            "omrl.race_track.query.03.json",  // index  2
+            "omrl.race_track.query.04.json",  // index  3
+            "omrl.race_track.query.05.json",  // index  4
+            "omrl.race_track.query.06.json",  // index  5
+            "omrl.race_track.query.07.json",  // index  6
+            "omrl.race_track.query.08.json",  // index  7
+            "omrl.dm.query.01.json",          // index  8
+            "omrl.dm.query.02.json",          // index  9
+            "omrl.dm.query.03.json"           // index 10
     };
-    private final static int PATH_INDEX = 9;
+    private final static int PATH_INDEX = 10;
 
-    private final static String SCHEMA_NAME = "department_management"; // "race_track";
+    private final static String SCHEMA_NAME = // "department_management";
+                                              // "race_track";
+                                              "journal_committee";
 
     private final static String JDBC_HOSTNAME = "100.111.136.104";  // "100.102.84.101";
     private final static int JDBC_PORT = 1521;
