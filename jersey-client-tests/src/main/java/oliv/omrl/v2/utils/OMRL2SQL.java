@@ -24,6 +24,7 @@ public class OMRL2SQL {
     private final static boolean VERBOSE = false;
 
     private final static boolean ADD_WHERE_CLAUSE_COLUMNS_TO_SELECT = false;
+    public static boolean usePreparedStmt = false;
 
     /**
      * Finds and returns the (full) entity holding the expected CompositeEntity attribute.
@@ -193,8 +194,8 @@ public class OMRL2SQL {
         return !firstAgg.isPresent();
     }
 
-    private static String expandWhereHavingClauseItem(Object oneMember, Map<String, Object> schema, String tableRef, List<String> joinClause) {
-        String expandedItem = "";
+    private static Object expandWhereHavingClauseItem(Object oneMember, Map<String, Object> schema, String tableRef, List<String> joinClause) {
+        Object expandedItem = null;
         if (oneMember instanceof List) {
             List<String> oneElem = (List<String>)oneMember;
             if (((List<String>)oneMember).size() == 2) {
@@ -225,14 +226,23 @@ public class OMRL2SQL {
                 expandedItem = String.format("%s.%s", tableName, colName);
             }
         } else if (oneMember instanceof String) {
-            expandedItem = String.format("'%s'", oneMember);
+            if (!usePreparedStmt) {
+                expandedItem = String.format("'%s'", oneMember);
+            } else {
+                expandedItem = String.format("%s", oneMember);
+            }
         } else {
-            expandedItem = String.format("%s", oneMember);
+            // Type this guy.
+            if (!usePreparedStmt) {
+                expandedItem = String.format("%s", oneMember);
+            } else {
+                expandedItem = oneMember;
+            }
         }
         return expandedItem;
     }
 
-    private static String expandWhereHavingClause(List<Object> where, Map<String, Object> schema, String tableRef, List<String> selectClause, List<String> joinClause) {
+    private static String expandWhereHavingClause(List<Object> where, Map<String, Object> schema, String tableRef, List<String> selectClause, List<String> joinClause, List<Object> prmValues) {
 
         String sqlWhereClause = "";
         if (where.size() == 0) {
@@ -243,27 +253,32 @@ public class OMRL2SQL {
         String cond = (String)where.get(i);
         if ("AND".equals(cond) || "OR".equals(cond)) {
             // Expect 2 Lists after that. Recurse.
-            String left = expandWhereHavingClause((List<Object>)where.get(i + 1), schema, tableRef, selectClause, joinClause);
-            String right = expandWhereHavingClause((List<Object>)where.get(i + 2), schema, tableRef, selectClause, joinClause);
+            String left = expandWhereHavingClause((List<Object>)where.get(i + 1), schema, tableRef, selectClause, joinClause, prmValues);
+            String right = expandWhereHavingClause((List<Object>)where.get(i + 2), schema, tableRef, selectClause, joinClause, prmValues);
             sqlWhereClause = String.format("(%s) %s (%s)", left, cond, right);
         } else {
             String unaryOp = cond;
             Object left = where.get(i+1);
             Object right = where.get(i+2);
 
-            String leftItem = expandWhereHavingClauseItem(left, schema, tableRef, joinClause);
-            String rightItem = expandWhereHavingClauseItem(right, schema, tableRef, joinClause);
+            Object leftItem = expandWhereHavingClauseItem(left, schema, tableRef, joinClause);
+            Object rightItem = expandWhereHavingClauseItem(right, schema, tableRef, joinClause);
+
+            if (usePreparedStmt) {
+                prmValues.add(rightItem); // And put the value in its list
+                rightItem = "?";
+            }
 
             if (ADD_WHERE_CLAUSE_COLUMNS_TO_SELECT) {
                 // see if the item is in the select clause already
                 if (left instanceof List) { // Means it is not a literal
                     if (!selectClause.contains(leftItem) && thereIsNoAggFuncIn(selectClause)) {
-                        selectClause.add(leftItem);
+                        selectClause.add((String)leftItem); // TODO Verify that String cast
                     }
                 }
                 if (right instanceof List) { // Means it is not a literal
                     if (!selectClause.contains(rightItem) && thereIsNoAggFuncIn(selectClause)) {
-                        selectClause.add(rightItem);
+                        selectClause.add((String)rightItem); // TODO Verify that String cast
                     }
                 }
             }
@@ -368,13 +383,14 @@ public class OMRL2SQL {
                 .collect(Collectors.joining(", "));
 
         // WHERE (and JOIN)
+        List<Object> prmValues = new ArrayList<>();
         List<Object> where = (List<Object>)query.get("where");
         String expandedWhere = (where != null ?
-                expandWhereHavingClause(where, schema, (String)from, selectClause, joinClause) :
+                expandWhereHavingClause(where, schema, (String)from, selectClause, joinClause, prmValues) :
                 "");
 
         // GROUP-BY
-        List<Object> groupBy = (List<Object>)query.get("groupBy"); // ""group-by");
+        List<Object> groupBy = (List<Object>)query.get("groupBy"); // "group-by");
         String sqlGroupByClause = "";
         if (groupBy != null) {
             List<String> groupByClause = new ArrayList<>();
@@ -389,7 +405,7 @@ public class OMRL2SQL {
         // HAVING
         List<Object> having = (List<Object>)query.get("having");
         String expandedHaving = (having != null ?
-                expandWhereHavingClause(having, schema, (String)from, selectClause, joinClause) :
+                expandWhereHavingClause(having, schema, (String)from, selectClause, joinClause, prmValues) :
                 "");
 
         String sqlSelectClause = selectClause.stream()
@@ -439,6 +455,6 @@ public class OMRL2SQL {
                 (expandedWhere.isEmpty() ? "" : String.format(" WHERE %s", expandedWhere)),
                 (sqlGroupByClause.isEmpty() ? "" : String.format(" GROUP BY %s", sqlGroupByClause)),
                 (expandedHaving.isEmpty() ? "" : String.format(" HAVING %s", expandedHaving)));
-        return Map.of("query", sql, "rs-map", resultSetMap);
+        return Map.of("query", sql, "prm-values", prmValues, "rs-map", resultSetMap);
     }
 }

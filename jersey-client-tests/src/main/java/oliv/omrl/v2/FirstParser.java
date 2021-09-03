@@ -20,11 +20,12 @@ import java.util.stream.Collectors;
  */
 public class FirstParser {
 
-    private final static boolean EXECUTE_QUERY = false; // true;
+    private final static boolean EXECUTE_QUERY = true;
+    private final static boolean USE_PREPARED_STMT = true;
 
-    private final static String OMRL_SCHEMA_PATH = // "omrl.mapping.schema.01.json";
+    private final static String OMRL_SCHEMA_PATH = "omrl.mapping.schema.01.json";
 //            "omrl.mapping.schema.02.json";
-            "omrl.mapping.schema.generated.03.json";
+//            "omrl.mapping.schema.generated.03.json";
 
     private final static String[] OMRL_QUERY_PATH = {
             "omrl.race_track.query.01.json",  // index  0
@@ -39,11 +40,11 @@ public class FirstParser {
             "omrl.dm.query.02.json",          // index  9
             "omrl.dm.query.03.json"           // index 10
     };
-    private final static int PATH_INDEX = 10;
+    private final static int PATH_INDEX = 3;
 
     private final static String SCHEMA_NAME = // "department_management";
-                                              // "race_track";
-                                              "journal_committee";
+                                              "race_track";
+                                              // "journal_committee";
 
     private final static String JDBC_HOSTNAME = "100.111.136.104";  // "100.102.84.101";
     private final static int JDBC_PORT = 1521;
@@ -74,7 +75,9 @@ public class FirstParser {
 
             Map<String, Object> omrlSql = null;
             Map<String, Object> schema = schemas.get(SCHEMA_NAME);
+
             if (schema != null) {
+                OMRL2SQL.usePreparedStmt = USE_PREPARED_STMT;
                 omrlSql = OMRL2SQL.omrlToSQLQuery(schema, query);
             } else {
                 System.out.printf("Schema [%s] not found.\n", SCHEMA_NAME);
@@ -82,6 +85,13 @@ public class FirstParser {
 
             System.out.println("SQL Query:");
             System.out.println(omrlSql.get("query"));
+
+            List<Object> prmValues = (List)omrlSql.get("prm-values");
+            if (prmValues != null && prmValues.size() > 0) {
+                System.out.println("Prm Values: " + prmValues.stream()
+                        .map(prm -> prm.toString())
+                        .collect(Collectors.joining(", ")));
+            }
 
             // Execution?
             if (EXECUTE_QUERY) {
@@ -107,9 +117,28 @@ public class FirstParser {
                 System.out.println(sqlStatement);
                 System.out.println("-------------------------------------");
 
-                Statement statement = connection.createStatement();
-                ResultSet rs = statement.executeQuery(sqlStatement);
+                ResultSet rs;
+                PreparedStatement preparedStatement = null;
+                Statement statement = null;
 
+                if (USE_PREPARED_STMT) {
+                    preparedStatement = connection.prepareStatement(sqlStatement);
+                    List<Object> prms = (List)omrlSql.get("prm-values");
+                    for (Object prm : prms) {
+//                        System.out.println(prm);
+                        if (prm instanceof String) {
+                            preparedStatement.setString(prms.indexOf(prm) + 1, (String) prm);
+                        } else if (prm instanceof Number) {
+                            preparedStatement.setDouble(prms.indexOf(prm) + 1, Double.parseDouble(prm.toString()));
+                        } else { // TODO Ohlala!
+                            System.out.println("Et merde!");
+                        }
+                    }
+                    rs = preparedStatement.executeQuery();
+                } else {
+                    statement = connection.createStatement();
+                    rs = statement.executeQuery(sqlStatement);
+                }
                 ResultSetMetaData metaData = rs.getMetaData();
                 int columnCount = metaData.getColumnCount();
 
@@ -178,7 +207,12 @@ public class FirstParser {
                     System.out.println(oneLine.stream().collect(Collectors.joining(", ")));
                 }
                 rs.close();
-                statement.close();
+                if (statement != null) {
+                    statement.close();
+                }
+                if (preparedStatement != null) {
+                    preparedStatement.close();
+                }
 
                 System.out.println("-------------------------------------");
                 System.out.printf(">> Retrieved %d row(s)\n", nbRows);
