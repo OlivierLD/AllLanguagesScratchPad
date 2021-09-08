@@ -17,6 +17,8 @@ import java.util.Map;
  */
 public class MappingSchemaBuilder {
 
+    private final static boolean V2 = true;
+
     private final static String TABLES_JSON = "tables.json"; // In the resource folder
 
     private final static String TABLES_STATEMENT_PREFIX = "--tables:";
@@ -107,13 +109,16 @@ public class MappingSchemaBuilder {
                             }
                             if (idx == (int)fkFromId.get(0)) {
 //                                System.out.println("1 to 1");
-                                Map<String, String> relationShip = new HashMap<>();
+                                Map<String, Object> relationShip = new HashMap<>();
                                 relationShip.put("name", tableNamesOriginal.get((int)fkToId.get(0)));
                                 relationShip.put("type", "CompositeEntity");
                                 relationShip.put("entity", tableNamesOriginal.get((int)fkToId.get(0)));
-                                relationShip.put("@foreignKey", (String)fkFromId.get(1));
-                                relationShip.put("@targetForeignKey", (String)fkToId.get(1));
-
+                                if (V2) {
+                                    relationShip.put("backendMappings", Map.of("foreignKey", List.of((String) fkFromId.get(1))));
+                                } else {
+                                    relationShip.put("@foreignKey", (String) fkFromId.get(1));
+                                    relationShip.put("@targetForeignKey", (String) fkToId.get(1));
+                                }
                                 attributes.add(relationShip);
                             }
                             if (idx == (int)fkToId.get(0)) {
