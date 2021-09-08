@@ -4,9 +4,11 @@
 
   "select": [
     [ "name" ],
+    [ "seating" ],
     [ "location" ]
   ],
   "from": "track",
+  "orderBy": [[ "#ASC", [ "seating" ] ]],
   "where": [ "AND",
     [ ">", [ "seating" ], 70000 ],
     [ ">", [ "year_opened" ], 1970]

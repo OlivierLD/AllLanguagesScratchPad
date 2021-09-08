@@ -9,5 +9,6 @@
   ],
   "from": "track",
   "where": [],
+  "orderBy": [[ "#desc", [ "name" ] ], [ "location" ], [ "#DESC", [ "races", "name" ] ] ],
   "limit": 50
 }

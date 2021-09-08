@@ -1,0 +1,9 @@
+{
+  "select": [
+    [ "name" ], ["location"], ["seating"], ["year_opened"]
+  ],
+  "from": "track",
+  "where": [],
+  "orderBy": [ [ "year_opened" ], [ "#desc", [ "name" ] ] ],
+  "limit": 50
+}

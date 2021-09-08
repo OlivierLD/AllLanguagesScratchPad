@@ -23,9 +23,9 @@ public class FirstParser {
     private final static boolean EXECUTE_QUERY = true;
     private final static boolean USE_PREPARED_STMT = true;
 
-    private final static String OMRL_SCHEMA_PATH = "omrl.mapping.schema.01.json";
+    private final static String OMRL_SCHEMA_PATH = // "omrl.mapping.schema.01.json";
 //            "omrl.mapping.schema.02.json";
-//            "omrl.mapping.schema.generated.03.json";
+              "omrl.mapping.schema.generated.03.json";
 
     private final static String[] OMRL_QUERY_PATH = {
             "omrl.race_track.query.01.json",  // index  0
@@ -36,11 +36,13 @@ public class FirstParser {
             "omrl.race_track.query.06.json",  // index  5
             "omrl.race_track.query.07.json",  // index  6
             "omrl.race_track.query.08.json",  // index  7
-            "omrl.dm.query.01.json",          // index  8
-            "omrl.dm.query.02.json",          // index  9
-            "omrl.dm.query.03.json"           // index 10
+            "omrl.race_track.query.09.json",  // index  8
+            "omrl.dm.query.01.json",          // index  9
+            "omrl.dm.query.02.json",          // index 10
+            "omrl.dm.query.03.json",          // index 11
+            "omrl.dm.query.04.json"           // index 12
     };
-    private final static int PATH_INDEX = 3;
+    private final static int PATH_INDEX = 8;
 
     private final static String SCHEMA_NAME = // "department_management";
                                               "race_track";

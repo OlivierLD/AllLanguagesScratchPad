@@ -1,9 +1,8 @@
 package oliv.omrl.v2.utils;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -17,7 +16,7 @@ import java.util.stream.Collectors;
  *
  * OMRL: Oracle Meaning Representation Language
  *
- * TODO ORDER-BY, ALIASES
+ * TODO ALIASES
  */
 public class OMRL2SQL {
 
@@ -25,6 +24,10 @@ public class OMRL2SQL {
 
     private final static boolean ADD_WHERE_CLAUSE_COLUMNS_TO_SELECT = false;
     public static boolean usePreparedStmt = false;
+
+    private final static String SELECT_REGEX = "^(?i)SELECT.*[\\s\\S].*FROM.*[\\s\\S].*"; // Case Insensitive, include NewLines
+
+    private final static Pattern SELECT_PATTERN = Pattern.compile(SELECT_REGEX, Pattern.MULTILINE);
 
     /**
      * Finds and returns the (full) entity holding the expected CompositeEntity attribute.
@@ -232,7 +235,7 @@ public class OMRL2SQL {
                 expandedItem = String.format("%s", oneMember);
             }
         } else {
-            // Type this guy.
+            // Type this guy?
             if (!usePreparedStmt) {
                 expandedItem = String.format("%s", oneMember);
             } else {
@@ -264,7 +267,19 @@ public class OMRL2SQL {
             Object leftItem = expandWhereHavingClauseItem(left, schema, tableRef, joinClause);
             Object rightItem = expandWhereHavingClauseItem(right, schema, tableRef, joinClause);
 
-            if (usePreparedStmt) {
+            boolean rightIsASelectStmt = false;
+            // TODO This is a trick. This should be generated from OMRL too.
+            if ("NOT IN".equalsIgnoreCase(unaryOp) || "IN".equalsIgnoreCase(unaryOp)) {
+                if (right instanceof String) {
+                    final Matcher matcher = SELECT_PATTERN.matcher((String)right);
+                    if (matcher.find()) {
+                        rightIsASelectStmt = true;
+                        rightItem = String.format("(%s)", right);
+                    }
+                }
+            }
+
+            if (!rightIsASelectStmt && usePreparedStmt) {
                 prmValues.add(rightItem); // And put the value in its list
                 rightItem = "?";
             }
@@ -292,15 +307,15 @@ public class OMRL2SQL {
             System.out.printf("Item is a %s\n", item.getClass().getName());
         }
         if (item instanceof List) {
-            List<String> oneElem = (List<String>)item;
+            List<Object> oneElem = (List)item;
             if (oneElem.size() == 1) {
                 String oneClause = String.format("%s.%s",
                         findDBTableByEntityName(tableRef, schema),
                         oneElem.get(0));
                 return oneClause;
             } else { // Agg function or CompositeEntity (join), size = 2
-                if (oneElem.get(0).startsWith("#")) {
-                    String aggFunc = oneElem.get(0).substring(1);
+                if (((String)oneElem.get(0)).startsWith("#")) {
+                    String aggFunc = ((String)oneElem.get(0)).substring(1);
                     String oneClause;
                     Object prm1 = oneElem.get(1);
 //                    System.out.println("oneElem.get(1) type:" + prm1);
@@ -308,10 +323,13 @@ public class OMRL2SQL {
                         oneClause = String.format("%s(%s)", aggFunc, "*"); // oneElem.get(1));
                     } else {
                         if (oneElem.size() == 2) { // Current table
-                            oneClause = String.format("%s(%s.%s)", aggFunc, tableRef, oneElem.get(1));
+                            oneClause = String.format("%s(%s.%s)",
+                                    aggFunc,
+                                    tableRef,
+                                    oneElem.get(1) instanceof List ? ((List)oneElem.get(1)).get(0) : oneElem.get(1));
                         } else { // Composite Entity
-                            String relationName = oneElem.get(1);
-                            String columnName = oneElem.get(2);
+                            String relationName = (String)oneElem.get(1);
+                            String columnName = (String)oneElem.get(2);
                             String resolved = resolveCompositeEntity(relationName, columnName, schema, joinClause);
                             oneClause = String.format("%s(%s)", aggFunc, resolved);
                         }
@@ -322,8 +340,8 @@ public class OMRL2SQL {
                         System.out.println("CompositeEntity...");
                     }
                     // look for a relationship
-                    String relationName = oneElem.get(0);
-                    String columnName = oneElem.get(1);
+                    String relationName = (String)oneElem.get(0);
+                    String columnName = (String)oneElem.get(1);
                     //
                     String expandedItem = resolveCompositeEntity(relationName, columnName, schema, joinClause);
                     return expandedItem;
@@ -383,7 +401,7 @@ public class OMRL2SQL {
                 .collect(Collectors.joining(", "));
 
         // WHERE (and JOIN)
-        List<Object> prmValues = new ArrayList<>();
+        List<Object> prmValues = (usePreparedStmt ? new ArrayList<>() : null);
         List<Object> where = (List<Object>)query.get("where");
         String expandedWhere = (where != null ?
                 expandWhereHavingClause(where, schema, (String)from, selectClause, joinClause, prmValues) :
@@ -407,6 +425,26 @@ public class OMRL2SQL {
         String expandedHaving = (having != null ?
                 expandWhereHavingClause(having, schema, (String)from, selectClause, joinClause, prmValues) :
                 "");
+
+        // ORDER BY
+        List<Object> orderBy = (List<Object>)query.get("orderBy");
+        String sqlOrderByClause = "";
+        if (orderBy != null) {
+            List<String> orderByClause = new ArrayList<>();
+            orderBy.forEach(one -> {
+                Object theOneToExpand = one;
+                boolean desc = false;
+                if (one instanceof List && ((List)one).size() > 1) {
+                    String sortDir = (String)((List)one).get(0);
+                    theOneToExpand = ((List)one).get(1);
+                    desc = ("#DESC".equalsIgnoreCase(sortDir));
+                }
+                String expanded = expandOneItem(theOneToExpand, schema, (String) from, joinClause);
+                orderByClause.add(String.format("%s%s", expanded, (desc ? " DESC" : "")));
+            });
+            sqlOrderByClause = orderByClause.stream()
+                    .collect(Collectors.joining(", "));
+        }
 
         String sqlSelectClause = selectClause.stream()
                 .collect(Collectors.joining(", "));
@@ -441,8 +479,9 @@ public class OMRL2SQL {
             }
         }
 
-        sql = String.format("SELECT %s FROM %s%s%s%s%s",
-                //                  |       | | | | |
+        sql = String.format("SELECT %s FROM %s%s%s%s%s%s",
+                //                  |       | | | | | |
+                //                  |       | | | | | order by
                 //                  |       | | | | having
                 //                  |       | | | group by clause
                 //                  |       | | where clause (and limit)
@@ -454,7 +493,14 @@ public class OMRL2SQL {
                 (sqlJoinClause.isEmpty() ? "" : String.format(" %s", sqlJoinClause)),
                 (expandedWhere.isEmpty() ? "" : String.format(" WHERE %s", expandedWhere)),
                 (sqlGroupByClause.isEmpty() ? "" : String.format(" GROUP BY %s", sqlGroupByClause)),
-                (expandedHaving.isEmpty() ? "" : String.format(" HAVING %s", expandedHaving)));
-        return Map.of("query", sql, "prm-values", prmValues, "rs-map", resultSetMap);
+                (expandedHaving.isEmpty() ? "" : String.format(" HAVING %s", expandedHaving)),
+                (sqlOrderByClause.isEmpty() ? "" : String.format(" ORDER BY %s", sqlOrderByClause)));
+
+        Map<String, Object> finalMap = new HashMap<>();
+        finalMap.put("query", sql);
+        finalMap.put("prm-values", prmValues);
+        finalMap.put("rs-map", resultSetMap);
+//        return Map.of("query", sql, "prm-values", prmValues, "rs-map", resultSetMap);
+        return finalMap;
     }
 }

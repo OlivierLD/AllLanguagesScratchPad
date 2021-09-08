@@ -1,0 +1,14 @@
+{
+  "sql" : "SELECT creation FROM department GROUP BY creation ORDER BY count(*) DESC LIMIT 1",
+  "schema-name": "Use department_management",
+
+  "keyWord" : "",
+  "select" : [ [ "CREATION" ] ],
+  "from" : "department",
+  "where" : [ ],
+  "orderBy-stdby" : [ [ "#DESC", [ [ "#COUNT", [ "*" ] ] ] ] ],
+  "orderBy" : [ [ "#DESC", [ "#COUNT", [ "*" ] ] ] ],
+  "having" : [ ],
+  "groupBy" : [ [ "CREATION" ] ],
+  "limit" : 1
+}
