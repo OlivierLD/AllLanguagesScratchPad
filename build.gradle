@@ -3,11 +3,11 @@ plugins {
     id 'scala'
     id 'idea'
     id 'maven-publish'
-    id 'com.github.johnrengelman.shadow' version '7.0.0'  // '5.2.0'
+    id 'com.github.johnrengelman.shadow' version '7.0.0' // '6.0.0' // '5.2.0'
 }
 
-compileJava.options.encoding = 'ISO-8859-1'
-compileJava.options.compilerArgs += ["-Xlint:unchecked"]
+//compileJava.options.encoding = 'ISO-8859-1'
+//compileJava.options.compilerArgs += ["-Xlint:unchecked"]
 
 group = 'oliv.scratch.pad'
 version = '1.0'

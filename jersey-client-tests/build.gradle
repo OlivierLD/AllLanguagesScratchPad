@@ -6,7 +6,7 @@ plugins {
 group 'oliv.scratch.pad'
 version '1.0'
 
-sourceCompatibility = 9
+// sourceCompatibility = 9
 
 repositories {
     mavenLocal()

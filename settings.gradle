@@ -8,11 +8,11 @@ pluginManagement {
 rootProject.name = 'oliv-scratch-pad'
 
 include ":some-tests"
-findProject(':some-tests')?.name = 'some-tests'
+//findProject(':some-tests')?.name = 'some-tests'
 
 include ":http-test"
 include ":HLL"
 
 include ':jersey-client-tests'
-findProject(':jersey-client-tests')?.name = 'jersey-client-tests'
+//findProject(':jersey-client-tests')?.name = 'jersey-client-tests'
 

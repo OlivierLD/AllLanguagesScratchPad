@@ -1,7 +1,7 @@
 package oliv.omrl.v2;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import oliv.omrl.v2.utils.OMRL2SQL;
+import oliv.omrl.v2.utils.OMRL2SQLV1;
 
 import java.io.File;
 import java.net.URL;
@@ -16,18 +16,16 @@ import java.util.stream.Collectors;
 
 /**
  * Hard coded file names.
- * Invokes OMRL2SQL.omrlToSQLQuery {@link oliv.omrl.v2.utils.OMRL2SQL#omrlToSQLQuery(Map, Map, Map)}
+ * Invokes OMRL2SQL.omrlToSQLQuery {@link OMRL2SQLV1#omrlToSQLQuery(Map, Map)}
  */
-public class FirstParser {
+public class FirstParserV1 {
 
     private final static boolean EXECUTE_QUERY = true;
     private final static boolean USE_PREPARED_STMT = true;
 
-    private final static String OMRL_SCHEMA_PATH = "OMRL_base_schema.json";
-    private final static String OMRL_SQL_SCHEMA_PATH = "OMRL_sql_schema.json";
-
-    private final static String OMRL_SCHEMA_NS = "https://oda.oracle.com/OMRL-Schema";
-    private final static String OMRL_SQL_SCHEMA_NS = "https://oda.oracle.com/OMRL-Sql-Schema";
+    private final static String OMRL_SCHEMA_PATH = // "omrl.mapping.schema.01.json";
+//            "omrl.mapping.schema.02.json";
+              "omrl.mapping.schema.generated.03.json";
 
     private final static String[] OMRL_QUERY_PATH = {
             "omrl.race_track.query.01.json",  // index  0
@@ -45,7 +43,7 @@ public class FirstParser {
             "omrl.dm.query.03.json",          // index 12
             "omrl.dm.query.04.json"           // index 13
     };
-    private final static int PATH_INDEX = 1;
+    private final static int PATH_INDEX = 9;
 
     private final static String SCHEMA_NAME = // "department_management";
                                               "race_track";
@@ -65,59 +63,27 @@ public class FirstParser {
 
     public static void main(String... args) {
         URL schemaResource;
-        URL sqlSchemaResource;
         URL queryResource;
 
         try {
             schemaResource = new File(OMRL_SCHEMA_PATH).toURI().toURL();
-            sqlSchemaResource = new File(OMRL_SQL_SCHEMA_PATH).toURI().toURL();
             queryResource = new File(OMRL_QUERY_PATH[PATH_INDEX]).toURI().toURL();
 
             ObjectMapper mapper = new ObjectMapper();
             // Schema Object
-            List<Object> schemas = mapper.readValue(schemaResource.openStream(), List.class);
-            List<Object> sqlSchemas = mapper.readValue(sqlSchemaResource.openStream(), List.class);
+            Map<String, Map<String, Object>> schemas = mapper.readValue(schemaResource.openStream(), Map.class);
             // Query Object
             Map<String, Object> query = mapper.readValue(queryResource.openStream(), Map.class);
             System.out.println("Done generating resources, processing the OMRL query.");
 
-            Map<String, Object> schema = null; // schemas.get(SCHEMA_NAME);
-            for (Object obj : schemas) {
-                if (obj instanceof Map) {
-                    Map<String, Object> _schema = (Map)obj;
-                    if (SCHEMA_NAME.equals(_schema.get("schema"))) {
-                        schema = _schema;
-                        break;
-                    }
-                }
-            }
-            Map<String, Object> sqlSchema = null; // schemas.get(SCHEMA_NAME);
-            for (Object obj : sqlSchemas) {
-                if (obj instanceof Map) {
-                    Map<String, Object> _sqlSchema = (Map)obj;
-                    if (SCHEMA_NAME.equals(_sqlSchema.get("schema"))) {
-                        sqlSchema = _sqlSchema;
-                        break;
-                    }
-                }
-            }
-
             Map<String, Object> omrlSql = null;
-            if (schema != null || sqlSchema != null) {
-                // Check namespaces
-                if (!OMRL_SCHEMA_NS.equals(schema.get("$ref"))) {
-                    System.err.println("Invalid NameSpace for base schema.");
-                    System.exit(1);
-                }
-                if (!OMRL_SQL_SCHEMA_NS.equals(sqlSchema.get("$ref"))) {
-                    System.err.println("Invalid NameSpace for SQL schema.");
-                    System.exit(1);
-                }
-                OMRL2SQL.usePreparedStmt = USE_PREPARED_STMT;
-                omrlSql = OMRL2SQL.omrlToSQLQuery(schema, sqlSchema, query);
+            Map<String, Object> schema = schemas.get(SCHEMA_NAME);
+
+            if (schema != null) {
+                OMRL2SQLV1.usePreparedStmt = USE_PREPARED_STMT;
+                omrlSql = OMRL2SQLV1.omrlToSQLQuery(schema, query);
             } else {
                 System.out.printf("Schema [%s] not found.\n", SCHEMA_NAME);
-                System.exit(1);
             }
 
             System.out.println("SQL Query:");
