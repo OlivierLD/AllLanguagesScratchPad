@@ -7,7 +7,8 @@ pluginManagement {
 
 rootProject.name = 'oliv-scratch-pad'
 
-include ":some-tests"
+include "misc-tests"
+//include ":some-tests"
 //findProject(':some-tests')?.name = 'some-tests'
 
 include ":http-test"
