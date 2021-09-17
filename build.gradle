@@ -29,6 +29,42 @@ tasks.withType(JavaCompile) {
 }
 
 dependencies {
+    implementation 'org.scala-lang:scala-library:2.12.3'
+    implementation "org.scala-lang:scala-compiler:2.12.3"
+    implementation 'com.typesafe.akka:akka-actor_2.11:2.3.11'
+    implementation 'org.codehaus.groovy:groovy-all:2.3.11'
+    implementation 'org.knowm.xchart:xchart:3.5.4'
+    implementation 'javax.interceptor:javax.interceptor-api:1.2.2'
+    implementation 'org.yaml:snakeyaml:1.21'
+    implementation 'oracle:xmlparser:2.0'
+    // https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.11.2'
+    // ScalaJS
+    implementation 'org.scala-js:scalajs-dom_sjs1_2.13:1.1.0'
+    implementation 'org.scala-js:scalajs-library_2.13:1.2.0'
+    // EvilPlot
+//    compile 'com.cibo:evilplot-repl_2.12:0.7.0'
+//    compile 'com.cibo:evilplot-repl_2.13:0.8.0'
+
+    implementation 'oliv.raspi.coffee:common-utils:1.0' // Java Celestial Almanac TODO remove...
+
+    implementation group: 'org.xerial', name: 'sqlite-jdbc', version: '3.34.0'
+    implementation group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.5'
+
+    // https://mvnrepository.com/artifact/org.apache.calcite/calcite-core
+    implementation group: 'org.apache.calcite', name: 'calcite-core', version: '1.26.0'
+
+    implementation group: 'com.jayway.jsonpath', name: 'json-path', version: '2.4.0'
+
+    implementation group: 'org.xerial', name: 'sqlite-jdbc', version: '3.34.0'
+    // implementation group: 'org.slf4j', name: 'slf4j-simple', version: '1.7.5'
+    implementation("com.oracle.database.jdbc:ojdbc8-production:21.1.0.0")
+    // implementation("com.oracle.database.jdbc:ojdbc11:21.1.0.0")
+
+    // Require tools.jar, from the JDK (Doclet and Co)
+//    compile files(org.gradle.internal.jvm.Jvm.current().toolsJar)
+    implementation files("${System.getProperty('java.home')}/../lib/tools.jar")
+    testImplementation group: 'junit', name: 'junit', version: '4.13'
 }
 
 repositories {
@@ -40,4 +76,28 @@ repositories {
     maven { url "https://www.datanucleus.org/downloads/maven2" } // Contains xmlparserv2 from Oracle
     maven { url "https://mvnrepository.com/artifact" }
     maven { url "https://oss.sonatype.org/content/groups/public" } // PI4J ?
+}
+
+task SQLiteTest(type: JavaExec, dependsOn: classes, description: 'Runs a SQLite sample') {
+    main = 'sqlite.Sample102'
+    classpath sourceSets.main.runtimeClasspath
+    classpath configurations.runtimeClasspath
+}
+
+task SQLiteBLOBTest(type: JavaExec, dependsOn: classes, description: 'Runs a SQLite sample') {
+    main = 'sqlite.SampleBLOB'
+    classpath sourceSets.main.runtimeClasspath
+    classpath configurations.runtimeClasspath
+}
+
+task BezierTest(type: JavaExec, dependsOn: classes, description: 'Runs a Bezier sample') {
+    main = 'oliv.curves.bezier.Bezier'
+    classpath sourceSets.main.runtimeClasspath
+    classpath configurations.runtimeClasspath
+}
+
+build.doFirst {
+    println "-------------------------------------------------------"
+    println ">>> Using JAVA_HOME: ${System.getProperty('java.home')}"
+    println "-------------------------------------------------------"
 }
