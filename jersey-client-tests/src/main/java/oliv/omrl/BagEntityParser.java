@@ -47,7 +47,7 @@ public class BagEntityParser {
         DATABASE("@database", List.of("name")),
         TABLE("@table", List.of("name")),
         COLUMN("@column", List.of("name")),
-        PRIMARY_KEY("@primary_key", List.of("name", "entity")), // TODO "entity" might not be needed.
+        PRIMARY_KEY("@primary_key", List.of("name")), // , "entity")), // TODO "entity" might not be needed.
         FOREIGN_KEY("@foreign_key", List.of("name", "entity"));
 
         private final String annotation;
@@ -425,7 +425,7 @@ public class BagEntityParser {
                     // Add Relationship
                     Map<String, String> relationShip = new HashMap<>();
                     if (pkName != null && pkEntity != null) {
-                        relationShip.put("name", fkEntity + "s");
+                        relationShip.put("name", fkEntity + "s"); // Plural
                         relationShip.put("entity", fkEntity);
                         relationShip.put("type", "CompositeArray");
                         relationShip.put("@foreignKey", columnName);

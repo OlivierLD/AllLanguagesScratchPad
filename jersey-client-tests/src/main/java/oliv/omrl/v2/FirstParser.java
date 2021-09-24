@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 
 /**
  * Hard coded file names.
- * Invokes OMRL2SQL.omrlToSQLQuery {@link oliv.omrl.v2.utils.OMRL2SQL#omrlToSQLQuery(Map, Map, Map)}
+ * Invokes OMRL2SQL.omrlToSQLQuery {@link oliv.omrl.v2.utils.OMRL2SQL#omrlToSQLQuery(Map, Map, Object)}
  */
 public class FirstParser {
 
@@ -40,10 +40,11 @@ public class FirstParser {
             "omrl.race_track.query.08.json",  // index  7
             "omrl.race_track.query.09.json",  // index  8
             "omrl.race_track.query.10.json",  // index  9
-            "omrl.dm.query.01.json",          // index 10
-            "omrl.dm.query.02.json",          // index 11
-            "omrl.dm.query.03.json",          // index 12
-            "omrl.dm.query.04.json"           // index 13
+            "omrl.race_track.query.11.json",  // index 10
+            "omrl.dm.query.01.json",          // index 11
+            "omrl.dm.query.02.json",          // index 12
+            "omrl.dm.query.03.json",          // index 13
+            "omrl.dm.query.04.json"           // index 14
     };
     private final static int PATH_INDEX = 1;
 
@@ -113,6 +114,9 @@ public class FirstParser {
                     System.err.println("Invalid NameSpace for SQL schema.");
                     System.exit(1);
                 }
+                /*
+                 *  HERE IS THE SKILL
+                 */
                 OMRL2SQL.usePreparedStmt = USE_PREPARED_STMT;
                 omrlSql = OMRL2SQL.omrlToSQLQuery(schema, sqlSchema, query);
             } else {

@@ -5,18 +5,18 @@
   "select": [
     [
       "#MIN",
-      "seating"
+      ["seating"]
     ], [
       "#MAX",
-      "seating"
+      ["seating"]
     ], [
       "#AVG",
-      "seating"
+      ["seating"]
     ]
   ],
   "from": "track",
   "having": [">", [
     "#MIN",
-    "seating"
+    ["seating"]
   ], 60000]
 }

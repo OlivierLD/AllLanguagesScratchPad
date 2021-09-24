@@ -4,7 +4,7 @@
 
   "select": [
     [ "name" ],
-    [ "race_date" ],
+    [ "date" ],
     [ "track", "name" ]
   ],
   "from": "race",

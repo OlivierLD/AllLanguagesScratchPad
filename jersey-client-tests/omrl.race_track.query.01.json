@@ -5,10 +5,10 @@
   "select": [
     [
       "#COUNT",
-      "race_id"
+      [ "race_id" ]
     ], [
       "#COUNT",
-      "*"
+      [ "*" ]
     ]
   ],
   "from": "race",

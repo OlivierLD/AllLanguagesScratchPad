@@ -5,7 +5,8 @@
   "select": [
     [ "name" ],
     [ "date" ],
-    [ "track", "name" ]
+    [ "track", "name" ],
+    [ "track", "location" ]
   ],
   "from": "race",
   "where": [],

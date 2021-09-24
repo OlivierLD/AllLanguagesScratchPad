@@ -1,0 +1,17 @@
+{
+  "utterance": "List tracks, and the number of races on each.",
+  "sql": "select track.name, count(race.race_id) from track join race on (track.Track_ID = race.Track_ID) group by track.name order by count(race.race_id) desc;",
+
+  "select": [
+    [
+      "name"
+    ],
+    [
+      "#COUNT", [ "races", "race_id" ]
+    ]
+  ],
+  "from": "track",
+  "where": [],
+  "orderBy": [ ["#DESC", [ "#COUNT", [ "races", "race_id" ]]] ],
+  "groupBy": [[ "name" ]]
+}
