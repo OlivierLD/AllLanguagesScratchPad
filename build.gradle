@@ -76,6 +76,7 @@ repositories {
     maven { url "https://www.datanucleus.org/downloads/maven2" } // Contains xmlparserv2 from Oracle
     maven { url "https://mvnrepository.com/artifact" }
     maven { url "https://oss.sonatype.org/content/groups/public" } // PI4J ?
+    maven { url "https://raw.githubusercontent.com/OlivierLD/raspberry-coffee/repository" }
 }
 
 task SQLiteTest(type: JavaExec, dependsOn: classes, description: 'Runs a SQLite sample') {
