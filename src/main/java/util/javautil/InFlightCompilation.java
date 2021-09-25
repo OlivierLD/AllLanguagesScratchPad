@@ -292,35 +292,45 @@ public class InFlightCompilation {
 				"    return(\"Hello Mr \" + name);\n" +
 				"  }\n" +
 				"}";
-		System.out.println("Compiling:\n" + newCode);
+		System.out.println("Compiling this:\n" + newCode);
 
 		System.out.println();
 		System.out.println("+----------------------------------+");
 		System.out.println("| The following error is expected! |");
 		System.out.println("+----------------------------------+");
 
-		System.setOut(new PrintStream(baos));
-//  Class extendedClass = compileFromStringAndLoad("test", "extendedTest", "generated" + File.separator + "classes", newCode, null, true);
-		Class extendedClass = compileFromStringAndLoad("test",
-				"extendedTest",
-				"generated" + File.separator + "classes",
-				newCode,
-				null, // getMyClassLoader(),
-				true);
-		obj = extendedClass.newInstance();
-		m = extendedClass.getMethod("sayHi", String.class);
-		m.invoke(obj, "Oliv"); // Non Static
+		PrintStream standardOut = System.out;
+		try {
+			System.setOut(new PrintStream(baos));
+        //  Class extendedClass = compileFromStringAndLoad("test", "extendedTest", "generated" + File.separator + "classes", newCode, null, true);
+			Class extendedClass = compileFromStringAndLoad("test",
+					"extendedTest",
+					"generated" + File.separator + "classes",
+					newCode,
+					null, // getMyClassLoader(),
+					true);
+			obj = extendedClass.newInstance();
+			m = extendedClass.getMethod("sayHi", String.class);
+			m.invoke(obj, "Oliv"); // Non Static
 
-		System.setOut(stdout);
-		System.out.println("Program Output:\n");
-		System.out.println(baos.toString());
-		baos.reset();
-		System.setOut(new PrintStream(baos));
+			System.setOut(stdout);
+			System.out.println("Program Output:\n");
+			System.out.println(baos.toString());
+			baos.reset();
+			System.setOut(new PrintStream(baos));
 
-		m = extendedClass.getMethod("greetings", String.class);
-		Object greeting = m.invoke(obj, "Oliv"); // Non Static
-		System.setOut(stdout);
-		System.out.println("Returned:" + greeting.toString());
+			m = extendedClass.getMethod("greetings", String.class);
+			Object greeting = m.invoke(obj, "Oliv"); // Non Static
+			System.setOut(stdout);
+			System.out.println("Returned:" + greeting.toString());
+		} catch (Throwable ooops) {
+			ooops.printStackTrace();
+		} finally {
+			// Reset System.out
+			System.setOut(standardOut);
+		}
+		System.out.println("--------");
+		System.out.println("Done!");
 	}
 
 	public static class JavaSourceFromString extends SimpleJavaFileObject {
