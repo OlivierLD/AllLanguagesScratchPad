@@ -94,8 +94,6 @@ public class OMRL2SQL {
                         columnList.add(tabCol);
                     });
             expanded = columnList.stream().collect(Collectors.joining(", "));
-//        } else {
-            // default! (*)
         }
         return expanded;
     }
