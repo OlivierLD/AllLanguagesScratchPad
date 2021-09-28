@@ -1271,7 +1271,7 @@
           },
           {
             "name": "class",
-            "columnName": "Class",
+            "columnName": "Race_Class",
             "uniqueValues": false
           },
           {

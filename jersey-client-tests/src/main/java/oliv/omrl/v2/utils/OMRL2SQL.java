@@ -75,6 +75,31 @@ public class OMRL2SQL {
                 .findFirst().orElse(null);
     }
 
+    private static String expandStarTableColumns(String entityName, Map<String, Object> sqlSchema) {
+
+        String expanded = "*";
+        List<Map<String, Object>> entities = (List)sqlSchema.get("entities");
+        Map<String, Object> entity = entities.stream()
+                .filter(_entity -> entityName.equals(_entity.get("name")))
+                .findFirst()
+                .orElse(null);
+        if (entity != null) {
+            String tableName = (String)entity.get("tableName");
+            List<Object> attributes = (List)entity.get("attributes");
+            List<String> columnList = new ArrayList<>();
+            attributes.stream()
+                    .filter(att -> ((Map<String, Object>) att).get("columnName") != null)
+                    .forEach(att -> {
+                        String tabCol = String.format("%s.%s", tableName, ((Map<String, Object>) att).get("columnName"));
+                        columnList.add(tabCol);
+                    });
+            expanded = columnList.stream().collect(Collectors.joining(", "));
+//        } else {
+            // default! (*)
+        }
+        return expanded;
+    }
+
     private static String findDBColumnByEntityName(String entityName, String attributeName, Map<String, Object> sqlSchema) {
         List<Map<String, Object>> entities = (List<Map<String, Object>>) sqlSchema.get("entities");
         Map<String, Object> entity = entities.stream()
@@ -160,10 +185,15 @@ public class OMRL2SQL {
             } else {
                 // WHERE condition, and JOIN
                 // 1 - WHERE
-                String dbTableName = findDBTableByEntityName((String) compositeEntityDefinition.get("entityName"), sqlSchema);
-                expandedItem = String.format("%s.%s",
-                        dbTableName,
-                        columnName);
+                String entityName = (String) compositeEntityDefinition.get("entityName");
+                String dbTableName = findDBTableByEntityName(entityName, sqlSchema);
+                if ("*".equals(columnName)) {
+                    expandedItem = expandStarTableColumns(entityName, sqlSchema);
+                } else {
+                    expandedItem = String.format("%s.%s",
+                            dbTableName,
+                            columnName);
+                }
                 // 2 - JOIN
                 String oneJoinClause = String.format("JOIN %s ON %s",
                         dbTableName,
@@ -302,17 +332,22 @@ public class OMRL2SQL {
         return sqlWhereClause;
     }
 
-    private static String expandOneItem(Object item, Map<String, Object> schema, Map<String, Object> sqlSchema, String tableRef, List<String> joinClause) {
+    private static String expandOneItem(Object item, Map<String, Object> schema, Map<String, Object> sqlSchema, String entityName, List<String> joinClause) {
         if (VERBOSE) {
             System.out.printf("Item is a %s\n", item.getClass().getName());
         }
         if (item instanceof List) {
             List<Object> oneElem = (List) item;
             if (oneElem.size() == 1) {
-                String oneClause = String.format("%s.%s",
-                        findDBTableByEntityName(tableRef, sqlSchema),
-                        findDBColumnByEntityName(tableRef, (String) oneElem.get(0), sqlSchema));
-                return oneClause;
+                if (oneElem.get(0) instanceof String && "*".equals(oneElem.get(0))) {
+                    String expandStar = expandStarTableColumns(entityName, sqlSchema);
+                    return expandStar;
+                } else {
+                    String oneClause = String.format("%s.%s",
+                            findDBTableByEntityName(entityName, sqlSchema),
+                            findDBColumnByEntityName(entityName, (String) oneElem.get(0), sqlSchema));
+                    return oneClause;
+                }
             } else { // Agg function or CompositeEntity (join), size = 2
                 if (((String) oneElem.get(0)).startsWith("#")) {
                     String aggFunc = ((String) oneElem.get(0)).substring(1);
@@ -325,19 +360,23 @@ public class OMRL2SQL {
                         if (oneElem.size() == 2 && prm1 instanceof List && ((List)prm1).size() == 1) { // Current table
                             oneClause = String.format("%s(%s.%s)",
                                     aggFunc,
-                                    tableRef,
+                                    entityName,
                                     prm1 instanceof List ? ((List) prm1).get(0) : oneElem.get(1));
                         } else { // Composite Entity
                             String relationName = null;
                             String columnName = null;
                             if (prm1 instanceof List && ((List)prm1).size() > 1) {  // [ "#COUNT", [ "race", "race_id" ]]
                                 relationName = (String)((List)prm1).get(0);
-                                columnName = (String)((List)prm1).get(1);
+                                if (((List)prm1).get(1) instanceof List) {  // Like [ "#COUNT", [ "#DISTINCT", [ "race_id" ]]]
+                                    columnName = expandOneItem(prm1, schema, sqlSchema, entityName, joinClause);
+                                } else {
+                                    columnName = (String) ((List) prm1).get(1);
+                                }
                             } else {                                                // [ "#COUNT", "race", "race_id" ]
                                 relationName = (String) oneElem.get(1);
                                 columnName = (String) oneElem.get(2);
                             }
-                            String resolved = resolveCompositeEntity(relationName, columnName, schema, sqlSchema, joinClause);
+                            String resolved = relationName.startsWith("#") ? columnName : resolveCompositeEntity(relationName, columnName, schema, sqlSchema, joinClause);
                             oneClause = String.format("%s(%s)", aggFunc, resolved);
                         }
                     }
@@ -531,14 +570,83 @@ public class OMRL2SQL {
                                 if (two.size() == 1) {
                                     resultSetMap.add(String.format("%s_%s", (String)((List)one).get(0), (String) two.get(0)));
                                 } else {
-                                    resultSetMap.add(String.format("%s.%s_%s", (String) two.get(0), (String)((List)one).get(0), (String) two.get(1)));
+                                    String secondTerm;
+                                    Object secondObj = two.get(1); // .toString();
+                                    if (secondObj instanceof List) {
+                                        secondTerm = (String) ((List) secondObj).stream()
+                                                .map(obj -> obj.toString())
+                                                .collect(Collectors.joining("_"));
+                                    } else {
+                                        secondTerm = secondObj.toString();
+                                    }
+                                    String firstTerm = (String) two.get(0);
+                                    if (firstTerm.startsWith("#")) {
+                                        resultSetMap.add(String.format("%s_%s_%s", firstTerm, (String) ((List) one).get(0), (String) secondTerm));
+                                    } else {
+                                        resultSetMap.add(String.format("%s.%s_%s", firstTerm, (String) ((List) one).get(0), (String) secondTerm)); // (String) two.get(1)));
+                                    }
                                 }
                             }
                         } else {
                             if (((List) one).size() == 1) {
-                                resultSetMap.add((String) ((List) one).get(0));
+                                String oneVal = (String) ((List) one).get(0);
+                                if ("*".equals(oneVal)) { // Expand star attributes (1st level)
+                                    List<Map<String, Object>> entities = (List)sqlSchema.get("entities");
+                                    String fromEntity = (String)from;
+                                    Map<String, Object> entity = entities.stream()
+                                            .filter(_entity -> fromEntity.equals(_entity.get("name")))
+                                            .findFirst()
+                                            .orElse(null);
+                                    if (entity != null) {
+                                        List<Object> attributes = (List)entity.get("attributes");
+                                        attributes.stream()
+                                                .filter(att -> ((Map<String, Object>) att).get("columnName") != null)
+                                                .forEach(att -> {
+                                                    resultSetMap.add((String) ((Map<String, Object>) att).get("name"));
+                                                });
+                                    }
+                                } else {
+                                    resultSetMap.add(oneVal);
+                                }
                             } else {
-                                resultSetMap.add(String.format("%s.%s", (String) ((List) one).get(0), (String) ((List) one).get(1)));
+                                String relationName = (String) ((List) one).get(0);
+                                String attName = (String) ((List) one).get(1);
+                                if ("*".equals(attName)) { // expand star (2nd level)
+                                    Map<String, Object> holdingEntity = getCompositeEntity(relationName, schema);
+                                    if (holdingEntity != null) {
+                                    /* Find the CompositeEntity in the returned entity, like
+                                       {
+                                            "name": "races",
+                                            "type": "entity",
+                                            "entityName": "race",
+                                            "multipleValues": true,
+                                            "reverse_link": "track"
+                                        }
+                                     */
+                                        Map<String, Object> compositeEntityDefinition = ((List<Map<String, Object>>) holdingEntity.get("attributes")).stream()
+                                                .filter(att -> "entity".equals(att.get("type")) &&
+                                                        relationName.equals(att.get("name"))).findFirst().orElse(null);
+                                        if (compositeEntityDefinition != null) {
+                                            String entityName = (String)compositeEntityDefinition.get("entityName");
+                                            List<Map<String, Object>> entities = (List)sqlSchema.get("entities");
+                                            Map<String, Object> entity = entities.stream()
+                                                    .filter(_entity -> entityName.equals(_entity.get("name")))
+                                                    .findFirst()
+                                                    .orElse(null);
+                                            if (entity != null) {
+                                                List<Object> attributes = (List)entity.get("attributes");
+                                                attributes.stream()
+                                                        .filter(att -> ((Map<String, Object>) att).get("columnName") != null)
+                                                        .forEach(att -> {
+                                                            resultSetMap.add(String.format("%s.%s", relationName, (String) ((Map<String, Object>) att).get("name")));
+                                                        });
+                                            }
+
+                                        }
+                                    } // else bizarre!
+                                } else {
+                                    resultSetMap.add(String.format("%s.%s", relationName, attName));
+                                }
                             }
                         }
                     });

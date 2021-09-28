@@ -1,0 +1,9 @@
+{
+  "utterance": "How many distinct races?",
+  "sql": ". . .",
+
+  "select": [
+    [ "#COUNT", [ "#DISTINCT", [ "race_id" ] ] ]
+  ],
+  "from": "race"
+}

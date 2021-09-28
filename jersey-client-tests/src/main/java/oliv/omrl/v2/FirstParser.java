@@ -41,12 +41,17 @@ public class FirstParser {
             "omrl.race_track.query.09.json",  // index  8
             "omrl.race_track.query.10.json",  // index  9
             "omrl.race_track.query.11.json",  // index 10
-            "omrl.dm.query.01.json",          // index 11
-            "omrl.dm.query.02.json",          // index 12
-            "omrl.dm.query.03.json",          // index 13
-            "omrl.dm.query.04.json"           // index 14
+            "omrl.race_track.query.12.json",  // index 11
+            "omrl.race_track.query.13.json",  // index 12
+            "omrl.race_track.query.14.json",  // index 13
+            "omrl.race_track.query.15.json",  // index 14
+            // dm. Data Management queries.
+            "omrl.dm.query.01.json",
+            "omrl.dm.query.02.json",
+            "omrl.dm.query.03.json",
+            "omrl.dm.query.04.json"
     };
-    private final static int PATH_INDEX = 1;
+    private final static int PATH_INDEX = 11;
 
     private final static String SCHEMA_NAME = // "department_management";
                                               "race_track";
@@ -194,13 +199,30 @@ public class FirstParser {
                     for (int i = 0; i < columnCount; i++) {
                         String colName = metaData.getColumnName(i + 1);
                         int columnType = metaData.getColumnType(i + 1);
-                        String colValue = "";
-                        if (columnType == JDBCType.INTEGER.getVendorTypeNumber()) {
-                            colValue = String.format("%d", rs.getInt(i+1)); //  colName));
-                        } else if (columnType == JDBCType.VARCHAR.getVendorTypeNumber()) {
-                            colValue = String.format("%s", rs.getString(i+1)); // colName));
+                        Object colValue;
+                        /**
+                         * Identifies the generic SQL type {@code CHAR}.
+                         */
+                        if (columnType == JDBCType.INTEGER.getVendorTypeNumber() ||
+                                columnType == JDBCType.TINYINT.getVendorTypeNumber() ||
+                                columnType == JDBCType.SMALLINT.getVendorTypeNumber() ||
+                                columnType == JDBCType.NUMERIC.getVendorTypeNumber() ||
+                                columnType == JDBCType.BIGINT.getVendorTypeNumber()) {
+//                            colValue = String.format("%d", rs.getInt(i+1)); //  colName));
+                            colValue = rs.getInt(i+1); //  colName));
+                        } else if (columnType == JDBCType.FLOAT.getVendorTypeNumber() ||
+                                columnType == JDBCType.REAL.getVendorTypeNumber() ||
+                                columnType == JDBCType.DOUBLE.getVendorTypeNumber() ||
+                                columnType == JDBCType.DECIMAL.getVendorTypeNumber()) {
+//                            colValue = String.format("%f", rs.getDouble(i+1)); // colName));
+                            colValue = rs.getDouble(i+1); // colName));
+                        } else if (columnType == JDBCType.VARCHAR.getVendorTypeNumber() ||
+                                columnType == JDBCType.CHAR.getVendorTypeNumber()) {
+//                            colValue = String.format("%s", rs.getString(i+1)); // colName));
+                            colValue = rs.getString(i+1); // colName));
                         } else {
-                            colValue = String.format("%s", rs.getObject(i+1)); // colName)); // Big fallback
+//                            colValue = String.format("%s", rs.getObject(i+1)); // colName)); // Big fallback
+                            colValue = rs.getObject(i+1); // colName)); // Big fallback
                         }
                         oneLine.add(String.format("%s: %s", colName, colValue));
                         // the RS Map

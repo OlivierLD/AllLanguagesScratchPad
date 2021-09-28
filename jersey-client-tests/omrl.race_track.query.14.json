@@ -1,0 +1,10 @@
+{
+  "utterance": "A test",
+  "sql": ". . .",
+
+  "select": [
+    [ "name" ],
+    [ "races", "*" ]
+  ],
+  "from": "track"
+}
