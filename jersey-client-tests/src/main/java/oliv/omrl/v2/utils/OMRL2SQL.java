@@ -394,7 +394,6 @@ public class OMRL2SQL {
         } else {
             throw new RuntimeException(String.format("Un-managed %s in clause %s\n", item.getClass().getName(), item.toString()));
         }
-//        return null;
     }
 
     public static Map<String, Object> omrlToNestedSQLQuery(Map<String, Object> schema, Map<String, Object> sqlSchema, List<Object> query) {
