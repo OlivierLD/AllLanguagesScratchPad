@@ -46,7 +46,7 @@ BEGIN TRANSACTION;
 CREATE TABLE OLIV_TABLE(id INTEGER PRIMARY KEY AUTOINCREMENT, data VARCHAR2, date DATETIME);
 INSERT INTO OLIV_TABLE VALUES(1,'Hi there','2021-03-29 14:37:16');
 COMMIT;
-sqlite> 
+sqlite> .exit
 ```
 To format the `select` output:
 ```
