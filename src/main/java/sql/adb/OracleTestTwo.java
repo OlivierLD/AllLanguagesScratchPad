@@ -240,7 +240,7 @@ public class OracleTestTwo {
     private static void executeStatement(String sql, Connection connection) throws SQLException {
         try (Statement statement = connection.createStatement()) {
             statement.executeUpdate(sql);
-        }
+        } // Will close statement
     }
 
     private static void executeQuery(String sql, Connection connection) throws SQLException {
@@ -257,7 +257,7 @@ public class OracleTestTwo {
                     }
                     System.out.println(oneRow.stream().map(obj -> String.valueOf(obj)).collect(Collectors.joining(", ")));
                 }
-            }
-        }
+            } // Will close result set
+        } // Will close statement
     }
 }
