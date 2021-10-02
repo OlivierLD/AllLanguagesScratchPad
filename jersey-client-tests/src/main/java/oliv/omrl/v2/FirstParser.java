@@ -5,11 +5,15 @@ import oliv.omrl.v2.utils.OMRL2SQL;
 
 import java.io.File;
 import java.net.URL;
-import java.sql.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.sql.Connection;
+import java.sql.Driver;
+import java.sql.DriverManager;
+import java.sql.JDBCType;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.Statement;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -152,6 +156,11 @@ public class FirstParser {
                 Class.forName("oracle.jdbc.driver.OracleDriver");
                 System.out.println(">> Driver loaded");
                 System.out.printf("Connecting with [%s]\n", jdbcUrl);
+                Enumeration<Driver> drivers = DriverManager.getDrivers();
+                while (drivers.hasMoreElements()) {
+                    Driver driver = drivers.nextElement();
+                    System.out.println(String.format("Version %d.%d", driver.getMajorVersion(), driver.getMinorVersion()));
+                }
                 Connection connection = DriverManager.getConnection(jdbcUrl, USERNAME, PASSWORD);
                 System.out.println(">> Connected");
 
