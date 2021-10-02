@@ -78,13 +78,14 @@ public class OracleTestTwo {
     // The recommended format of a connection URL is the long format with the connection descriptor.
 
     // For ATP and ADW - use the TNS Alias name along with the TNS_ADMIN when using 18.3 JDBC driver
-    final static String WALLET_PATH = "/Users/olivierlediouris/Wallet_OlivDBOne";
+    final static String WALLET_PATH = "/Users/olivierlediouris/Wallet_OlivDBOne"; // This is on the machine this code is running on.
     final static String TNS_NAME = "olivdbone_medium"; // From tnsname.ora, in the wallet folder.
 
     // This user must have been created before running this code.
     final static String DB_USER = "RACES";
     final static String DB_PASSWORD = "AkeuCoucou_1";
 
+    // Insert statements
     static String[] insertStmt = new String[]{
             "INSERT INTO TRACK VALUES (1, 'Auto Club Speedway', 'Fontana, CA', 92000, 1997)",
             "INSERT INTO TRACK VALUES (2, 'Chicagoland Speedway','Joliet, IL',75000,2001)",
@@ -194,6 +195,8 @@ public class OracleTestTwo {
 //                sqlEx.printStackTrace();
 //            }
 
+            connection.setAutoCommit(false);
+
             // Part two - Populate the tables
             Arrays.stream(insertStmt).forEach(stmt -> {
                 try {
@@ -202,6 +205,9 @@ public class OracleTestTwo {
                     sqlEx.printStackTrace();
                 }
             });
+
+            // Commit ? If auto commit is off (on by default).
+            connection.commit();
 
             // Part three - Perform database operation(s)
             String sqlSelect;
