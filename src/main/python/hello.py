@@ -1,4 +1,4 @@
-#!/bin/python
+#!/bin/python3
 import random
 
 print("Hello from Python")
