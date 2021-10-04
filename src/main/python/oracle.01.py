@@ -53,9 +53,17 @@ cursor.executemany("insert into pytab(id, data) values (:1, :2)", rows)
 
 # connection.commit()  # uncomment to make data persistent
 
+print("First query:")
 # Now query the rows back
 nb: int = 0
 for row in cursor.execute('select * from pytab'):
+    nb += 1
+    # print(f"Row is a ${type(row)}")
+    print(f"Row #{nb}: {row}")
+
+print("Second query:")
+nb: int = 0
+for row in cursor.execute('SELECT race.name, race.race_date, track.name FROM race JOIN track ON race.track_id = track.track_id'):
     nb += 1
     # print(f"Row is a ${type(row)}")
     print(f"Row #{nb}: {row}")
