@@ -1,0 +1,3 @@
+# Jupyter Notebooks
+Available for almost any language coming with a REPL (Read Execute Print Loop), like Python, Java, Scala, NodeJS, ...  
+See [here](https://github.com/OlivierLD/oliv-ai/blob/master/JupyterNotebooks/README.md).
