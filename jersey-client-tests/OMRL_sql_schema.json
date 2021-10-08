@@ -1280,6 +1280,14 @@
             "uniqueValues": true
           },
           {
+            "name": "num_name_date",
+            "sqlExpression": "'Race #' || TO_CHAR(RACE_ID) || ', ' || RACE.NAME || ', on ' || RACE_DATE"
+          },
+          {
+            "name": "race_name_1st_char",
+            "sqlExpression": "UPPER(SUBSTR(RACE.NAME, 1, 1))"
+          },
+          {
             "name": "track",
             "foreignKey": [
               "Track_ID"

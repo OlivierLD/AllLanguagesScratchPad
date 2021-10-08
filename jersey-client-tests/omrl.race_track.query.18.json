@@ -1,0 +1,12 @@
+{
+  "select": [
+    [ "name" ],
+    [ "races", "name" ],
+    [ "races", "num_name_date" ]
+  ],
+  "from": "track",
+  "where": [ "AND",
+              [ ">", [ "seating" ], 70000 ],
+              [ "<>", [ "races", "race_name_1st_char" ], "R" ]
+           ]
+}

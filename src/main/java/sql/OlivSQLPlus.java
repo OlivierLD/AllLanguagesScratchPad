@@ -3,7 +3,11 @@ package sql;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.InputStreamReader;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.Statement;
 import java.util.Arrays;
 
 public class OlivSQLPlus {
@@ -249,8 +253,7 @@ public class OlivSQLPlus {
             } else {
                 System.out.println("Not connected...");
             }
-        } else if (str.trim().length() > 0) // Other commands ( CREATE TABLE, etc)
-        {
+        } else if (str.trim().length() > 0)  { // Other commands ( CREATE TABLE, etc)
             boolean completed = str.trim().endsWith(";");
             while (!completed) {
                 str += (" " + userInput("   + > "));

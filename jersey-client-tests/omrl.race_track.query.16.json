@@ -1,0 +1,9 @@
+{
+  "select": [
+    [ "name" ],
+    [ "date" ],
+    [ "num_name_date" ]
+  ],
+  "from": "race",
+  "where": []
+}

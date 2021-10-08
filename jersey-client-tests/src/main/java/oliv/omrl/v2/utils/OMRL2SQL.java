@@ -52,16 +52,20 @@ public class OMRL2SQL {
      * @param schema the full base schema
      * @return the entity
      */
-    private static Map<String, Object> getCompositeEntity(String name, Map<String, Object> schema) {
+    private static Map<String, Object> getCompositeEntity(String fromEntity, String name, Map<String, Object> schema) {
 
         List<Map<String, Object>> entities = (List<Map<String, Object>>) schema.get("entities");
-        return entities.stream().filter(ent -> {
-            List<Map<String, Object>> attributes = (List<Map<String, Object>>) ((Map<String, Object>) ent).get("attributes");
+        Map<String, Object> entity = entities.stream().filter(ent -> fromEntity.equals(ent.get("name"))).findFirst().orElse(null);
+        if (entity != null) {
+            List<Map<String, Object>> attributes = (List<Map<String, Object>>) (entity).get("attributes");
             Optional<Map<String, Object>> compositeEntityAttribute = attributes.stream()
                     .filter(att -> "entity".equals(att.get("type")) &&
-                            name.equals(att.get("name"))).findFirst(); // TODO and multipleValues = false
-            return compositeEntityAttribute.isPresent(); // the filter condition
-        }).findFirst().orElse(null);
+                            name.equals(att.get("name"))).findFirst(); // TODO and multipleValues = false?
+            if (compositeEntityAttribute.isPresent()) {
+                return entity; // compositeEntityAttribute.get();
+            }
+        }
+        return null;
     }
 
     /**
@@ -166,9 +170,23 @@ public class OMRL2SQL {
      * @param joinClause
      * @return
      */
-    private static String resolveCompositeEntity(String relationName, String columnName, Map<String, Object> schema, Map<String, Object> sqlSchema, List<String> joinClause) {
+    private static String resolveCompositeEntity(String fromEntityName,
+                                                 String relationName,
+                                                 String columnName,
+                                                 Map<String, Object> schema,
+                                                 Map<String, Object> sqlSchema,
+                                                 List<String> joinClause) {
+        return resolveCompositeEntity(fromEntityName, relationName, columnName,schema, sqlSchema, joinClause, false);
+    }
+    private static String resolveCompositeEntity(String fromEntityName,
+                                                 String relationName,
+                                                 String columnName,
+                                                 Map<String, Object> schema,
+                                                 Map<String, Object> sqlSchema,
+                                                 List<String> joinClause,
+                                                 boolean inWhereClause) {
         String expandedItem = "";
-        Map<String, Object> holdingEntity = getCompositeEntity(relationName, schema);
+        Map<String, Object> holdingEntity = getCompositeEntity(fromEntityName, relationName, schema);
         if (holdingEntity != null) {
             /* Find the CompositeEntity in the returned entity, like
                {
@@ -192,9 +210,20 @@ public class OMRL2SQL {
                 if ("*".equals(columnName)) {
                     expandedItem = expandStarTableColumns(entityName, sqlSchema);
                 } else {
-                    expandedItem = String.format("%s.%s",
-                            dbTableName,
-                            columnName);
+                    // sqlExpression ?
+                    String sqlExp = sqlExpression(entityName, columnName, sqlSchema);
+                    if (sqlExp != null) {
+                        if (inWhereClause) {
+                            expandedItem = String.format("(%s)", sqlExp);
+                        } else {
+                            expandedItem = String.format("(%s) as %s", sqlExp, columnName);
+                        }
+//                    } else if () { // TODO ColumnExpansions
+                    } else {
+                        expandedItem = String.format("%s.%s",
+                                dbTableName,
+                                columnName);
+                    }
                 }
                 // 2 - JOIN
                 String oneJoinClause = String.format("JOIN %s ON %s",
@@ -244,7 +273,7 @@ public class OMRL2SQL {
                         } else { // Composite Entity
                             String relationName = (String)oneElem.get(1);
                             String columnName = (String)oneElem.get(2);
-                            String resolved = resolveCompositeEntity(relationName, columnName, schema, sqlSchema, joinClause);
+                            String resolved = resolveCompositeEntity(tableRef, relationName, columnName, schema, sqlSchema, joinClause, true); // TODO tableRef?
                             expandedItem = String.format("%s(%s)", aggFunc, resolved);
                         }
                     }
@@ -253,12 +282,20 @@ public class OMRL2SQL {
                     String relationName = (String) ((List) oneMember).get(0);
                     String columnName = (String) ((List) oneMember).get(1);
                     //
-                    expandedItem = resolveCompositeEntity(relationName, columnName, schema, sqlSchema, joinClause);
+                    expandedItem = resolveCompositeEntity(tableRef, relationName, columnName, schema, sqlSchema, joinClause, true); // TODO tableRef?
                 }
             } else { // One column, in the current table.
                 String colName = (String) ((List) oneMember).get(0);
                 String tableName = findDBTableByEntityName(tableRef, sqlSchema);
-                expandedItem = String.format("%s.%s", tableName, colName);
+                // sqlExpression ?
+                String sqlExp = sqlExpression(tableRef, colName, sqlSchema);
+                if (sqlExp != null) {
+//                    expandedItem = String.format("(%s) as %s", sqlExp, colName);
+                    expandedItem = String.format("(%s)", sqlExp);
+//                    } else if () { // TODO ColumnExpansions
+                } else {
+                    expandedItem = String.format("%s.%s", tableName, colName);
+                }
             }
         } else if (oneMember instanceof String) {
             if (!usePreparedStmt) {
@@ -334,6 +371,28 @@ public class OMRL2SQL {
         return sqlWhereClause;
     }
 
+    private static String sqlExpression(String entity, String attribute, Map<String, Object> sqlSchema) {
+        List<Object> entities = (List)sqlSchema.get("entities");
+        Object attObj = entities.stream()
+                .filter(ent -> entity.equals(((Map<String, Object>) ent).get("name")))
+                .map(ent -> ((Map<String, Object>) ent).get("attributes"))
+                .findFirst().orElse(null);
+        if (attObj != null) {
+            if (attObj instanceof List) {
+                List<Map<String, Object>> attList = (List)attObj;
+                Map<String, Object> attr = attList.stream()
+                        .filter(att -> attribute.equals(att.get("name")))
+                        .findFirst()
+                        .orElse(null);
+                if (attr != null) {
+                    String sqlExpression = (String)attr.get("sqlExpression");
+                    return sqlExpression;
+                }
+            }
+        }
+        return null;
+    }
+
     private static String expandOneItem(Object item, Map<String, Object> schema, Map<String, Object> sqlSchema, String entityName, List<String> joinClause) {
         if (VERBOSE) {
             System.out.printf("Item is a %s\n", item.getClass().getName());
@@ -345,9 +404,16 @@ public class OMRL2SQL {
                     String expandStar = expandStarTableColumns(entityName, sqlSchema);
                     return expandStar;
                 } else {
-                    String oneClause = String.format("%s.%s",
-                            findDBTableByEntityName(entityName, sqlSchema),
-                            findDBColumnByEntityName(entityName, (String) oneElem.get(0), sqlSchema));
+                    String oneClause;
+                    String sqlExp = sqlExpression(entityName, (String) oneElem.get(0), sqlSchema);
+                    if (sqlExp != null) {
+                        oneClause = String.format("(%s) as %s", sqlExp, oneElem.get(0));
+//                    } else if () { // TODO ColumnExpansions
+                    } else {
+                        oneClause = String.format("%s.%s",
+                                findDBTableByEntityName(entityName, sqlSchema),
+                                findDBColumnByEntityName(entityName, (String) oneElem.get(0), sqlSchema));
+                    }
                     return oneClause;
                 }
             } else { // Agg function or CompositeEntity (join), size = 2
@@ -378,7 +444,7 @@ public class OMRL2SQL {
                                 relationName = (String) oneElem.get(1);
                                 columnName = (String) oneElem.get(2);
                             }
-                            String resolved = relationName.startsWith("#") ? columnName : resolveCompositeEntity(relationName, columnName, schema, sqlSchema, joinClause);
+                            String resolved = relationName.startsWith("#") ? columnName : resolveCompositeEntity(entityName, relationName, columnName, schema, sqlSchema, joinClause);
                             oneClause = String.format("%s(%s)", aggFunc, resolved);
                         }
                     }
@@ -391,7 +457,7 @@ public class OMRL2SQL {
                     String relationName = (String) oneElem.get(0);
                     String columnName = (String) oneElem.get(1);
                     //
-                    String expandedItem = resolveCompositeEntity(relationName, columnName, schema, sqlSchema, joinClause);
+                    String expandedItem = resolveCompositeEntity(entityName, relationName, columnName, schema, sqlSchema, joinClause);
                     return expandedItem;
                 }
             }
@@ -613,7 +679,7 @@ public class OMRL2SQL {
                                 String relationName = (String) ((List) one).get(0);
                                 String attName = (String) ((List) one).get(1);
                                 if ("*".equals(attName)) { // expand star (2nd level)
-                                    Map<String, Object> holdingEntity = getCompositeEntity(relationName, schema);
+                                    Map<String, Object> holdingEntity = getCompositeEntity((String)from, relationName, schema);
                                     if (holdingEntity != null) {
                                     /* Find the CompositeEntity in the returned entity, like
                                        {
