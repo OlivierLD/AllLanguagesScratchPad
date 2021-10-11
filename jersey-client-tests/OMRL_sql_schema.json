@@ -1254,7 +1254,7 @@
     "entities": [
       {
         "name": "race",
-        "tableName": "race",
+        "tableName": "RACE",
         "primaryKey": [
           "Race_ID"
         ],
@@ -1286,6 +1286,19 @@
           {
             "name": "race_name_1st_char",
             "sqlExpression": "UPPER(SUBSTR(RACE.NAME, 1, 1))"
+          },
+          {
+            "name": "cost",
+            "column_expansions": [
+              "${year}_${quarter}_CST",
+              "${period}_${type}_CST"
+            ]
+          },
+          {
+            "name": "race_stuff",
+            "column_expansions": [
+              "RACE_${stuff}"
+            ]
           },
           {
             "name": "track",

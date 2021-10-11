@@ -1,0 +1,14 @@
+{
+  "select": [
+    [ "name" ]
+  ],
+  "from": "race",
+  "comment": "Assumption: items used for column expansion are is their own 'AND' block.",
+  "where": [ "AND", [ "AND", [ "=", [ "year" ], "2020" ],
+                             [ "=", [ "quarter" ], "Q1" ] ],
+                    [ "AND", [ ">", [ "cost" ], 10 ],
+                             [ "=", [ "name" ], "whatever" ],
+                             [ "<>", [ "race_name_1st_char" ], "R" ]
+                    ]
+           ]
+}

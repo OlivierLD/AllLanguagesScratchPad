@@ -24,8 +24,8 @@ import java.util.stream.Collectors;
  */
 public class FirstParser {
 
-    private final static boolean EXECUTE_QUERY = true;
-    private final static boolean USE_PREPARED_STMT = true;
+    private final static boolean EXECUTE_QUERY = false;
+    private final static boolean USE_PREPARED_STMT = false;
 
     private final static String OMRL_SCHEMA_PATH = "OMRL_base_schema.json";
     private final static String OMRL_SQL_SCHEMA_PATH = "OMRL_sql_schema.json";
@@ -53,6 +53,14 @@ public class FirstParser {
             "omrl.race_track.query.17.json",  // index 16
             "omrl.race_track.query.18.json",  // index 17
             "omrl.race_track.query.19.json",  // index 18
+            "omrl.race_track.query.20.json",  // index 19 - Don't execute
+            "omrl.race_track.query.21.json",  // index 20 - Don't execute
+            "omrl.race_track.query.22.json",  // index 21 - Don't execute
+            "omrl.race_track.query.23.json",  // index 22 - Don't execute
+            "omrl.race_track.query.24.json",  // index 23 - Don't execute
+            "omrl.race_track.query.25.json",  // index 24
+            "omrl.race_track.query.26.json",  // index 25 - Don't execute
+            "omrl.race_track.query.27.json",  // index 26 - Don't execute
             // dm. Data Management queries.
             "omrl.dm.query.01.json",
             "omrl.dm.query.02.json",
@@ -64,7 +72,6 @@ public class FirstParser {
     private final static String SCHEMA_NAME = // "department_management";
                                               "race_track";
                                               // "journal_committee";
-
     private final static String JDBC_HOSTNAME = "100.111.136.104";  // "100.102.84.101";
     private final static int JDBC_PORT = 1521;
     private final static String JDBC_SERVICE_NAME = "BOTS.localdomain";
@@ -128,7 +135,7 @@ public class FirstParser {
                     System.exit(1);
                 }
                 /*
-                 *  HERE IS THE SKILL
+                 *  HERE IS THE SKILL. Query Generation.
                  */
                 OMRL2SQL.usePreparedStmt = USE_PREPARED_STMT;
                 omrlSql = OMRL2SQL.omrlToSQLQuery(schema, sqlSchema, query);

@@ -1,0 +1,11 @@
+{
+  "select": [
+    [ "name" ],
+    [ "race_stuff" ]
+  ],
+  "from": "race",
+  "comment": "Assumption: items used for column expansion are is their own 'AND' block.",
+  "where": [ "AND", [ "=", [ "stuff" ], "DATE" ],
+                    [ "=", [ "name" ], "RaceTrack whatever" ]
+           ]
+}
