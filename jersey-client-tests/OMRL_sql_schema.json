@@ -1310,6 +1310,42 @@
         ]
       },
       {
+        "name": "course",
+        "tableName": "RACE",
+        "primaryKey": [
+          "Race_ID"
+        ],
+        "attributes": [
+          {
+            "name": "race_id",
+            "columnName": "Race_ID",
+            "uniqueValues": true
+          },
+          {
+            "name": "nom",
+            "columnName": "Name",
+            "uniqueValues": true
+          },
+          {
+            "name": "classe",
+            "columnName": "Race_Class",
+            "uniqueValues": false
+          },
+          {
+            "name": "date",
+            "columnName": "Race_Date",
+            "uniqueValues": true
+          },
+          {
+            "name": "piste",
+            "foreignKey": [
+              "Track_ID"
+            ],
+            "uniqueValues": false
+          }
+        ]
+      },
+      {
         "name": "track",
         "tableName": "track",
         "primaryKey": [
@@ -1343,6 +1379,36 @@
           },
           {
             "name": "races",
+            "foreignKey": [
+              "Track_ID"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "piste",
+        "tableName": "track",
+        "primaryKey": [
+          "Track_ID"
+        ],
+        "attributes": [
+          {
+            "name": "track_id",
+            "columnName": "Track_ID",
+            "uniqueValues": true
+          },
+          {
+            "name": "nom",
+            "columnName": "Name",
+            "uniqueValues": true
+          },
+          {
+            "name": "endroit",
+            "columnName": "Location",
+            "uniqueValues": true
+          },
+          {
+            "name": "courses",
             "foreignKey": [
               "Track_ID"
             ]

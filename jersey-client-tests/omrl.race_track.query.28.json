@@ -1,0 +1,16 @@
+{
+  "select": [
+    [ "nom" ],
+    [ "date" ],
+    [ "piste", "nom" ]
+  ],
+  "from": "course",
+  "where": [
+    "=",
+    [
+      "piste",
+      "nom"
+    ],
+    "Chicagoland Speedway"
+  ]
+}

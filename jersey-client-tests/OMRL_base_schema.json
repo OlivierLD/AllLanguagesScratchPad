@@ -1089,6 +1089,34 @@
         ]
       },
       {
+        "name": "course",
+        "attributes": [
+          {
+            "name": "race_id",
+            "type": "number"
+          },
+          {
+            "name": "nom",
+            "type": "text"
+          },
+          {
+            "name": "classe",
+            "type": "text"
+          },
+          {
+            "name": "date",
+            "type": "text"
+          },
+          {
+            "name": "piste",
+            "type": "entity",
+            "entityName": "piste",
+            "multipleValues": false,
+            "reverse_link": "courses"
+          }
+        ]
+      },
+      {
         "name": "track",
         "attributes": [
           {
@@ -1117,6 +1145,30 @@
             "entityName": "race",
             "multipleValues": true,
             "reverse_link": "track"
+          }
+        ]
+      },
+      {
+        "name": "piste",
+        "attributes": [
+          {
+            "name": "track_id",
+            "type": "number"
+          },
+          {
+            "name": "nom",
+            "type": "text"
+          },
+          {
+            "name": "endroit",
+            "type": "text"
+          },
+          {
+            "name": "courses",
+            "type": "entity",
+            "entityName": "course",
+            "multipleValues": true,
+            "reverse_link": "piste"
           }
         ]
       }

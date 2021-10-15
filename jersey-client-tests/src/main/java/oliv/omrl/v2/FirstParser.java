@@ -61,13 +61,17 @@ public class FirstParser {
             "omrl.race_track.query.25.json",  // index 24
             "omrl.race_track.query.26.json",  // index 25 - Don't execute
             "omrl.race_track.query.27.json",  // index 26 - Don't execute
+            "omrl.race_track.query.28.json",  // index 27
+            "omrl.race_track.query.29.json",  // index 28 - Don't execute
+            "omrl.race_track.query.30.json",  // index 29 - Don't execute
+            "omrl.race_track.query.31.json",  // index 30 - Don't execute
             // dm. Data Management queries.
             "omrl.dm.query.01.json",
             "omrl.dm.query.02.json",
             "omrl.dm.query.03.json",
             "omrl.dm.query.04.json"
     };
-    private final static int PATH_INDEX = 18;
+    private final static int PATH_INDEX = 30;
 
     private final static String SCHEMA_NAME = // "department_management";
                                               "race_track";

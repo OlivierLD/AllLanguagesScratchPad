@@ -1,0 +1,15 @@
+{
+  "select": [
+    [ "name" ],
+    [ "cost" ],
+    [ "year" ],
+    [ "period" ]
+  ],
+  "from": "race",
+  "where": [ "OR", [ "AND", [ "=", [ "year" ], "2020" ],
+                             [ "=", [ "quarter" ], "Q1" ],
+                             [ "=", [ "period" ], "ITD" ],
+                             [ "=", [ "type" ], "LBR" ] ],
+                    [ "=", [ "name" ], "RaceTrack whatever" ]
+           ]
+}

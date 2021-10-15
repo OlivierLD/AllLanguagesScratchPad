@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -31,13 +32,16 @@ public class OMRL2SQL {
     private final static boolean LOGICAL_RESULT_SET_MAP = true;
 
     private final static boolean ADD_WHERE_CLAUSE_COLUMNS_TO_SELECT = false;
-    public static boolean usePreparedStmt = false;
+    public static boolean usePreparedStmt = true;
 
     private final static String SELECT_REGEX = "^(?i)SELECT.*[\\s\\S].*FROM.*[\\s\\S].*"; // Case Insensitive, include NewLines
     private final static Pattern SELECT_PATTERN = Pattern.compile(SELECT_REGEX, Pattern.MULTILINE);
 
     private final static String COLUMN_EXPANSION_STR = "\\$\\{([^\\}]*)\\}";
     private final static Pattern COLUMN_EXPANSION_PATTERN = Pattern.compile(COLUMN_EXPANSION_STR, Pattern.MULTILINE);
+
+    private final static String ALIAS_DETECTOR_STR = "as \"(.*?)\"";
+    private final static Pattern ALIAS_DETECTOR_PATTERN = Pattern.compile(ALIAS_DETECTOR_STR, Pattern.MULTILINE);
 
     /**
      * Finds and returns the (full) entity holding the expected CompositeEntity attribute.
@@ -449,7 +453,7 @@ public class OMRL2SQL {
         String cond = (String) where.get(i);
         if ("AND".equals(cond) || "OR".equals(cond)) {
             // Expect 2 (or more) Lists after that. Recurse.
-            List<String> otherClause = new ArrayList<>();
+            List<String> whereClauseElements = new ArrayList<>();
             for (int w=1; w<where.size(); w++) {
                 String one = expandWhereHavingClause((List<Object>) where.get(i + w),
                         originalWhere,
@@ -460,21 +464,21 @@ public class OMRL2SQL {
                         joinClause,
                         prmValues,
                         usedForExpansion);
-                otherClause.add(one);
+                whereClauseElements.add(one);
             }
             // Remove blanks & nulls. This can happen when there are column expansions
-            List<String> noBlanks = otherClause.stream()
+            List<String> noBlanks = whereClauseElements.stream()
                     .filter(elmt -> elmt != null && !elmt.isEmpty())
                     .collect(Collectors.toList());
-            otherClause = noBlanks;
+            whereClauseElements = noBlanks;
 
-            if (otherClause.size() > 0) {
-                if (otherClause.size() == 1) {
-                    sqlWhereClause = otherClause.get(0);
+            if (whereClauseElements.size() > 0) {
+                if (whereClauseElements.size() == 1) {
+                    sqlWhereClause = whereClauseElements.get(0);
                 } else {
-                    sqlWhereClause = String.format("(%s) %s (%s)", otherClause.get(0), cond, otherClause.get(1));
-                    for (int w=2; w<otherClause.size(); w++) {
-                        sqlWhereClause = String.format("%s %s (%s)", sqlWhereClause, cond, otherClause.get(w));
+                    sqlWhereClause = String.format("(%s) %s (%s)", whereClauseElements.get(0), cond, whereClauseElements.get(1));
+                    for (int w=2; w<whereClauseElements.size(); w++) {
+                        sqlWhereClause = String.format("%s %s (%s)", sqlWhereClause, cond, whereClauseElements.get(w));
                     }
                 }
             } else {
@@ -528,7 +532,16 @@ public class OMRL2SQL {
                     }
                 }
             }
-            sqlWhereClause = String.format("%s %s %s", leftItem, unaryOp, rightItem);
+            if (left instanceof List && ((List)left).size() > 0 && isColumnExpansion(tableRef, (String)((List)left).get(0), sqlSchema)) {
+                // If column expansion generate mor than one column, then apply condition on each of them, and connect them with OR.
+                String[] colArray = ((String)leftItem).split(",");
+                sqlWhereClause = String.format("%s %s %s", colArray[0].trim(), unaryOp, rightItem);
+                for (int colIndex=1; colIndex< colArray.length; colIndex++) {
+                    sqlWhereClause = String.format("%s OR %s %s %s", sqlWhereClause, colArray[colIndex].trim(), unaryOp, rightItem);
+                }
+            } else {
+                sqlWhereClause = String.format("%s %s %s", leftItem, unaryOp, rightItem);
+            }
         }
         return sqlWhereClause;
     }
@@ -667,6 +680,46 @@ public class OMRL2SQL {
         return expandedColumns;
     }
 
+    /**
+     * This assumes that a parameter like ${duh} is used only in ONE expandable attribute.
+     * @param sqlSchema
+     * @param entityName
+     * @param attName
+     * @return
+     */
+    private static String findParentAttribute(Map<String, Object> sqlSchema,
+                                              String entityName,
+                                              String attName) {
+        String parentAttName = null;
+        Map<String, Object> ent =  (Map<String, Object>)((List) sqlSchema.get("entities")).stream()
+                .filter(entity -> entityName.equals(((Map<String, Object>) entity).get("name")))
+                .findFirst().orElse(null);
+        if (ent != null) {
+            System.out.println();
+            List attributes = (List)ent.get("attributes");
+            if (attributes != null) {
+                Object parentObj = attributes.stream()
+                        .filter(att -> {
+                            Map<String, Object> attMap = (Map<String, Object>) att;
+                            if (attMap.get("column_expansions") != null) {
+                                List<String> colExp = (List) attMap.get("column_expansions");
+                                String match = String.format("${%s}", attName);
+                                String found = colExp.stream()
+                                        .filter(ex -> ex.indexOf(match) > -1)
+                                        .findFirst().orElse(null);
+                                return found != null;
+                            } else {
+                                return false;
+                            }
+                        }).findFirst().orElse(null);
+                if (parentObj != null && parentObj instanceof Map) {
+                    parentAttName = (String)((Map<String, Object>)parentObj).get("name");
+                }
+            }
+        }
+        return parentAttName;
+    }
+
     private static String expandOneItem(Object item,
                                         Map<String, Object> schema,
                                         Map<String, Object> sqlSchema,
@@ -697,20 +750,42 @@ public class OMRL2SQL {
                         oneClause = String.format("(%s) as %s", sqlExp, oneElem.get(0));
                     } else if (isColumnExpansion(entityName, (String) oneElem.get(0), sqlSchema)) { // Column Expansion ?
                         // Use the where clause to find the patch values
+                        String attributeName = (String) oneElem.get(0);
                         List<String> expandedColumns = expandColumns(entityName,
-                                (String) oneElem.get(0),
+                                attributeName,
                                 sqlSchema,
                                 where,
                                 usedForExpansion);
                         if (expandedColumns != null && expandedColumns.size() > 0) {
-                            oneClause = expandedColumns.stream().collect(Collectors.joining(", "));
+                            AtomicInteger aliasIndex = new AtomicInteger(0);
+                            oneClause = expandedColumns.stream()
+//                                    .map(col -> String.format("%s as \"%s_%d\"", col, attributeName, aliasIndex.addAndGet(1)))
+                                    .map(col -> String.format("%s as \"%s.%s_%d\"", col, attributeName, col.split("\\.")[1], aliasIndex.addAndGet(1)))
+                                    .collect(Collectors.joining(", "));
                         } else {
                             oneClause = "";
                         }
                     } else {
-                        oneClause = String.format("%s.%s",
-                                findDBTableByEntityName(entityName, sqlSchema),
-                                findDBColumnByEntityName(entityName, (String) oneElem.get(0), sqlSchema));
+                        String tableName = findDBTableByEntityName(entityName, sqlSchema);
+                        String columnName = findDBColumnByEntityName(entityName, (String) oneElem.get(0), sqlSchema);
+                        if (columnName == null) {
+                            // See if the value is in the where, about a column expansion
+                            String attName = (String) oneElem.get(0);
+                            Object prmValue = findValueInWhereClause(List.of(attName), where);
+                            if (prmValue != null) {
+                                // Find the expendable attribute this prm belongs to
+                                String parentAttributeName = "X";
+                                String foundParentAttributeName = findParentAttribute(sqlSchema, entityName, attName);
+                                if (foundParentAttributeName != null) {
+                                    parentAttributeName = foundParentAttributeName;
+                                }
+                                oneClause = String.format("'%s' as \"%s.%s\"", prmValue, parentAttributeName, attName);
+                            } else {
+                                oneClause = String.format("%s.%s", tableName, columnName); // Fallback - Means if failed. Not found.
+                            }
+                        } else {
+                            oneClause = String.format("%s.%s", tableName, columnName);
+                        }
                     }
                     return oneClause;
                 }
@@ -998,7 +1073,21 @@ public class OMRL2SQL {
                                                 });
                                     }
                                 } else {
-                                    resultSetMap.add(oneVal);
+                                    int index = select.indexOf(one);
+                                    String selectChunk = selectClause.get(index);
+                                    // RegEx for string like [RACE.2020_Q1_CST as "cost_1", RACE.ITD_LBR_CST as "cost_2"]
+                                    Matcher matcher = ALIAS_DETECTOR_PATTERN.matcher(selectChunk);
+                                    List<String> aliases = new ArrayList<>();
+                                    while (matcher.find()) {
+                                        for (int i = 1; i <= matcher.groupCount(); i++) {
+                                            aliases.add(matcher.group(i));
+                                        }
+                                    }
+                                    if (aliases.size() > 0) {
+                                        aliases.stream().forEach(alias -> resultSetMap.add(alias));
+                                    } else {
+                                        resultSetMap.add(oneVal);
+                                    }
                                 }
                             } else {
                                 String relationName = (String) ((List) one).get(0);
@@ -1033,7 +1122,6 @@ public class OMRL2SQL {
                                                             resultSetMap.add(String.format("%s.%s", relationName, (String) ((Map<String, Object>) att).get("name")));
                                                         });
                                             }
-
                                         }
                                     } // else bizarre!
                                 } else {
@@ -1082,7 +1170,7 @@ public class OMRL2SQL {
                 //                  | |       | join clause
                 //                  | |       from
                 //                  | select
-                //                  Keyword (Distinct)
+                //                  Keyword (Distinct, All)
                 ((keyWord == null || keyWord.isEmpty()) ? "" : String.format("%s ", keyWord)),
                 sqlSelectClause,
                 sqlFromClause,
