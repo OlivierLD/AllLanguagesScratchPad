@@ -1,10 +1,6 @@
 package oliv.omrl.v2.utils;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
@@ -23,7 +19,7 @@ import java.util.stream.Stream;
  *
  * OMRL: Oracle Meaning Representation Language
  *
- * TODO ALIASES
+ * TODO ALIASES, COLUMN_EXPANSIONS through Relations/Links
  */
 public class OMRL2SQL {
 
@@ -76,6 +72,22 @@ public class OMRL2SQL {
         return null;
     }
 
+    private static String getEntityFromRelation(String fromEntity, String relationName, Map<String, Object> schema) {
+        String entityRelName = null;
+        Object currentEntity = ((List<Object>) schema.get("entities")).stream()
+                .filter(entity -> fromEntity.equals(((Map<String, Object>) entity).get("name")))
+                .findFirst().orElse(null);
+        if (currentEntity != null) {
+            Object relAttribute = ((List<Object>) ((Map<String, Object>) currentEntity).get("attributes")).stream()
+                    .filter(att -> relationName.equals(((Map<String, Object>) att).get("name")))
+                    .findFirst().orElse(null);
+            if (relAttribute != null) {
+                entityRelName = (String)((Map<String, Object>)relAttribute).get("entityName");
+            }
+        }
+        return entityRelName;
+    }
+
     /**
      * Get the DB table name (entity.tableName) from the entity name (entity.name)
      *
@@ -123,16 +135,26 @@ public class OMRL2SQL {
             Stream<Map<String, Object>> attributes = ((List<Map<String, Object>>) entity.get("attributes")).stream()
                     .filter(att -> attributeName.equals(att.get("name")));
             // Try column name
-            String matchingColumn = attributes.map(att -> {
-                String columnName = (String) att.get("columnName");
-                if (columnName == null) {
-                    if (att.get("foreignKey") != null) {
-                        columnName = (String) ((List) att.get("foreignKey")).get(0); // TODO Make sure that works...
-                    }
-                }
-                return columnName;
-            }).findFirst().orElse(null);
-            return matchingColumn;
+            String matchingColumn = attributes
+                    .filter(att -> {
+                        String columnName = (String) att.get("columnName");
+                        if (columnName == null) {
+                            if (att.get("foreignKey") != null) {
+                                columnName = (String) ((List) att.get("foreignKey")).get(0); // TODO Make sure that works...
+                            }
+                        }
+                        return columnName != null;
+                    })
+                    .map(att -> {
+                        String columnName = (String) att.get("columnName");
+                        if (columnName == null) {
+                            if (att.get("foreignKey") != null) {
+                                columnName = (String) ((List) att.get("foreignKey")).get(0); // TODO Make sure that works...
+                            }
+                        }
+                        return columnName;
+                    }).findFirst().orElse(null);
+            return matchingColumn; // .isPresent() ? matchingColumn.get() : null;
         } else {
             return null;
         }
@@ -186,8 +208,10 @@ public class OMRL2SQL {
                                                  String columnName,
                                                  Map<String, Object> schema,
                                                  Map<String, Object> sqlSchema,
-                                                 List<String> joinClause) {
-        return resolveCompositeEntity(fromEntityName, relationName, columnName,schema, sqlSchema, joinClause, false);
+                                                 List<String> joinClause,
+                                                 List<Object> where,
+                                                 List<Object> usedForExpansion) {
+        return resolveCompositeEntity(fromEntityName, relationName, columnName,schema, sqlSchema, joinClause, where, usedForExpansion, false);
     }
     private static String resolveCompositeEntity(String fromEntityName,
                                                  String relationName,
@@ -195,6 +219,8 @@ public class OMRL2SQL {
                                                  Map<String, Object> schema,
                                                  Map<String, Object> sqlSchema,
                                                  List<String> joinClause,
+                                                 List<Object> where,
+                                                 List<Object> usedForExpansion,
                                                  boolean inWhereClause) {
         String expandedItem = "";
         Map<String, Object> holdingEntity = getCompositeEntity(fromEntityName, relationName, schema);
@@ -234,8 +260,8 @@ public class OMRL2SQL {
                         List<String> expandedColumns = expandColumns(entityName,
                                 columnName,
                                 sqlSchema,
-                                null, // where,
-                                null); // usedForExpansion);
+                                where,
+                                usedForExpansion);
                         if (expandedColumns != null && expandedColumns.size() > 0) {
                             expandedItem = expandedColumns.stream().collect(Collectors.joining(", "));
                         } else {
@@ -308,16 +334,34 @@ public class OMRL2SQL {
                         } else { // Composite Entity
                             String relationName = (String)oneElem.get(1);
                             String columnName = (String)oneElem.get(2);
-                            String resolved = resolveCompositeEntity(tableRef, relationName, columnName, schema, sqlSchema, joinClause, true); // TODO tableRef?
+                            String resolved = resolveCompositeEntity(tableRef, relationName, columnName, schema, sqlSchema, joinClause, where, usedForExpansion,true); // TODO tableRef?
                             expandedItem = String.format("%s(%s)", aggFunc, resolved);
                         }
                     }
-                } else { // CompositeEntity. table.column, and join.
+                } else { // CompositeEntity. table.column, and join. Or column_expansion
                     // look for a relationship
                     String relationName = (String) ((List) oneMember).get(0);
                     String columnName = (String) ((List) oneMember).get(1);
-                    //
-                    expandedItem = resolveCompositeEntity(tableRef, relationName, columnName, schema, sqlSchema, joinClause, true); // TODO tableRef?
+                    // Manage column_expansion here
+                    if (isColumnExpansion(tableRef, columnName, sqlSchema) && // column_expansion at the entity level (no relation)
+                            columnName.equals(relationName)) { // like [ "cost", "cost" ]
+                        // Use the where clause to find the patch values
+                        String attributeName = columnName;
+                        List<String> expandedColumns = expandColumns(tableRef,
+                                attributeName,
+                                sqlSchema,
+                                where,
+                                usedForExpansion);
+                        if (expandedColumns != null && expandedColumns.size() > 0) {
+                            expandedItem = expandedColumns.stream()
+                                    .map(col -> String.format("%s", col))
+                                    .collect(Collectors.joining(", "));
+                        } else {
+                            expandedItem = "";
+                        }
+                    } else {
+                        expandedItem = resolveCompositeEntity(tableRef, relationName, columnName, schema, sqlSchema, joinClause, where, usedForExpansion, true); // TODO tableRef?
+                    }
                 }
             } else { // One column, in the current table.
                 String colName = (String) ((List) oneMember).get(0);
@@ -327,7 +371,7 @@ public class OMRL2SQL {
                 if (sqlExp != null) {
 //                    expandedItem = String.format("(%s) as %s", sqlExp, colName);
                     expandedItem = String.format("(%s)", sqlExp);
-                } else if (isColumnExpansion(tableRef, (String) oneElem.get(0), sqlSchema)) { // Column Expansion ?
+                } else if (isColumnExpansion(tableRef, (String) oneElem.get(0), sqlSchema)) { // Column Expansion ? TODO Should not happen here anymore
                     // Use the where clause to find the patch values
                     List<String> expandedColumns = expandColumns(tableRef,
                             (String) oneElem.get(0),
@@ -335,7 +379,7 @@ public class OMRL2SQL {
                             where,
                             usedForExpansion);
                     if (expandedColumns != null && expandedColumns.size() > 0) {
-                        // TODO Honk if size > 1 ? Or generate the condition for each item?
+                        // Will generate the condition for each item?
                         expandedItem = expandedColumns.stream().collect(Collectors.joining(", "));
                     } else {
                         expandedItem = "";
@@ -375,13 +419,13 @@ public class OMRL2SQL {
         String cond = (String) where.get(i);
         if ("AND".equals(cond) || "OR".equals(cond)) {
             // Expect 2 Lists after that. Recurse.
-            rescanExpansionList((List<Object>) where.get(i + 1),
-                    originalWhere,
-                    schema,
-                    sqlSchema,
-                    from,
-                    usedForExpansion);
-            for (int w=2; w<where.size(); w++) {
+//            rescanExpansionList((List<Object>) where.get(i + 1),
+//                    originalWhere,
+//                    schema,
+//                    sqlSchema,
+//                    from,
+//                    usedForExpansion);
+            for (int w=1 /*2*/; w<where.size(); w++) {
                 rescanExpansionList((List<Object>) where.get(i + w),
                         originalWhere,
                         schema,
@@ -400,20 +444,29 @@ public class OMRL2SQL {
             if (left instanceof List) {
                 attributeName = (String)((List)left).get(0);
                 if (((List)left).size() == 2) {
-                    fromEntity = (String)((List)left).get(0);
+                    fromEntity = (String)((List)left).get(0); // TODO This can be the column_to_expand name...
                     attributeName = (String)((List)left).get(1);
                 }
             } else {
                 // TODO Honk?
                 System.out.println("Atch!");
             }
-            boolean yesItIs = isColumnExpansion(fromEntity, attributeName, sqlSchema);
-            if (usedForExpansion != null && yesItIs) {
-                List<String> unused = expandColumns(fromEntity,
-                        attributeName,
-                        sqlSchema,
-                        originalWhere,
-                        usedForExpansion); // Just here to add to usedForExpansion if needed
+            boolean colExpPrm = isColumnExpansion(fromEntity, attributeName, sqlSchema); // like [ "cost", "year" ]
+            boolean entExp = isColumnExpansion(from, fromEntity, sqlSchema);             // like [ "race", "cost" ]
+            if (usedForExpansion != null && (colExpPrm || entExp)) {
+                if (colExpPrm) {
+                    List<String> unused = expandColumns(fromEntity,
+                            attributeName,
+                            sqlSchema,
+                            originalWhere,
+                            usedForExpansion); // Just here to add to usedForExpansion if needed
+                } else {
+                    List<String> unused = expandColumns(from,
+                            fromEntity,
+                            sqlSchema,
+                            originalWhere,
+                            usedForExpansion); // Just here to add to usedForExpansion if needed
+                }
             }
         }
     }
@@ -583,6 +636,12 @@ public class OMRL2SQL {
         return foundColExpansion.get();
     }
 
+    /**
+     *
+     * @param valueNames like [ "cost", "year" ]
+     * @param where
+     * @return
+     */
     private static Object findValueInWhereClause(List<String> valueNames, List<Object> where) {
         Object theValue = null;
 
@@ -648,11 +707,11 @@ public class OMRL2SQL {
                         for (int i = 1; i <= matcher.groupCount(); i++) {
                             String valueToFind = matcher.group(i); // Find in the where clause
 //                            System.out.println("Group " + i + ": " + valueToFind);
-                            Object obj = findValueInWhereClause(List.of(valueToFind), whereClause);
+                            Object obj = findValueInWhereClause(List.of(attributeName, valueToFind), whereClause); // Look for [ "=", [ "cost", "year" ], "VAL" ]
                             valuesToPatch.add(obj);
                             if (obj != null && usedForExpansion != null) {
-                                if (!usedForExpansion.contains(List.of(valueToFind))) {
-                                    usedForExpansion.add(List.of(valueToFind)); // Not to use in the SQL WHERE clause.
+                                if (!usedForExpansion.contains(List.of(attributeName, valueToFind))) {
+                                    usedForExpansion.add(List.of(attributeName, valueToFind)); // Not to use in the SQL WHERE clause.
                                 }
                             }
                         }
@@ -695,7 +754,6 @@ public class OMRL2SQL {
                 .filter(entity -> entityName.equals(((Map<String, Object>) entity).get("name")))
                 .findFirst().orElse(null);
         if (ent != null) {
-            System.out.println();
             List attributes = (List)ent.get("attributes");
             if (attributes != null) {
                 Object parentObj = attributes.stream()
@@ -748,7 +806,7 @@ public class OMRL2SQL {
                     String sqlExp = sqlExpression(entityName, (String) oneElem.get(0), sqlSchema);
                     if (sqlExp != null) {                                                           // SQL Expression
                         oneClause = String.format("(%s) as %s", sqlExp, oneElem.get(0));
-                    } else if (isColumnExpansion(entityName, (String) oneElem.get(0), sqlSchema)) { // Column Expansion ?
+                    } else if (isColumnExpansion(entityName, (String) oneElem.get(0), sqlSchema)) { // Column Expansion ? // TODO Can't be
                         // Use the where clause to find the patch values
                         String attributeName = (String) oneElem.get(0);
                         List<String> expandedColumns = expandColumns(entityName,
@@ -771,10 +829,10 @@ public class OMRL2SQL {
                         if (columnName == null) {
                             // See if the value is in the where, about a column expansion
                             String attName = (String) oneElem.get(0);
-                            Object prmValue = findValueInWhereClause(List.of(attName), where);
+                            Object prmValue = findValueInWhereClause(List.of(columnName, attName), where); // TODO Verify columnName
                             if (prmValue != null) {
                                 // Find the expendable attribute this prm belongs to
-                                String parentAttributeName = "X";
+                                String parentAttributeName = "X"; // Should be the columnName in the new syntax
                                 String foundParentAttributeName = findParentAttribute(sqlSchema, entityName, attName);
                                 if (foundParentAttributeName != null) {
                                     parentAttributeName = foundParentAttributeName;
@@ -799,10 +857,14 @@ public class OMRL2SQL {
                         oneClause = String.format("%s(%s)", aggFunc, "*"); // oneElem.get(1));
                     } else {
                         if (oneElem.size() == 2 && prm1 instanceof List && ((List)prm1).size() == 1) { // Current table
+                            String tableName = findDBTableByEntityName(entityName, sqlSchema);
+                            String columnName = findDBColumnByEntityName(entityName,
+                                    (String) (prm1 instanceof List ? ((List) prm1).get(0) : oneElem.get(1)),
+                                    sqlSchema);
                             oneClause = String.format("%s(%s.%s)",
                                     aggFunc,
-                                    entityName,
-                                    prm1 instanceof List ? ((List) prm1).get(0) : oneElem.get(1));
+                                    tableName,
+                                    columnName);
                         } else { // Composite Entity
                             String relationName = null;
                             String columnName = null;
@@ -817,20 +879,106 @@ public class OMRL2SQL {
                                 relationName = (String) oneElem.get(1);
                                 columnName = (String) oneElem.get(2);
                             }
-                            String resolved = relationName.startsWith("#") ? columnName : resolveCompositeEntity(entityName, relationName, columnName, schema, sqlSchema, joinClause);
+                            String resolved = relationName.startsWith("#") ? columnName : resolveCompositeEntity(entityName,
+                                                                                                                 relationName,
+                                                                                                                 columnName,
+                                                                                                                 schema,
+                                                                                                                 sqlSchema,
+                                                                                                                 joinClause,
+                                                                                                                 where,
+                                                                                                                 usedForExpansion);
                             oneClause = String.format("%s(%s)", aggFunc, resolved);
                         }
                     }
                     return oneClause;
-                } else { // CompositeEntity. table.column, and join.
+                } else { // CompositeEntity. table.column, and join. column_expansion
                     if (VERBOSE) {
                         System.out.println("CompositeEntity...");
                     }
-                    // look for a relationship
+                    // look for a relationship or column_expansion
                     String relationName = (String) oneElem.get(0);
                     String columnName = (String) oneElem.get(1);
-                    //
-                    String expandedItem = resolveCompositeEntity(entityName, relationName, columnName, schema, sqlSchema, joinClause);
+
+                    String tableName = findDBTableByEntityName(entityName, sqlSchema);
+                    String dbColumnName = findDBColumnByEntityName(entityName, columnName, sqlSchema);
+
+                    // TODO More elements in oneElem ?
+
+                    String expandedItem = "";
+
+                    // TODO SQLExpression
+
+                    if (isColumnExpansion(entityName, columnName, sqlSchema) && // column_expansion at the entity level (no relation)
+                            columnName.equals(relationName)) { // like [ "cost", "cost" ]
+                        // Use the where clause to find the patch values
+                        String attributeName = columnName;
+                        List<String> expandedColumns = expandColumns(entityName,
+                                attributeName,
+                                sqlSchema,
+                                where,
+                                usedForExpansion);
+                        if (expandedColumns != null && expandedColumns.size() > 0) {
+                            AtomicInteger aliasIndex = new AtomicInteger(0);
+                            expandedItem = expandedColumns.stream()
+//                                    .map(col -> String.format("%s as \"%s_%d\"", col, attributeName, aliasIndex.addAndGet(1)))
+                                    .map(col -> String.format("%s as \"%s.%s.%s_%d\"", col, columnName, attributeName, col.split("\\.")[1], aliasIndex.addAndGet(1)))
+                                    .collect(Collectors.joining(", "));
+                            System.out.println();
+                        } else {
+                            expandedItem = "";
+                        }
+                    } else if (dbColumnName == null) {
+                        // Prm of a column expansion, like entityName: race, relationName: cost, columnName: year
+                        if (dbColumnName == null) {
+                            // See if the value is in the where, about a column expansion
+                            String expColName = (String) oneElem.get(0);
+                            Object prmValue = findValueInWhereClause(List.of(expColName, columnName), where); // TODO Verify columnName
+                            if (prmValue != null) {
+                                // Find the expendable attribute this prm belongs to
+                                String parentAttributeName = expColName; // "X"; // Should be the columnName in the new syntax
+//                                String foundParentAttributeName = findParentAttribute(sqlSchema, entityName, attName);
+//                                if (foundParentAttributeName != null) {
+//                                    parentAttributeName = foundParentAttributeName;
+//                                }
+                                expandedItem = String.format("'%s' as \"%s.%s\"", prmValue, parentAttributeName, columnName); // attName);
+                            } else {
+                                expandedItem = String.format("%s.%s", tableName, columnName); // Fallback - Means if failed. Not found.
+                            }
+                        }
+                    } else {
+                        // Find the entity matching the relationName
+                        String holdingEntity = getEntityFromRelation(entityName, relationName, schema);
+                        if (holdingEntity != null && isColumnExpansion(holdingEntity, columnName, sqlSchema)) {
+                            // Use the where clause to find the patch values
+                            String attributeName = columnName;
+                            List<String> expandedColumns = expandColumns(holdingEntity,
+                                    attributeName,
+                                    sqlSchema,
+                                    where,
+                                    usedForExpansion);
+
+                            if (expandedColumns != null && expandedColumns.size() > 0) {
+                                AtomicInteger aliasIndex = new AtomicInteger(0);
+                                expandedItem = expandedColumns.stream()
+//                                    .map(col -> String.format("%s as \"%s_%d\"", col, attributeName, aliasIndex.addAndGet(1)))
+                                        .map(col -> String.format("%s as \"%s.%s.%s_%d\"", col, relationName, attributeName, col.split("\\.")[1], aliasIndex.addAndGet(1)))
+                                        .collect(Collectors.joining(", "));
+                            } else {
+                                expandedItem = "";
+                            }
+                            // System.out.println("OneClause:" + expandedItem);
+                        } else {
+                            //
+                            expandedItem = resolveCompositeEntity(entityName,
+                                    relationName,
+                                    columnName,
+                                    schema,
+                                    sqlSchema,
+                                    joinClause,
+                                    where,
+                                    usedForExpansion);
+                        }
+                    }
                     return expandedItem;
                 }
             }

@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
  */
 public class FirstParser {
 
-    private final static boolean EXECUTE_QUERY = false;
+    private final static boolean EXECUTE_QUERY = true;
     private final static boolean USE_PREPARED_STMT = false;
 
     private final static String OMRL_SCHEMA_PATH = "OMRL_base_schema.json";
@@ -58,20 +58,22 @@ public class FirstParser {
             "omrl.race_track.query.22.json",  // index 21 - Don't execute
             "omrl.race_track.query.23.json",  // index 22 - Don't execute
             "omrl.race_track.query.24.json",  // index 23 - Don't execute
-            "omrl.race_track.query.25.json",  // index 24
+            "omrl.race_track.query.25.json",  // index 24 - with race_stuff. Can execute.
             "omrl.race_track.query.26.json",  // index 25 - Don't execute
             "omrl.race_track.query.27.json",  // index 26 - Don't execute
             "omrl.race_track.query.28.json",  // index 27
             "omrl.race_track.query.29.json",  // index 28 - Don't execute
             "omrl.race_track.query.30.json",  // index 29 - Don't execute
             "omrl.race_track.query.31.json",  // index 30 - Don't execute
+            "omrl.race_track.query.32.json",  // index 31 - Don't execute
+            "omrl.race_track.query.33.json",  // index 32
             // dm. Data Management queries.
             "omrl.dm.query.01.json",
             "omrl.dm.query.02.json",
             "omrl.dm.query.03.json",
             "omrl.dm.query.04.json"
     };
-    private final static int PATH_INDEX = 30;
+    private final static int PATH_INDEX = 32;
 
     private final static String SCHEMA_NAME = // "department_management";
                                               "race_track";
@@ -150,6 +152,10 @@ public class FirstParser {
 
             System.out.println("SQL Query:");
             System.out.println(omrlSql.get("query"));
+
+            System.out.println("ResultSet Map:");
+            System.out.println(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(omrlSql.get("rs-map")));
+
 
             List<Object> prmValues = (List)omrlSql.get("prm-values");
             if (prmValues != null && prmValues.size() > 0) {

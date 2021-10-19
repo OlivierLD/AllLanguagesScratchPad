@@ -1266,7 +1266,7 @@
           },
           {
             "name": "name",
-            "columnName": "Name",
+            "columnName": "NAME",
             "uniqueValues": true
           },
           {

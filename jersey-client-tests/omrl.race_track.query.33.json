@@ -1,0 +1,6 @@
+{
+  "select": [
+    [ "#DISTINCT", [ "name" ]]
+  ],
+  "from": "race"
+}

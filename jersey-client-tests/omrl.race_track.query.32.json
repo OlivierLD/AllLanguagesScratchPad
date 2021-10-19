@@ -1,0 +1,17 @@
+{
+  "comment": "column_expand from a link...",
+
+  "select": [
+    [ "name" ],
+    [ "location" ],
+    [ "races", "cost" ],
+    [ "year" ],
+    [ "period" ]
+  ],
+  "from": "track",
+  "where": [ "AND", [ "=", [ "year" ], "2020" ],
+                    [ "=", [ "quarter" ], "Q1" ],
+                    [ "=", [ "period" ], "ITD" ],
+                    [ "=", [ "type" ], "LBR" ] ],
+  "limit": 50
+}
