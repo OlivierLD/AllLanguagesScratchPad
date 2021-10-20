@@ -1,17 +1,17 @@
 {
-  "comment": "column_expand from a link...",
+  "comment": "column_expand from a link track -> races ...",
 
   "select": [
     [ "name" ],
     [ "location" ],
-    [ "races", "cost" ],
-    [ "year" ],
-    [ "period" ]
+    [ "races", "cost", "cost" ],
+    [ "races", "cost", "year" ],
+    [ "races", "cost", "period" ]
   ],
   "from": "track",
-  "where": [ "AND", [ "=", [ "year" ], "2020" ],
-                    [ "=", [ "quarter" ], "Q1" ],
-                    [ "=", [ "period" ], "ITD" ],
-                    [ "=", [ "type" ], "LBR" ] ],
+  "where": [ "AND", [ "=", [ "races", "cost", "year" ], "2020" ],
+                    [ "=", [ "races", "cost", "quarter" ], "Q1" ],
+                    [ "=", [ "races", "cost", "period" ], "ITD" ],
+                    [ "=", [ "races", "cost", "type" ], "LBR" ] ],
   "limit": 50
 }

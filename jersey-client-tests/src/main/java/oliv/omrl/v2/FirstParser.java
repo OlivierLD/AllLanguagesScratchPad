@@ -73,7 +73,7 @@ public class FirstParser {
             "omrl.dm.query.03.json",
             "omrl.dm.query.04.json"
     };
-    private final static int PATH_INDEX = 32;
+    private final static int PATH_INDEX = 27;
 
     private final static String SCHEMA_NAME = // "department_management";
                                               "race_track";
@@ -155,7 +155,6 @@ public class FirstParser {
 
             System.out.println("ResultSet Map:");
             System.out.println(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(omrlSql.get("rs-map")));
-
 
             List<Object> prmValues = (List)omrlSql.get("prm-values");
             if (prmValues != null && prmValues.size() > 0) {

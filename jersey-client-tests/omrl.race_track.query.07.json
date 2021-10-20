@@ -9,10 +9,10 @@
       "name"
     ], [
       "#COUNT",
-      "race_id"
+      [ "race_id" ]
     ], [
       "#COUNT",
-      "*"
+      [ "*" ]
     ]
   ],
   "from": "race",
@@ -22,7 +22,6 @@
   ]],
   "orderBy": [],
   "having": [">", [
-    "#COUNT",
-    "race_id"
+    "#COUNT", [ "race_id" ]
   ], 1]
 }
