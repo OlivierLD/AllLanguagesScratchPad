@@ -8,9 +8,10 @@
     [ "location" ]
   ],
   "from": "track",
-  "orderBy": [[ "#ASC", [ "seating" ] ]],
+  "order_by": [[ "#ASC", [ "seating" ] ]],
+  "comment": "Both != and <> work on Oracle",
   "where": [ "AND",
-    [ ">", [ "seating" ], 70000 ],
+    [ "!=", [ "seating" ], 70000 ],
     [ ">", [ "year_opened" ], 1970]
   ]
 }

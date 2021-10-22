@@ -12,6 +12,6 @@
   ],
   "from": "track",
   "where": [],
-  "orderBy": [ ["#DESC", [ "#COUNT", [ "races", "race_id" ]]] ],
-  "groupBy": [[ "name" ]]
+  "order_by": [ ["#DESC", [ "#COUNT", [ "races", "race_id" ]]] ],
+  "group_by": [[ "name" ]]
 }

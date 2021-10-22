@@ -1,6 +1,7 @@
 package oliv.streams;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
@@ -30,5 +31,10 @@ public class NumericStreams {
 			System.out.print(String.format("%03f ", xData[i]));
 		}
 		System.out.println();
+
+		doubleList.sort(Comparator.comparing(x -> x.doubleValue()));
+		System.out.println("Sorted:");
+		doubleList.stream()
+				.forEach(d -> System.out.println(String.format("%.03f", d)));
 	}
 }

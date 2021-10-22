@@ -20,9 +20,13 @@ public class One {
         if (args.length == 1) {
             length = Integer.parseInt(args[0]);
         }
+        long before = System.currentTimeMillis();
         for (int i=0; i<length; i++) {
-            suite.add(fibonacci(i));
+            suite.add(fibonacci(i)); // i'th element in the suite
         }
+        long after = System.currentTimeMillis();
+        System.out.printf("Computation done in %s ms:%n", NumberFormat.getInstance().format(after - before));
+
         String result = suite.stream()
                 .map(NumberFormat.getInstance()::format)
                 .collect(Collectors.joining(", "));

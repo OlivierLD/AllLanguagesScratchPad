@@ -5,14 +5,7 @@ import oliv.omrl.v2.utils.OMRL2SQL;
 
 import java.io.File;
 import java.net.URL;
-import java.sql.Connection;
-import java.sql.Driver;
-import java.sql.DriverManager;
-import java.sql.JDBCType;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -24,7 +17,7 @@ import java.util.stream.Collectors;
  */
 public class FirstParser {
 
-    private final static boolean EXECUTE_QUERY = true;
+    private final static boolean EXECUTE_QUERY = false;
     private final static boolean USE_PREPARED_STMT = false;
 
     private final static String OMRL_SCHEMA_PATH = "OMRL_base_schema.json";
@@ -33,51 +26,72 @@ public class FirstParser {
     private final static String OMRL_SCHEMA_NS = "https://oda.oracle.com/OMRL-Schema";
     private final static String OMRL_SQL_SCHEMA_NS = "https://oda.oracle.com/OMRL-Sql-Schema";
 
-    private final static String[] OMRL_QUERY_PATH = {
-            "omrl.race_track.query.01.json",  // index  0
-            "omrl.race_track.query.02.json",  // index  1
-            "omrl.race_track.query.03.json",  // index  2
-            "omrl.race_track.query.04.json",  // index  3
-            "omrl.race_track.query.05.json",  // index  4
-            "omrl.race_track.query.06.json",  // index  5
-            "omrl.race_track.query.07.json",  // index  6
-            "omrl.race_track.query.08.json",  // index  7
-            "omrl.race_track.query.09.json",  // index  8
-            "omrl.race_track.query.10.json",  // index  9
-            "omrl.race_track.query.11.json",  // index 10
-            "omrl.race_track.query.12.json",  // index 11
-            "omrl.race_track.query.13.json",  // index 12
-            "omrl.race_track.query.14.json",  // index 13
-            "omrl.race_track.query.15.json",  // index 14
-            "omrl.race_track.query.16.json",  // index 15
-            "omrl.race_track.query.17.json",  // index 16
-            "omrl.race_track.query.18.json",  // index 17
-            "omrl.race_track.query.19.json",  // index 18
-            "omrl.race_track.query.20.json",  // index 19 - Don't execute
-            "omrl.race_track.query.21.json",  // index 20 - Don't execute
-            "omrl.race_track.query.22.json",  // index 21 - Don't execute
-            "omrl.race_track.query.23.json",  // index 22 - Don't execute
-            "omrl.race_track.query.24.json",  // index 23 - Don't execute
-            "omrl.race_track.query.25.json",  // index 24 - with race_stuff. Can execute.
-            "omrl.race_track.query.26.json",  // index 25 - Don't execute
-            "omrl.race_track.query.27.json",  // index 26 - Don't execute
-            "omrl.race_track.query.28.json",  // index 27
-            "omrl.race_track.query.29.json",  // index 28 - Don't execute
-            "omrl.race_track.query.30.json",  // index 29 - Don't execute
-            "omrl.race_track.query.31.json",  // index 30 - Don't execute
-            "omrl.race_track.query.32.json",  // index 31 - Don't execute
-            "omrl.race_track.query.33.json",  // index 32
-            // dm. Data Management queries.
-            "omrl.dm.query.01.json",
-            "omrl.dm.query.02.json",
-            "omrl.dm.query.03.json",
-            "omrl.dm.query.04.json"
-    };
-    private final static int PATH_INDEX = 27;
+    public enum OMRLQuery {
+        _01("omrl.race_track.query.01.json", "race_track", true),
+        _02("omrl.race_track.query.02.json", "race_track", true),
+        _03("omrl.race_track.query.03.json", "race_track", true),
+        _04("omrl.race_track.query.04.json", "race_track", true),
+        _05("omrl.race_track.query.05.json", "race_track", true),
+        _06("omrl.race_track.query.06.json", "race_track", true),
+        _07("omrl.race_track.query.07.json", "race_track", true),
+        _08("omrl.race_track.query.08.json", "race_track", true),
+        _09("omrl.race_track.query.09.json", "race_track", true),
+        _10("omrl.race_track.query.10.json", "race_track", true),
+        _11("omrl.race_track.query.11.json", "race_track", true),
+        _12("omrl.race_track.query.12.json", "race_track", true),
+        _13("omrl.race_track.query.13.json", "race_track", true),
+        _14("omrl.race_track.query.14.json", "race_track", true),
+        _14_2("omrl.race_track.query.14.2.json", "race_track", true),
+        _15("omrl.race_track.query.15.json", "race_track", true),
+        _16("omrl.race_track.query.16.json", "race_track", true),
+        _17("omrl.race_track.query.17.json", "race_track", true),
+        _18("omrl.race_track.query.18.json", "race_track", true),
+        _19("omrl.race_track.query.19.json", "race_track", true),
+        _20("omrl.race_track.query.20.json", "race_track", false),
+        _21("omrl.race_track.query.21.json", "race_track", false),
+        _22("omrl.race_track.query.22.json", "race_track", false),
+        _23("omrl.race_track.query.23.json", "race_track", false),
+        _24("omrl.race_track.query.24.json", "race_track", false),
+        _25("omrl.race_track.query.25.json", "race_track", true), // With race_stuff. Can execute.
+        _26("omrl.race_track.query.26.json", "race_track", false),
+        _27("omrl.race_track.query.27.json", "race_track", false),
+        _28("omrl.race_track.query.28.json", "race_track", true),
+        _29("omrl.race_track.query.29.json", "race_track", false),
+        _30("omrl.race_track.query.30.json", "race_track", false),
+        _31("omrl.race_track.query.31.json", "race_track", false),
+        _32("omrl.race_track.query.32.json", "race_track", false),
+        _33("omrl.race_track.query.33.json", "race_track", true),
+        _DM_01("omrl.dm.query.01.json", "department_management", false),
+        _DM_02("omrl.dm.query.02.json", "department_management", false),
+        _JC_01("omrl.jc.query.03.json", "journal_committee", false),
+        _DM_04("omrl.dm.query.04.json", "department_management", false);
 
-    private final static String SCHEMA_NAME = // "department_management";
-                                              "race_track";
-                                              // "journal_committee";
+        private final String fileName;
+        private final String connection;
+        private final boolean execute;
+
+        OMRLQuery(String fileName, String connection, boolean execute) {
+            this.fileName = fileName;
+            this.connection = connection;
+            this.execute = execute;
+        }
+
+        public String fileName() {
+            return this.fileName;
+        }
+
+        public String connection() {
+            return this.connection;
+        }
+
+        public boolean execute() {
+            return this.execute;
+        }
+    }
+
+    private final static OMRLQuery DEFAULT_QUERY = OMRLQuery._26;
+
+//    private final static String SCHEMA_NAME = ""; // "department_management", "race_track", "journal_committee";
     private final static String JDBC_HOSTNAME = "100.111.136.104";  // "100.102.84.101";
     private final static int JDBC_PORT = 1521;
     private final static String JDBC_SERVICE_NAME = "BOTS.localdomain";
@@ -91,6 +105,19 @@ public class FirstParser {
     private final static Pattern FUNC_PATTERN = Pattern.compile(FUNC_REGEX, Pattern.MULTILINE);
 
     public static void main(String... args) {
+        boolean justOne = true;
+
+        if (justOne) {
+            executeQuery(OMRLQuery._14_2); // DEFAULT_QUERY); // Default one
+        } else {
+            for (OMRLQuery query : OMRLQuery.values()) {
+                System.out.println("Executing " + query.toString());
+                executeQuery(query);
+            }
+        }
+    }
+
+    public static void executeQuery(OMRLQuery omrlQuery) {
         URL schemaResource;
         URL sqlSchemaResource;
         URL queryResource;
@@ -98,7 +125,7 @@ public class FirstParser {
         try {
             schemaResource = new File(OMRL_SCHEMA_PATH).toURI().toURL();
             sqlSchemaResource = new File(OMRL_SQL_SCHEMA_PATH).toURI().toURL();
-            queryResource = new File(OMRL_QUERY_PATH[PATH_INDEX]).toURI().toURL();
+            queryResource = new File(omrlQuery.fileName).toURI().toURL();
 
             ObjectMapper mapper = new ObjectMapper();
             // Schema Object
@@ -106,13 +133,13 @@ public class FirstParser {
             List<Object> sqlSchemas = mapper.readValue(sqlSchemaResource.openStream(), List.class);
             // Query Object
             Map<String, Object> query = mapper.readValue(queryResource.openStream(), Map.class);
-            System.out.println("Done generating resources, processing the OMRL query.");
+            // System.out.println("Done generating resources, processing the OMRL query.");
 
             Map<String, Object> schema = null; // schemas.get(SCHEMA_NAME);
             for (Object obj : schemas) {
                 if (obj instanceof Map) {
                     Map<String, Object> _schema = (Map)obj;
-                    if (SCHEMA_NAME.equals(_schema.get("schema"))) {
+                    if (omrlQuery.connection().equals(_schema.get("schema"))) {
                         schema = _schema;
                         break;
                     }
@@ -122,7 +149,7 @@ public class FirstParser {
             for (Object obj : sqlSchemas) {
                 if (obj instanceof Map) {
                     Map<String, Object> _sqlSchema = (Map)obj;
-                    if (SCHEMA_NAME.equals(_sqlSchema.get("schema"))) {
+                    if (omrlQuery.connection().equals(_sqlSchema.get("schema"))) {
                         sqlSchema = _sqlSchema;
                         break;
                     }
@@ -146,7 +173,7 @@ public class FirstParser {
                 OMRL2SQL.usePreparedStmt = USE_PREPARED_STMT;
                 omrlSql = OMRL2SQL.omrlToSQLQuery(schema, sqlSchema, query);
             } else {
-                System.out.printf("Schema [%s] not found.\n", SCHEMA_NAME);
+                System.out.printf("Schema [%s] not found.\n", omrlQuery.connection());
                 System.exit(1);
             }
 
@@ -164,7 +191,7 @@ public class FirstParser {
             }
 
             // Execution?
-            if (EXECUTE_QUERY) {
+            if (EXECUTE_QUERY && omrlQuery.execute()) {
                 System.out.println("-------------------------------------");
                 String jdbcUrl = String.format("jdbc:oracle:thin:@//%s:%d/%s",
 //                USERNAME,

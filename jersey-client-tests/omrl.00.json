@@ -55,9 +55,9 @@
       null
     ]
   ],
-  "groupBy": [],
+  "group_by": [],
   "having": [],
-  "orderBy": [
+  "order_by": [
     "asc",
     [
       [

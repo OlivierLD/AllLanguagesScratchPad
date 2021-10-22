@@ -106,7 +106,7 @@
                     null
                 ]
             ],
-            "groupBy": [],
+            "group_by": [],
             "having": [],
             "orderBy": [
                 "asc",
@@ -237,7 +237,7 @@
                     null
                 ]
             ],
-            "groupBy": [],
+            "group_by": [],
             "having": [],
             "orderBy": [
                 "asc",
@@ -364,7 +364,7 @@
                 ]
             ],
             "where": [],
-            "groupBy": [],
+            "group_by": [],
             "having": [],
             "orderBy": [
                 "desc",
@@ -496,7 +496,7 @@
                 ]
             ],
             "where": [],
-            "groupBy": [],
+            "group_by": [],
             "having": [],
             "orderBy": [
                 "desc",
@@ -628,7 +628,7 @@
                 ]
             ],
             "where": [],
-            "groupBy": [],
+            "group_by": [],
             "having": [],
             "orderBy": [],
             "limit": null,
@@ -746,7 +746,7 @@
                 ]
             ],
             "where": [],
-            "groupBy": [],
+            "group_by": [],
             "having": [],
             "orderBy": [],
             "limit": null,
@@ -916,7 +916,7 @@
                             ]
                         ],
                         "where": [],
-                        "groupBy": [],
+                        "group_by": [],
                         "having": [],
                         "orderBy": [],
                         "limit": null,
@@ -927,7 +927,7 @@
                     null
                 ]
             ],
-            "groupBy": [],
+            "group_by": [],
             "having": [],
             "orderBy": [],
             "limit": null,
@@ -1097,7 +1097,7 @@
                             ]
                         ],
                         "where": [],
-                        "groupBy": [],
+                        "group_by": [],
                         "having": [],
                         "orderBy": [],
                         "limit": null,
@@ -1108,7 +1108,7 @@
                     null
                 ]
             ],
-            "groupBy": [],
+            "group_by": [],
             "having": [],
             "orderBy": [],
             "limit": null,
@@ -1174,7 +1174,7 @@
                 ]
             ],
             "where": [],
-            "groupBy": [],
+            "group_by": [],
             "having": [],
             "orderBy": [],
             "limit": null,
@@ -1238,7 +1238,7 @@
                 ]
             ],
             "where": [],
-            "groupBy": [],
+            "group_by": [],
             "having": [],
             "orderBy": [],
             "limit": null,
@@ -1305,7 +1305,7 @@
                 ]
             ],
             "where": [],
-            "groupBy": [],
+            "group_by": [],
             "having": [],
             "orderBy": [],
             "limit": null,
@@ -1372,7 +1372,7 @@
                 ]
             ],
             "where": [],
-            "groupBy": [],
+            "group_by": [],
             "having": [],
             "orderBy": [],
             "limit": null,
@@ -1439,7 +1439,7 @@
                 ]
             ],
             "where": [],
-            "groupBy": [],
+            "group_by": [],
             "having": [],
             "orderBy": [],
             "limit": null,
@@ -1503,7 +1503,7 @@
                 ]
             ],
             "where": [],
-            "groupBy": [],
+            "group_by": [],
             "having": [],
             "orderBy": [],
             "limit": null,
@@ -1601,7 +1601,7 @@
                 ]
             ],
             "where": [],
-            "groupBy": [],
+            "group_by": [],
             "having": [],
             "orderBy": [],
             "limit": null,
@@ -1701,7 +1701,7 @@
                 ]
             ],
             "where": [],
-            "groupBy": [],
+            "group_by": [],
             "having": [],
             "orderBy": [],
             "limit": null,
@@ -1796,7 +1796,7 @@
                 ]
             ],
             "where": [],
-            "groupBy": [
+            "group_by": [
                 [
                     0,
                     3,
@@ -1901,7 +1901,7 @@
                 ]
             ],
             "where": [],
-            "groupBy": [
+            "group_by": [
                 [
                     0,
                     3,
@@ -1997,7 +1997,7 @@
                 ]
             ],
             "where": [],
-            "groupBy": [
+            "group_by": [
                 [
                     0,
                     3,
@@ -2105,7 +2105,7 @@
                 ]
             ],
             "where": [],
-            "groupBy": [
+            "group_by": [
                 [
                     0,
                     3,
@@ -2211,7 +2211,7 @@
                 ]
             ],
             "where": [],
-            "groupBy": [
+            "group_by": [
                 [
                     0,
                     3,
@@ -2324,7 +2324,7 @@
                 ]
             ],
             "where": [],
-            "groupBy": [
+            "group_by": [
                 [
                     0,
                     3,
@@ -2462,7 +2462,7 @@
                 ]
             ],
             "where": [],
-            "groupBy": [],
+            "group_by": [],
             "having": [],
             "orderBy": [],
             "limit": null,
@@ -2536,7 +2536,7 @@
                         null
                     ]
                 ],
-                "groupBy": [],
+                "group_by": [],
                 "having": [],
                 "orderBy": [],
                 "limit": null,
@@ -2656,7 +2656,7 @@
                 ]
             ],
             "where": [],
-            "groupBy": [],
+            "group_by": [],
             "having": [],
             "orderBy": [],
             "limit": null,
@@ -2730,7 +2730,7 @@
                         null
                     ]
                 ],
-                "groupBy": [],
+                "group_by": [],
                 "having": [],
                 "orderBy": [],
                 "limit": null,
@@ -2856,7 +2856,7 @@
                             ]
                         ],
                         "where": [],
-                        "groupBy": [],
+                        "group_by": [],
                         "having": [],
                         "orderBy": [],
                         "limit": null,
@@ -2867,7 +2867,7 @@
                     null
                 ]
             ],
-            "groupBy": [],
+            "group_by": [],
             "having": [],
             "orderBy": [],
             "limit": null,
@@ -2994,7 +2994,7 @@
                             ]
                         ],
                         "where": [],
-                        "groupBy": [],
+                        "group_by": [],
                         "having": [],
                         "orderBy": [],
                         "limit": null,
@@ -3005,7 +3005,7 @@
                     null
                 ]
             ],
-            "groupBy": [],
+            "group_by": [],
             "having": [],
             "orderBy": [],
             "limit": null,
@@ -3111,7 +3111,7 @@
                     5000.0
                 ]
             ],
-            "groupBy": [],
+            "group_by": [],
             "having": [],
             "orderBy": [],
             "limit": null,
@@ -3209,7 +3209,7 @@
                     5000.0
                 ]
             ],
-            "groupBy": [],
+            "group_by": [],
             "having": [],
             "orderBy": [],
             "limit": null,
@@ -3358,7 +3358,7 @@
                 ]
             ],
             "where": [],
-            "groupBy": [
+            "group_by": [
                 [
                     0,
                     5,
@@ -3515,7 +3515,7 @@
                 ]
             ],
             "where": [],
-            "groupBy": [
+            "group_by": [
                 [
                     0,
                     5,
@@ -3663,7 +3663,7 @@
                 ]
             ],
             "where": [],
-            "groupBy": [
+            "group_by": [
                 [
                     0,
                     5,
@@ -3829,7 +3829,7 @@
                 ]
             ],
             "where": [],
-            "groupBy": [
+            "group_by": [
                 [
                     0,
                     5,
@@ -4002,7 +4002,7 @@
                 ]
             ],
             "where": [],
-            "groupBy": [],
+            "group_by": [],
             "having": [],
             "orderBy": [],
             "limit": null,
@@ -4163,7 +4163,7 @@
                 ]
             ],
             "where": [],
-            "groupBy": [],
+            "group_by": [],
             "having": [],
             "orderBy": [],
             "limit": null,
@@ -4319,7 +4319,7 @@
                 ]
             ],
             "where": [],
-            "groupBy": [
+            "group_by": [
                 [
                     0,
                     5,
@@ -4501,7 +4501,7 @@
                 ]
             ],
             "where": [],
-            "groupBy": [
+            "group_by": [
                 [
                     0,
                     5,
@@ -4640,7 +4640,7 @@
                     null
                 ]
             ],
-            "groupBy": [],
+            "group_by": [],
             "having": [],
             "orderBy": [],
             "limit": null,
@@ -4688,7 +4688,7 @@
                         null
                     ]
                 ],
-                "groupBy": [],
+                "group_by": [],
                 "having": [],
                 "orderBy": [],
                 "limit": null,
@@ -4810,7 +4810,7 @@
                     null
                 ]
             ],
-            "groupBy": [],
+            "group_by": [],
             "having": [],
             "orderBy": [],
             "limit": null,
@@ -4858,7 +4858,7 @@
                         null
                     ]
                 ],
-                "groupBy": [],
+                "group_by": [],
                 "having": [],
                 "orderBy": [],
                 "limit": null,

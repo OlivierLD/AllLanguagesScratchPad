@@ -16,11 +16,13 @@
     ]
   ],
   "from": "race",
-  "groupBy": [[
+  "group_by": [[
     "track",
     "name"
   ]],
-  "orderBy": [],
+  "order_by": [
+    [ "track", "name" ]
+  ],
   "having": [">", [
     "#COUNT", [ "race_id" ]
   ], 1]

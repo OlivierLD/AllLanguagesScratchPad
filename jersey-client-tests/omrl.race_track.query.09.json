@@ -4,6 +4,6 @@
   ],
   "from": "track",
   "where": [],
-  "orderBy": [ [ "year_opened" ], [ "#desc", [ "name" ] ] ],
+  "order_by": [ [ "year_opened" ], [ "#desc", [ "name" ] ] ],
   "limit": 50
 }

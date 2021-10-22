@@ -20,6 +20,6 @@
     [ "=", [ "track", "name" ],  "Chicagoland Speedway" ],
     [ "<>", [ "track", "name" ],  "Chicagoland Speedway" ]
   ],
-  "groupBy": [[ "track", "name" ]],
+  "group_by": [[ "track", "name" ]],
   "limit": 5
 }

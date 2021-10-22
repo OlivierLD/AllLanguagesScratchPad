@@ -1,9 +1,9 @@
 {
-  "keyWord" : "",
+  "distinct" : false,
   "select" : [ [ "name" ], [ "#COUNT", [ "races", "race_id" ] ] ],
   "from" : "track",
   "where" : [ ],
-  "orderBy" : [ ["#DESC", [ "#COUNT", [ "races", "race_id" ] ] ] ],
+  "order_by" : [ ["#DESC", [ "#COUNT", [ "races", "race_id" ] ] ] ],
   "having" : [ ],
-  "groupBy" : [ [ "name" ] ]
+  "group_by" : [ [ "name" ] ]
 }
