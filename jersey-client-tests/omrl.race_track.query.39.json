@@ -1,0 +1,12 @@
+{
+  "select": [
+    [ "track", "name" ],
+    [ "#COUNT", [ "name" ] ]
+  ],
+  "from": "race",
+  "group_by": [ [ "track", "name" ] ],
+  "having":[ "AND",
+    [ ">=", [ "#COUNT", [ "name" ] ], 2 ],
+    [ ">", [ "#COUNT", [ "track_id" ] ], 0 ]
+  ]
+}

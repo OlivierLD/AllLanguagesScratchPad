@@ -21,7 +21,9 @@
     "name"
   ]],
   "order_by": [
-    [ "track", "name" ]
+    [[ "track", "name" ]],
+    [ "#DESC", [ "race_id" ]],
+    [  [ "class" ]]
   ],
   "having": [">", [
     "#COUNT", [ "race_id" ]

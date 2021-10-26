@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
  */
 public class FirstParser {
 
-    private final static boolean EXECUTE_QUERY = false;
+    private final static boolean EXECUTE_QUERY = true;
     private final static boolean USE_PREPARED_STMT = false;
 
     private final static String OMRL_SCHEMA_PATH = "OMRL_base_schema.json";
@@ -33,7 +33,7 @@ public class FirstParser {
         _04("omrl.race_track.query.04.json", "race_track", true),
         _05("omrl.race_track.query.05.json", "race_track", true),
         _06("omrl.race_track.query.06.json", "race_track", true),
-        _07("omrl.race_track.query.07.json", "race_track", true),
+        _07("omrl.race_track.query.07.json", "race_track", false),
         _08("omrl.race_track.query.08.json", "race_track", true),
         _09("omrl.race_track.query.09.json", "race_track", true),
         _10("omrl.race_track.query.10.json", "race_track", true),
@@ -61,10 +61,22 @@ public class FirstParser {
         _31("omrl.race_track.query.31.json", "race_track", false),
         _32("omrl.race_track.query.32.json", "race_track", false),
         _33("omrl.race_track.query.33.json", "race_track", true),
+        _34("omrl.race_track.query.34.json", "race_track", true),
+        _35("omrl.race_track.query.35.json", "race_track", true),
+        _36("omrl.race_track.query.36.json", "race_track", true),
+        _37("omrl.race_track.query.37.json", "race_track", true),
+        _38("omrl.race_track.query.38.json", "race_track", true),
+        _39("omrl.race_track.query.39.json", "race_track", true),
+        _40("omrl.race_track.query.40.json", "race_track", false),
+        _41("omrl.race_track.query.41.json", "race_track", false),
+        _42("omrl.race_track.query.42.json", "race_track", false),
+        _43("omrl.race_track.query.43.json", "race_track", false),
+        _44("omrl.race_track.query.44.json", "race_track", true),
         _DM_01("omrl.dm.query.01.json", "department_management", false),
         _DM_02("omrl.dm.query.02.json", "department_management", false),
         _JC_01("omrl.jc.query.03.json", "journal_committee", false),
-        _DM_04("omrl.dm.query.04.json", "department_management", false);
+        _DM_04("omrl.dm.query.04.json", "department_management", false),
+        _BK_01("omrl.bike_1.query.01.json", "bike_1", false);
 
         private final String fileName;
         private final String connection;
@@ -108,11 +120,16 @@ public class FirstParser {
         boolean justOne = true;
 
         if (justOne) {
-            executeQuery(OMRLQuery._14_2); // DEFAULT_QUERY); // Default one
+//            executeQuery(OMRLQuery._BK_01); // DEFAULT_QUERY); // Default one
+            executeQuery(OMRLQuery._44); // DEFAULT_QUERY); // Default one
         } else {
             for (OMRLQuery query : OMRLQuery.values()) {
                 System.out.println("Executing " + query.toString());
-                executeQuery(query);
+                try {
+                    executeQuery(query);
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
             }
         }
     }

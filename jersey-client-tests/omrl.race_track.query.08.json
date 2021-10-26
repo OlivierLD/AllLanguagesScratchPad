@@ -9,6 +9,10 @@
   ],
   "from": "track",
   "where": [],
-  "order_by": [[ "#desc", [ "name" ] ], [ "location" ], [ "#DESC", [ "races", "name" ] ] ],
+  "order_by": [
+    [ "#desc", [ "name" ] ],
+    [[ "location" ]],
+    [ "#DESC", [ "races", "name" ] ]
+  ],
   "limit": 50
 }

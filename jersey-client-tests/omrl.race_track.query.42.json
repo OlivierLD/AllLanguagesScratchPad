@@ -1,0 +1,16 @@
+{
+  "select": [
+    [ "name" ],
+    [ "cost", "cost" ],
+    [ "cost", "year" ],
+    [ "cost", "quarter" ]
+  ],
+  "from": "race",
+  "where": [ "OR", [ "AND", [ "=", [ "cost", "year" ], "2020" ],
+                            [ "=", [ "cost", "quarter" ], "Q1" ] ],
+                    [ "=", [ "name" ], "RaceTrack whatever" ]
+           ],
+  "order_by": [
+    [ "#DESC", [ "cost", "cost" ]]
+  ]
+}

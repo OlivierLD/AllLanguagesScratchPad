@@ -1,0 +1,9 @@
+{
+  "select": [
+    [ "name" ],
+    [ "#COUNT", [ "races", "race_id" ] ]
+  ],
+  "from": "track",
+  "order_by": [ ["#DESC", [ "#COUNT", [ "races", "race_id" ]]] ],
+  "group_by": [ [ "name" ] ]
+}

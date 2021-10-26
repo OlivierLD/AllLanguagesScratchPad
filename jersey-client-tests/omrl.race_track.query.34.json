@@ -1,0 +1,13 @@
+{
+  "select": [
+    [ "name" ],
+    [ "date" ],
+    [ "track", "name" ]
+  ],
+  "from": "race",
+  "where": [
+    "OR",
+    [ "=", [ "name" ], "Gainsco Grand Prix of Miami" ],
+    [ "=", [ "track", "name" ], "Auto Club Speedway" ]
+  ]
+}

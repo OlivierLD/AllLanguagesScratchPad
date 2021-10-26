@@ -1,0 +1,16 @@
+{
+  "select": [
+    [ "#AVG", [ "bikes_available" ] ]
+  ],
+  "from": "status",
+  "where": [
+    "NOT IN", [ "station", "id" ],
+    {
+      "select": [
+        [  "id" ]
+      ],
+      "from": "station",
+      "where": [  "=", [ "city" ], "Palo Alto" ]
+    }
+  ]
+}

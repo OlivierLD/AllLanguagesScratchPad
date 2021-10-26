@@ -1,5 +1,6 @@
 package oliv.omrl.v2.utils;
 
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -288,13 +289,21 @@ public class OMRL2SQL {
                     }
                 }
                 // 2 - JOIN
+                List<String> keyFrom;
+                if ((boolean)compositeEntityDefinition.get("multipleValues")) {
+                    keyFrom = findEntityForeignKey((String) compositeEntityDefinition.get("entityName"), (String) holdingEntity.get("name"), sqlSchema);
+                } else {
+                    keyFrom = findEntityPrimaryKey((String) compositeEntityDefinition.get("entityName"), sqlSchema);
+                }
+                String toTable = findDBTableByEntityName((String) holdingEntity.get("name"), sqlSchema);
+                List<String> fkTo = findEntityForeignKey((String) holdingEntity.get("name"), (String) compositeEntityDefinition.get("name"), sqlSchema);
                 String oneJoinClause = String.format("JOIN %s ON %s",
                         dbTableName,
                         generateOnJoinClause(
                                 dbTableName,
-                                findEntityPrimaryKey((String) compositeEntityDefinition.get("entityName"), sqlSchema), // PK
-                                findDBTableByEntityName((String) holdingEntity.get("name"), sqlSchema),
-                                findEntityForeignKey((String) holdingEntity.get("name"), (String) compositeEntityDefinition.get("name"), sqlSchema)  // FK
+                                keyFrom, // PK or FK
+                                toTable,
+                                fkTo  // FK
                         )
                 );
 //                        findEntityForeignKey((String)holdingEntity.get("name"), (String)compositeEntityDefinition.get("entityName"), sqlSchema)); //FK
@@ -323,10 +332,11 @@ public class OMRL2SQL {
                                                       List<String> joinClause) {
         return expandWhereHavingClauseItem(oneMember, schema, sqlSchema, tableRef, joinClause, null, null);
     }
+
     private static Object expandWhereHavingClauseItem(Object oneMember,
                                                       Map<String, Object> schema,
                                                       Map<String, Object> sqlSchema,
-                                                      String tableRef,
+                                                      String entityRef,
                                                       List<String> joinClause,
                                                       List<Object> where,
                                                       List<Object> usedForExpansion) {
@@ -341,14 +351,14 @@ public class OMRL2SQL {
                     } else {
                         if (oneElem.size() == 2) { // Current table
                             if (oneElem.get(1) instanceof List) {
-                                expandedItem = String.format("%s(%s.%s)", aggFunc, tableRef, ((List)oneElem.get(1)).get(0)); // Pfooo...
+                                expandedItem = String.format("%s(%s.%s)", aggFunc, entityRef, ((List)oneElem.get(1)).get(0)); // Pfooo...
                             } else {
-                                expandedItem = String.format("%s(%s.%s)", aggFunc, tableRef, oneElem.get(1));
+                                expandedItem = String.format("%s(%s.%s)", aggFunc, entityRef, oneElem.get(1));
                             }
                         } else { // Composite Entity
                             String relationName = (String)oneElem.get(1);
                             String columnName = (String)oneElem.get(2);
-                            String resolved = resolveCompositeEntity(tableRef, relationName, columnName, schema, sqlSchema, joinClause, where, usedForExpansion,true); // TODO tableRef?
+                            String resolved = resolveCompositeEntity(entityRef, relationName, columnName, schema, sqlSchema, joinClause, where, usedForExpansion,true); // TODO tableRef?
                             expandedItem = String.format("%s(%s)", aggFunc, resolved);
                         }
                     }
@@ -357,11 +367,11 @@ public class OMRL2SQL {
                     String relationName = (String) ((List) oneMember).get(0);
                     String columnName = (String) ((List) oneMember).get(1);
                     // Manage column_expansion here
-                    if (isColumnExpansion(tableRef, columnName, sqlSchema) && // column_expansion at the entity level (no relation)
+                    if (isColumnExpansion(entityRef, columnName, sqlSchema) && // column_expansion at the entity level (no relation)
                             columnName.equals(relationName)) { // like [ "cost", "cost" ]
                         // Use the where clause to find the patch values
                         String attributeName = columnName;
-                        List<String> expandedColumns = expandColumns(tableRef,
+                        List<String> expandedColumns = expandColumns(entityRef,
                                 attributeName,
                                 sqlSchema,
                                 where,
@@ -374,20 +384,21 @@ public class OMRL2SQL {
                             expandedItem = "";
                         }
                     } else {
-                        expandedItem = resolveCompositeEntity(tableRef, relationName, columnName, schema, sqlSchema, joinClause, where, usedForExpansion, true); // TODO tableRef?
+                        expandedItem = resolveCompositeEntity(entityRef, relationName, columnName, schema, sqlSchema, joinClause, where, usedForExpansion, true); // TODO tableRef?
                     }
                 }
             } else { // One column, in the current table.
-                String colName = (String) ((List) oneMember).get(0);
-                String tableName = findDBTableByEntityName(tableRef, sqlSchema);
+                String attName = (String) ((List) oneMember).get(0);
+                String colName = findDBColumnByEntityName(entityRef, attName, sqlSchema);
+                String tableName = findDBTableByEntityName(entityRef, sqlSchema);
                 // sqlExpression ?
-                String sqlExp = sqlExpression(tableRef, colName, sqlSchema);
+                String sqlExp = sqlExpression(entityRef, attName, sqlSchema);
                 if (sqlExp != null) {
 //                    expandedItem = String.format("(%s) as %s", sqlExp, colName);
                     expandedItem = String.format("(%s)", sqlExp);
-                } else if (isColumnExpansion(tableRef, (String) oneElem.get(0), sqlSchema)) { // Column Expansion ? TODO Should not happen here anymore
+                } else if (isColumnExpansion(entityRef, (String) oneElem.get(0), sqlSchema)) { // Column Expansion ? TODO Should not happen here anymore
                     // Use the where clause to find the patch values
-                    List<String> expandedColumns = expandColumns(tableRef,
+                    List<String> expandedColumns = expandColumns(entityRef,
                             (String) oneElem.get(0),
                             sqlSchema,
                             where,
@@ -407,6 +418,13 @@ public class OMRL2SQL {
                 expandedItem = String.format("'%s'", oneMember);
             } else {
                 expandedItem = String.format("%s", oneMember);
+            }
+        } else if (oneMember instanceof Map) { // Like a NOT IN select...
+            if (((Map)oneMember).get("select") != null) { // select and from are mandatory members of an OMRL query
+                Map<String, Object> stringObjectMap = OMRL2SQL.omrlToSQLQuery(schema, sqlSchema, oneMember);
+                expandedItem = String.format("(%s)", stringObjectMap.get("query"));
+            } else {
+                // TODO What's that?
             }
         } else {
             // Type this guy?
@@ -554,9 +572,10 @@ public class OMRL2SQL {
         } else {
             String unaryOp = cond;
 //            System.out.println("Where size:" + where.size());
-            assert (where.size() == 3);
+            assert (where.size() >= 3);
             Object left = where.get(i + 1);
             Object right = where.get(i + 2);
+            Object thirdValue = null;
 
             if (usedForExpansion != null && "=".equals(unaryOp)) { // For expansion, assume '='
 //                System.out.println(left);
@@ -568,9 +587,18 @@ public class OMRL2SQL {
 
             Object leftItem = expandWhereHavingClauseItem(left, schema, sqlSchema, tableRef, joinClause, originalWhere, usedForExpansion);
             Object rightItem = expandWhereHavingClauseItem(right, schema, sqlSchema, tableRef, joinClause, originalWhere, usedForExpansion);
+            Object thirdItem = null; // For BETWEEN
 
+            if ("BETWEEN".equalsIgnoreCase(unaryOp)) {
+                if (where.size() > 3) {
+                    thirdValue = where.get(i + 3);
+                    thirdItem = expandWhereHavingClauseItem(thirdValue, schema, sqlSchema, tableRef, joinClause, originalWhere, usedForExpansion);
+                } else {
+                    // Bad Syntax
+                }
+            }
             boolean rightIsASelectStmt = false;
-            // TODO This is a trick. This should be generated from OMRL too.
+            // This is a trick. This can also be generated from OMRL too.
             if ("NOT IN".equalsIgnoreCase(unaryOp) || "IN".equalsIgnoreCase(unaryOp)) {
                 if (right instanceof String) {
                     final Matcher matcher = SELECT_PATTERN.matcher((String) right);
@@ -584,6 +612,10 @@ public class OMRL2SQL {
             if (!rightIsASelectStmt && usePreparedStmt) {
                 prmValues.add(rightItem); // And put the value in its list
                 rightItem = "?";
+                if (thirdItem != null) {
+                    prmValues.add(thirdItem);
+                    thirdItem = "?";
+                }
             }
 
             if (ADD_WHERE_CLAUSE_COLUMNS_TO_SELECT) {
@@ -607,7 +639,11 @@ public class OMRL2SQL {
                     sqlWhereClause = String.format("%s OR %s %s %s", sqlWhereClause, colArray[colIndex].trim(), unaryOp, rightItem);
                 }
             } else {
-                sqlWhereClause = String.format("%s %s %s", leftItem, unaryOp, rightItem);
+                if ("BETWEEN".equalsIgnoreCase(unaryOp)) {
+                    sqlWhereClause = String.format("%s %s %s AND %s", leftItem, unaryOp, rightItem, thirdItem);
+                } else {
+                    sqlWhereClause = String.format("%s %s %s", leftItem, unaryOp, rightItem);
+                }
             }
         }
         return sqlWhereClause;
@@ -846,7 +882,7 @@ public class OMRL2SQL {
                     String sqlExp = sqlExpression(entityName, (String) oneElem.get(0), sqlSchema);
                     if (sqlExp != null) {                                                           // SQL Expression
                         oneClause = String.format("(%s) as %s", sqlExp, oneElem.get(0));
-                    } else if (isColumnExpansion(entityName, (String) oneElem.get(0), sqlSchema)) { // Column Expansion ? // TODO Can't be
+                    } else if (isColumnExpansion(entityName, (String) oneElem.get(0), sqlSchema)) { // Column Expansion ? // TODO Can't be (oneElem.size() == 1). To remove
                         // Use the where clause to find the patch values
                         String attributeName = (String) oneElem.get(0);
                         List<String> expandedColumns = expandColumns(entityName,
@@ -1094,7 +1130,13 @@ public class OMRL2SQL {
                 final String _relPrefix = relPrefix;
                 AtomicInteger aliasIndex = new AtomicInteger(0);
                 expandedItem = expandedColumns.stream()
-                        .map(col -> String.format("%s as \"%s.%s.%s_%d\"", col, _relPrefix, attributeName, col.split("\\.")[1], aliasIndex.addAndGet(1)))
+                        .map(col -> {
+                            if (inWhereClause) {
+                               return String.format("%s", col);
+                            } else {
+                               return String.format("%s as \"%s.%s.%s_%d\"", col, _relPrefix, attributeName, col.split("\\.")[1], aliasIndex.addAndGet(1));
+                            }
+                        })
                         .collect(Collectors.joining(", "));
             } else {
                 expandedItem = "";
@@ -1138,7 +1180,13 @@ public class OMRL2SQL {
                     AtomicInteger aliasIndex = new AtomicInteger(0);
                     expandedItem = expandedColumns.stream()
 //                                    .map(col -> String.format("%s as \"%s_%d\"", col, attributeName, aliasIndex.addAndGet(1)))
-                            .map(col -> String.format("%s as \"%s.%s.%s_%d\"", col, relationName, attributeName, col.split("\\.")[1], aliasIndex.addAndGet(1)))
+                            .map(col -> {
+                                if (inWhereClause) {
+                                    return String.format("%s", col);
+                                } else {
+                                    return String.format("%s as \"%s.%s.%s_%d\"", col, relationName, attributeName, col.split("\\.")[1], aliasIndex.addAndGet(1));
+                                }
+                            })
                             .collect(Collectors.joining(", "));
                 } else {
                     expandedItem = "";
@@ -1318,22 +1366,82 @@ public class OMRL2SQL {
                 "");
 
         // ORDER BY
-        List<Object> orderBy = (List<Object>) query.get(ORDER_BY);  // TODO Expanded Columns?
+        List<Object> orderBy = (List<Object>) query.get(ORDER_BY);
         String sqlOrderByClause = "";
         if (orderBy != null) {
             List<String> orderByClause = new ArrayList<>();
             orderBy.forEach(one -> {
                 Object theOneToExpand = one;
-                boolean desc = false;
+//                boolean desc = false;
+                String sortDirective = ""; // Behind whatever starts with '#' in [ "#SORT", [ "ENT", "ATT" ] ]
                 if (one instanceof List && ((List) one).size() > 1 && ((List) one).get(0) instanceof List) { // like [ "#desc", [ "ent", "att" ] ]
                     String sortDir = (String) ((List) one).get(0);
                     theOneToExpand = ((List) one).get(1);
-                    desc = ("#DESC".equalsIgnoreCase(sortDir));
+                    if (sortDir.startsWith("#")) {
+                        sortDirective = sortDir.substring(1);
+                    }
+//                    desc = ("#DESC".equalsIgnoreCase(sortDir));
                 } else if (((List) one).get(0) instanceof List) { // No direction, only the sort key like [ [ "ent", "att" ] ]
                     theOneToExpand = ((List) one).get(0);
+                } else if (((List) one).get(0) instanceof String && ((List) one).size() > 1) { // [ "#XX", [ "att" ]]
+                    String sortDir = (String) ((List) one).get(0);
+                    if (sortDir.startsWith("#")) {
+                        sortDirective = sortDir.substring(1);
+                    }
+//                    desc = ("#DESC".equalsIgnoreCase(sortDir));
+                    theOneToExpand = ((List) one).get(1);
                 }
-                String expanded = expandOneItem(theOneToExpand, schema, sqlSchema, (String) from, joinClause);
-                orderByClause.add(String.format("%s%s", expanded, (desc ? " DESC" : "")));
+                String entityName = (String) from;
+                String attributeName = (theOneToExpand instanceof List) ?
+                        (String)((List)theOneToExpand).get(0) :
+                        theOneToExpand.toString();
+                if (theOneToExpand instanceof List && ((List)theOneToExpand).size() > 2) { // Relation, and column expansion?
+                    String relationName = (String)((List)theOneToExpand).get(0);
+                    String entityFromRelation = getEntityFromRelation(entityName, relationName, schema);
+                    String tableName = findDBTableByEntityName(entityFromRelation, sqlSchema);
+                    String dbColumnName = findDBColumnByEntityName(entityFromRelation, (String)((List)theOneToExpand).get(1), sqlSchema);
+                    String expandedItem = expandFromList(entityFromRelation,
+                            (String)((List)theOneToExpand).get(1),
+                            (String)((List)theOneToExpand).get(2),
+                            dbColumnName,
+                            tableName,
+                            (List)theOneToExpand,
+                            schema,
+                            sqlSchema,
+                            where,
+                            joinClause,
+                            usedForExpansion,
+                            List.of(relationName), // TODO ... more than 1 relation ?
+                            true);
+//                    System.out.println(expandedItem);
+                    List<String> expandedColumns = Arrays.asList(expandedItem.split(","));
+                    if (expandedColumns != null && expandedColumns.size() > 0) {
+                        final String _sortDirective = sortDirective;
+                        expandedColumns.stream().forEach(exp -> {
+                            orderByClause.add(String.format("%s%s", exp.trim(),
+                                    (!_sortDirective.trim().isEmpty() ? String.format(" %s", _sortDirective.trim()) : "")));
+                        });
+                    }
+                } else if (isColumnExpansion(entityName, attributeName, sqlSchema)) { // Column Expansion ?
+                    // Use the where clause to find the patch values
+                    List<String> expandedColumns = expandColumns(entityName,
+                            attributeName,
+                            sqlSchema,
+                            where,
+                            usedForExpansion);
+                    if (expandedColumns != null && expandedColumns.size() > 0) {
+                        final String _sortDirective = sortDirective;
+                        expandedColumns.stream().forEach(exp -> {
+                            orderByClause.add(String.format("%s%s", exp,
+                                    (!_sortDirective.trim().isEmpty() ? String.format(" %s", _sortDirective.trim()) : "")));
+                        });
+                    }
+                } else {
+                    String expanded = expandOneItem(theOneToExpand, schema, sqlSchema, (String) from, joinClause);
+                    orderByClause.add(String.format("%s%s", expanded,
+                            (!sortDirective.trim().isEmpty() ? String.format(" %s", sortDirective.trim()) : "")));
+                }
+//                orderByClause.add(String.format("%s%s", expanded, (desc ? " DESC" : "")));
             });
             sqlOrderByClause = orderByClause.stream()
                     .collect(Collectors.joining(", "));

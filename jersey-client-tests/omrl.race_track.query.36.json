@@ -8,5 +8,13 @@
     [ "track", "name" ]
   ],
   "from": "race",
-  "where": [ "=", [ "track", "name" ], "Chicagoland Speedway" ]
+  "where": [
+    "IN", [ "track", "track_id" ], {
+      "select": [
+        [  "track_id" ]
+      ],
+      "from": "track",
+      "where": [  "=", [ "name" ], "Chicagoland Speedway" ]
+    }
+  ]
 }

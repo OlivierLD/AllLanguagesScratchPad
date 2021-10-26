@@ -1,0 +1,12 @@
+{
+  "select": [
+  [ "name" ],
+  [ "location" ],
+  [ "seating" ]
+],
+  "from": "track",
+  "order_by": [
+    [ "#asc", [ "name" ] ],
+    [ "#desc", [ "seating" ] ]
+  ]
+}
