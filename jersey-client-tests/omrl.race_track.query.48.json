@@ -1,0 +1,8 @@
+{
+  "select": [
+    [ "name" ],
+    [ "race_stuff", "race_stuff" ]
+  ],
+  "from": "race",
+  "where": [ "=", [ "name" ], "RumBum.com 250" ]
+}

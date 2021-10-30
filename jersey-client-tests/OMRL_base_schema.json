@@ -1051,33 +1051,46 @@
             "type": "number"
           },
           {
+            "name": "num_name_date",
+            "type": "text"
+          },
+          {
+            "name": "race_name_1st_char",
+            "type": "text"
+          },
+          {
             "name": "race_stuff",
             "type": "text"
           },
           {
             "name": "stuff",
             "type": "entity",
-            "entity_name": "Stuff_VLE"
+            "entity_name": "Stuff_VLE",
+            "valueList": [ "CLASS", "DATE" ]
           },
           {
             "name": "period",
             "type": "entity",
-            "entity_name": "Period_VLE"
+            "entity_name": "Period_VLE",
+            "valueList": [ "ITD", "YTD", "PTD" ]
           },
           {
             "name": "type",
             "type": "entity",
-            "entity_name": "Type_VLE"
+            "entity_name": "Type_VLE",
+            "valueList": [ "LBR", "SUB", "ODC" ]
           },
           {
             "name": "year",
             "type": "entity",
-            "entity_name": "Year_VLE"
+            "entity_name": "Year_VLE",
+            "valueList": [ "2020", "2021" ]
           },
           {
             "name": "quarter",
             "type": "entity",
-            "entity_name": "Quarter_VLE"
+            "entity_name": "Quarter_VLE",
+            "valueList": [ "Q1", "Q2", "Q3", "Q4" ]
           },
           {
             "name": "track",

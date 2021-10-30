@@ -77,7 +77,7 @@ public class OMRL2SQL {
         if (entity != null) {
             List<Map<String, Object>> attributes = (List<Map<String, Object>>) (entity).get("attributes");
             Optional<Map<String, Object>> compositeEntityAttribute = attributes.stream()
-                    .filter(att -> "entity".equals(att.get("type")) &&
+                    .filter(att -> "composite_entity".equals(att.get("type")) &&
                             name.equals(att.get("name"))).findFirst(); // TODO and multipleValues = false?
             if (compositeEntityAttribute.isPresent()) {
                 return entity; // compositeEntityAttribute.get();
@@ -96,7 +96,7 @@ public class OMRL2SQL {
                     .filter(att -> relationName.equals(((Map<String, Object>) att).get("name")))
                     .findFirst().orElse(null);
             if (relAttribute != null) {
-                entityRelName = (String)((Map<String, Object>)relAttribute).get("entityName");
+                entityRelName = (String)((Map<String, Object>)relAttribute).get("entity_name");
             }
         }
         return entityRelName;
@@ -113,7 +113,7 @@ public class OMRL2SQL {
         List<Map<String, Object>> entities = (List<Map<String, Object>>) sqlSchema.get("entities");
         return entities.stream()
                 .filter(ent -> entityName.equals(ent.get("name")))
-                .map(ent -> (String) ent.get("tableName"))
+                .map(ent -> (String) ((Map)ent.get("sql_mapping")).get("table_name"))
                 .findFirst().orElse(null);
     }
 
@@ -126,13 +126,13 @@ public class OMRL2SQL {
                 .findFirst()
                 .orElse(null);
         if (entity != null) {
-            String tableName = (String)entity.get("tableName");
+            String tableName = (String)((Map)entity.get("sql_mapping")).get("table_name");
             List<Object> attributes = (List)entity.get("attributes");
             List<String> columnList = new ArrayList<>();
             attributes.stream()
-                    .filter(att -> ((Map<String, Object>) att).get("columnName") != null)
+                    .filter(att -> ((Map<String, Object>)((Map)att).get("sql_mapping")).get("column_name") != null)
                     .forEach(att -> {
-                        String tabCol = String.format("%s.%s", tableName, ((Map<String, Object>) att).get("columnName"));
+                        String tabCol = String.format("%s.%s", tableName, ((Map<String, Object>)((Map)att).get("sql_mapping")).get("column_name"));
                         columnList.add(tabCol);
                     });
             expanded = columnList.stream().collect(Collectors.joining(", "));
@@ -151,19 +151,19 @@ public class OMRL2SQL {
             // Try column name
             String matchingColumn = attributes
                     .filter(att -> {
-                        String columnName = (String) att.get("columnName");
+                        String columnName = (String) ((Map)att.get("sql_mapping")).get("column_name");
                         if (columnName == null) {
-                            if (att.get("foreignKey") != null) {
-                                columnName = (String) ((List) att.get("foreignKey")).get(0); // TODO Make sure that works...
+                            if (((Map)att.get("sql_mapping")).get("foreign_key") != null) {
+                                columnName = (String) ((List) ((Map)att.get("sql_mapping")).get("foreign_key")).get(0); // TODO Make sure that works...
                             }
                         }
                         return columnName != null;
                     })
                     .map(att -> {
-                        String columnName = (String) att.get("columnName");
+                        String columnName = (String) ((Map)att.get("sql_mapping")).get("column_name");
                         if (columnName == null) {
-                            if (att.get("foreignKey") != null) {
-                                columnName = (String) ((List) att.get("foreignKey")).get(0); // TODO Make sure that works...
+                            if (((Map)att.get("sql_mapping")).get("foreign_key") != null) {
+                                columnName = (String) ((List) ((Map)att.get("sql_mapping")).get("foreign_key")).get(0); // TODO Make sure that works...
                             }
                         }
                         return columnName;
@@ -178,7 +178,7 @@ public class OMRL2SQL {
 
         return (List<String>) ((List) sqlSchema.get("entities")).stream()
                 .filter(entity -> entityName.equals(((Map) entity).get("name")))
-                .map(entity -> ((Map) entity).get("primaryKey"))
+                .map(entity -> ((Map)((Map) entity).get("sql_mapping")).get("primary_key"))
                 .findFirst().orElse(null);
     }
 
@@ -189,7 +189,7 @@ public class OMRL2SQL {
         if (_entity != null) {
             return (List<String>) ((List) _entity.get("attributes")).stream()
                     .filter(attribute -> linkEntityName.equals(((Map) attribute).get("name")))
-                    .map(attribute -> ((Map) attribute).get("foreignKey"))
+                    .map(attribute -> ((Map) ((Map)attribute).get("sql_mapping")).get("foreign_key"))
                     .findFirst().orElse(null);
         } else {
             return null;
@@ -242,21 +242,20 @@ public class OMRL2SQL {
             /* Find the CompositeEntity in the returned entity, like
                {
                     "name": "races",
-                    "type": "entity",
-                    "entityName": "race",
-                    "multipleValues": true,
-                    "reverse_link": "track"
+                    "type": "composite_entity",
+                    "entity_name": "race",
+                    "multiple_values": true
                 }
              */
             Map<String, Object> compositeEntityDefinition = ((List<Map<String, Object>>) holdingEntity.get("attributes")).stream()
-                    .filter(att -> "entity".equals(att.get("type")) &&
+                    .filter(att -> "composite_entity".equals(att.get("type")) &&
                             relationName.equals(att.get("name"))).findFirst().orElse(null);
             if (compositeEntityDefinition == null) {
                 throw new RuntimeException(String.format("Should not happen, %s was found, and then gone.", relationName));
             } else {
                 // WHERE condition, and JOIN
                 // 1 - WHERE
-                String entityName = (String) compositeEntityDefinition.get("entityName");
+                String entityName = (String) compositeEntityDefinition.get("entity_name");
                 String dbTableName = findDBTableByEntityName(entityName, sqlSchema);
                 if ("*".equals(attributeName)) {
                     expandedItem = expandStarTableColumns(entityName, sqlSchema);
@@ -273,6 +272,7 @@ public class OMRL2SQL {
                         // Use the where clause to find the patch values
                         List<String> expandedColumns = expandColumns(entityName,
                                 attributeName,
+                                schema,
                                 sqlSchema,
                                 where,
                                 usedForExpansion);
@@ -290,10 +290,10 @@ public class OMRL2SQL {
                 }
                 // 2 - JOIN
                 List<String> keyFrom;
-                if ((boolean)compositeEntityDefinition.get("multipleValues")) {
-                    keyFrom = findEntityForeignKey((String) compositeEntityDefinition.get("entityName"), (String) holdingEntity.get("name"), sqlSchema);
+                if ((boolean)compositeEntityDefinition.get("multiple_values")) {
+                    keyFrom = findEntityForeignKey((String) compositeEntityDefinition.get("entity_name"), (String) holdingEntity.get("name"), sqlSchema);
                 } else {
-                    keyFrom = findEntityPrimaryKey((String) compositeEntityDefinition.get("entityName"), sqlSchema);
+                    keyFrom = findEntityPrimaryKey((String) compositeEntityDefinition.get("entity_name"), sqlSchema);
                 }
                 String toTable = findDBTableByEntityName((String) holdingEntity.get("name"), sqlSchema);
                 List<String> fkTo = findEntityForeignKey((String) holdingEntity.get("name"), (String) compositeEntityDefinition.get("name"), sqlSchema);
@@ -373,6 +373,7 @@ public class OMRL2SQL {
                         String attributeName = columnName;
                         List<String> expandedColumns = expandColumns(entityRef,
                                 attributeName,
+                                schema,
                                 sqlSchema,
                                 where,
                                 usedForExpansion);
@@ -400,6 +401,7 @@ public class OMRL2SQL {
                     // Use the where clause to find the patch values
                     List<String> expandedColumns = expandColumns(entityRef,
                             (String) oneElem.get(0),
+                            schema,
                             sqlSchema,
                             where,
                             usedForExpansion);
@@ -489,12 +491,14 @@ public class OMRL2SQL {
                 if (colExpPrm) {
                     List<String> unused = expandColumns(fromEntity,
                             attributeName,
+                            schema,
                             sqlSchema,
                             originalWhere,
                             usedForExpansion); // Just here to add to usedForExpansion if needed
                 } else {
                     List<String> unused = expandColumns(from,
                             fromEntity,
+                            schema,
                             sqlSchema,
                             originalWhere,
                             usedForExpansion); // Just here to add to usedForExpansion if needed
@@ -663,7 +667,7 @@ public class OMRL2SQL {
                         .findFirst()
                         .orElse(null);
                 if (attr != null) {
-                    String sqlExpression = (String)attr.get("sqlExpression");
+                    String sqlExpression = (String)((Map)attr.get("sql_mapping")).get("sql_expression");
                     return sqlExpression;
                 }
             }
@@ -680,7 +684,7 @@ public class OMRL2SQL {
         if (entity != null) {
             Stream<Map<String, Object>> attributes = ((List<Map<String, Object>>) entity.get("attributes")).stream()
                     .filter(att -> attributeName.equals(att.get("name")));
-            Boolean found = attributes.map(att -> att.get("column_expansions") != null).findFirst().orElse(null);
+            Boolean found = attributes.map(att -> ((Map)att.get("sql_mapping")).get("column_expansions") != null).findFirst().orElse(null);
             foundColExpansion.set(found != null && found.booleanValue());
         }
         return foundColExpansion.get();
@@ -723,27 +727,32 @@ public class OMRL2SQL {
         return theValue;
     }
     /*
-     *  "column_expansions": [
-     *    "${year}_${quarter}_CST",
-     *    "${period}_${type}_CST"
-     *  ]
+     *  "sql_mapping": {
+     *    "column_expansions": [
+     *      "${year}_${quarter}_CST",
+     *      "${period}_${type}_CST"
+     *    ]
+     *  }
      */
     private static List<String> expandColumns(String entityName,
                                               String attributeName,
+                                              Map<String, Object> baseSchema,
                                               Map<String, Object> sqlSchema,
                                               List<Object> whereClause,
                                               List<Object> usedForExpansion) {
         return expandColumns(entityName,
                 attributeName,
+                baseSchema,
                 sqlSchema,
                 whereClause,
                 null,
                 usedForExpansion);
     }
 
-
+    // Used for column expansion. Should also manage the wildcards.
     private static List<String> expandColumns(String entityName,
                                               String attributeName,
+                                              Map<String, Object> baseSchema,
                                               Map<String, Object> sqlSchema,
                                               List<Object> whereClause,
                                               List<String> previousLinks,
@@ -757,13 +766,14 @@ public class OMRL2SQL {
         if (entity != null) {
             Stream<Map<String, Object>> attributes = ((List<Map<String, Object>>) entity.get("attributes")).stream()
                     .filter(att -> attributeName.equals(att.get("name")));
-            List<String> expansionFormulas = attributes.map(att -> (List<String>)att.get("column_expansions")).findFirst().orElse(null);
+            List<String> expansionFormulas = attributes.map(att -> (List<String>)((Map)att.get("sql_mapping")).get("column_expansions")).findFirst().orElse(null);
             if (expansionFormulas != null && expansionFormulas.size() > 0) {
                 // Found it.
                 expansionFormulas.stream().forEach(formula -> {
 //                    System.out.println("Analyzing " + formula);
                     List<String> stringsToSubstitute = new ArrayList<>();
                     List<Object> valuesToPatch = new ArrayList<>();
+                    int nbWildCards = 0;
                     final Matcher matcher = COLUMN_EXPANSION_PATTERN.matcher(formula);
                     while (matcher.find()) {
                         String fullMatch = matcher.group(0);
@@ -781,11 +791,24 @@ public class OMRL2SQL {
                                         .collect(Collectors.toList());
                             }
                             Object obj = findValueInWhereClause(whereElement, whereClause); // Look for [ "=", [ "cost", "year" ], "VAL" ]
+
+                            if (obj == null) { // Not found in where clause. Wildcard?
+                                // look for entityName, whereElement.get(1) in baseSchema
+                                Object currentEntity = ((List) baseSchema.get("entities")).stream()
+                                        .filter(ent -> entityName.equals(((Map) ent).get("name"))).findFirst().orElse(null);
+                                if (currentEntity != null) {
+                                    Object vle = ((List) ((Map) currentEntity).get("attributes")).stream()
+                                            .filter(att -> whereElement.get(1).equals(((Map) att).get("name")))
+                                            .findFirst().orElse(null);
+                                    if (vle != null) {
+                                        Object valueList = ((Map) vle).get("valueList");
+                                        obj = valueList;
+                                        nbWildCards += 1;
+                                    }
+                                }
+                            }
                             valuesToPatch.add(obj);
                             if (obj != null && usedForExpansion != null) {
-//                                if (!usedForExpansion.contains(List.of(attributeName, valueToFind))) {
-//                                    usedForExpansion.add(List.of(attributeName, valueToFind)); // Not to use in the SQL WHERE clause.
-//                                }
                                 if (!usedForExpansion.contains(whereElement)) {
                                     usedForExpansion.add(whereElement); // Not to use in the SQL WHERE clause.
                                 }
@@ -793,21 +816,52 @@ public class OMRL2SQL {
                         }
                     }
                     String finalColumnName = formula;
-                    assert(stringsToSubstitute.size() == valuesToPatch.size());
+                    assert (stringsToSubstitute.size() == valuesToPatch.size());
 
-                    boolean noNull = true;
-                    for (int i=0; i<stringsToSubstitute.size(); i++) {
-                        if (valuesToPatch.get(i) == null) {
-                            noNull = false;
-                        } else {
-                            finalColumnName = finalColumnName.replace(stringsToSubstitute.get(i), (String) valuesToPatch.get(i));
+                    List<String> finalColumnList = new ArrayList<>();
+                    finalColumnList.add(finalColumnName);
+
+                    // Possible Trick. Use the wildcards if there if just one parameter in the expansion
+                    // if (stringsToSubstitute.size() == 1 || stringsToSubstitute.size() > nbWildCards) {
+                    if (stringsToSubstitute.size() > nbWildCards) {
+
+                        boolean noNull = true;
+                        for (int i = 0; i < stringsToSubstitute.size(); i++) {
+                            if (valuesToPatch.get(i) == null) {
+                                noNull = false;
+                            } else {
+                                if (valuesToPatch.get(i) instanceof String) {
+                                    final int _i = i;
+                                    for (int j = 0; j < finalColumnList.size(); j++) {
+                                        String col = finalColumnList.get(j);
+                                        col = col.replace(stringsToSubstitute.get(_i), (String) valuesToPatch.get(_i));
+                                        finalColumnList.set(j, col);
+                                    }
+                                } else if (valuesToPatch.get(i) instanceof List) {         // Wildcards
+                                    String toSubstitute = stringsToSubstitute.get(i);
+                                    List<String> patchValues = (List) ((List) valuesToPatch.get(i)).stream()
+                                            .map(value -> value.toString())
+                                            .collect(Collectors.toList());
+                                    List<String> newList = new ArrayList<>();
+                                    finalColumnList.forEach(col -> {
+                                        String toPatch = col;
+                                        patchValues.forEach(patch -> {
+                                            String patched = toPatch.replace(toSubstitute, patch);
+                                            newList.add(patched);
+                                        });
+//                                    System.out.println("New list:" + newList.stream().collect(Collectors.joining(", ")));
+                                    });
+                                    finalColumnList = newList;
+                                }
+                            }
                         }
-                    }
-//                    System.out.println("Final Column:" + finalColumnName);
-                    if (noNull) {
-                        expandedColumns.add(String.format("%s.%s",
-                                findDBTableByEntityName(entityName, sqlSchema),
-                                finalColumnName));
+                        if (noNull) {
+                            finalColumnList.stream().forEach(oneCol -> {
+                                expandedColumns.add(String.format("%s.%s",
+                                        findDBTableByEntityName(entityName, sqlSchema),
+                                        oneCol));
+                            });
+                        }
                     }
                 });
             }
@@ -835,8 +889,8 @@ public class OMRL2SQL {
                 Object parentObj = attributes.stream()
                         .filter(att -> {
                             Map<String, Object> attMap = (Map<String, Object>) att;
-                            if (attMap.get("column_expansions") != null) {
-                                List<String> colExp = (List) attMap.get("column_expansions");
+                            if (((Map)attMap.get("sql_mapping")).get("column_expansions") != null) {
+                                List<String> colExp = (List) ((Map)attMap.get("sql_mapping")).get("column_expansions");
                                 String match = String.format("${%s}", attName);
                                 String found = colExp.stream()
                                         .filter(ex -> ex.indexOf(match) > -1)
@@ -887,6 +941,7 @@ public class OMRL2SQL {
                         String attributeName = (String) oneElem.get(0);
                         List<String> expandedColumns = expandColumns(entityName,
                                 attributeName,
+                                schema,
                                 sqlSchema,
                                 where,
                                 usedForExpansion);
@@ -1012,7 +1067,7 @@ public class OMRL2SQL {
                     String dbColumnName = findDBColumnByEntityName(entityFromLink == null ? entityName : entityFromLink, attName, sqlSchema);
 
                     // More elements in oneElem ?
-                    if (oneElem.size() > 2) { // Link and column expansion?
+                    if (oneElem.size() > 2) { // Link AND column expansion?
                         String entityFromRelation = getEntityFromRelation(entityName, relationName, schema);
                         tableName = findDBTableByEntityName(entityFromRelation, sqlSchema);
                         dbColumnName = findDBColumnByEntityName(entityFromRelation, attName, sqlSchema);
@@ -1116,6 +1171,7 @@ public class OMRL2SQL {
             String attributeName = attName;
             List<String> expandedColumns = expandColumns(entityName,
                     attributeName,
+                    schema,
                     sqlSchema,
                     where,
                     previousRelations,
@@ -1132,9 +1188,9 @@ public class OMRL2SQL {
                 expandedItem = expandedColumns.stream()
                         .map(col -> {
                             if (inWhereClause) {
-                               return String.format("%s", col);
+                                return String.format("%s", col);
                             } else {
-                               return String.format("%s as \"%s.%s.%s_%d\"", col, _relPrefix, attributeName, col.split("\\.")[1], aliasIndex.addAndGet(1));
+                                return String.format("%s as \"%s.%s.%s_%d\"", col, _relPrefix, attributeName, col.split("\\.")[1], aliasIndex.addAndGet(1));
                             }
                         })
                         .collect(Collectors.joining(", "));
@@ -1172,6 +1228,7 @@ public class OMRL2SQL {
                 String attributeName = attName;
                 List<String> expandedColumns = expandColumns(holdingEntity,
                         attributeName,
+                        schema,
                         sqlSchema,
                         where,
                         usedForExpansion);
@@ -1303,7 +1360,7 @@ public class OMRL2SQL {
                     .findFirst();
             if (entityObject.isPresent()) {
                 Map<String, Object> entityMap = entityObject.get();
-                String tableName = (String) entityMap.get("tableName");
+                String tableName = (String)((Map)entityMap.get("sql_mapping")).get("table_name");
                 fromClause.add(tableName);
             }
         } else {
@@ -1426,6 +1483,7 @@ public class OMRL2SQL {
                     // Use the where clause to find the patch values
                     List<String> expandedColumns = expandColumns(entityName,
                             attributeName,
+                            schema,
                             sqlSchema,
                             where,
                             usedForExpansion);
@@ -1448,6 +1506,7 @@ public class OMRL2SQL {
         }
 
         String sqlSelectClause = selectClause.stream()
+                .filter(one -> !one.trim().isEmpty())
                 .collect(Collectors.joining(", "));
 
         // Build result-set map (on DB tables/columns)
@@ -1561,7 +1620,23 @@ public class OMRL2SQL {
                                         }
                                     } // else bizarre!
                                 } else {
-                                    resultSetMap.add(String.format("%s.%s", relationName, attName));
+                                    int index = select.indexOf(one);
+                                    String selectChunk = selectClause.get(index);
+                                    // RegEx for string like [RACE.2020_Q1_CST as "cost_1", RACE.ITD_LBR_CST as "cost_2"]
+                                    Matcher matcher = ALIAS_DETECTOR_PATTERN.matcher(selectChunk);
+                                    List<String> aliases = new ArrayList<>();
+                                    while (matcher.find()) {
+                                        for (int i = 1; i <= matcher.groupCount(); i++) {
+                                            aliases.add(matcher.group(i));
+                                        }
+                                    }
+                                    if (aliases.size() > 0) {
+//                                        aliases.stream().forEach(alias -> resultSetMap.add(alias));
+                                        aliases.stream().forEach(alias -> resultSetMap.add(String.format("%s.%s", relationName, alias)));
+                                    } else {
+                                        resultSetMap.add(String.format("%s.%s", relationName, attName));
+                                    }
+//                                    resultSetMap.add(String.format("%s.%s", relationName, attName));
                                 }
                             }
                         }
