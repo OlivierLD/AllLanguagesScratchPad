@@ -1,0 +1,8 @@
+{
+  "comment": "SQL Select Entity",
+  "select": [
+    [ "race_concat" ]
+  ],
+  "from": "sql_race",
+  "limit": 100
+}

@@ -1626,6 +1626,38 @@
                         }
                     }
                 ]
+            },
+            {
+              "name": "sql_race",
+              "sql_mapping": {
+                "sql_select": "SELECT NAME as RACE_NAME, RACE_CLASS, RACE_DATE, (RACE_CLASS || ' - ' || NAME || ' on ' || RACE_DATE) as RACE_CONCAT FROM RACE"
+              },
+              "attributes": [
+                {
+                  "name": "race_name",
+                  "sql_mapping": {
+                    "column_name": "RACE_NAME"
+                  }
+                },
+                {
+                  "name": "race_class",
+                  "sql_mapping": {
+                    "column_name": "RACE_CLASS"
+                  }
+                },
+                {
+                  "name": "race_date",
+                  "sql_mapping": {
+                    "column_name": "RACE_DATE"
+                  }
+                },
+                {
+                  "name": "race_concat",
+                  "sql_mapping": {
+                    "column_name": "RACE_CONCAT"
+                  }
+                }
+              ]
             }
         ]
     },

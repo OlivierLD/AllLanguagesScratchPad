@@ -58,11 +58,10 @@ public class OMRL2SQL {
      * The corresponding "attribute" look like this:
      * <pre>
      *     {
-     *       "name": "track",  // Can be a plural
-     *       "type": "entity",
-     *       "entityName": "track",
-     *       "multipleValues": false,
-     *       "reverse_link": "races"
+     *       "name": "track",
+     *       "type": "composite_entity",
+     *       "entity_name": "track",
+     *       "multiple_values": false
      *     }
      * </pre>
      *
@@ -111,10 +110,15 @@ public class OMRL2SQL {
      */
     private static String findDBTableByEntityName(String entityName, Map<String, Object> sqlSchema) {
         List<Map<String, Object>> entities = (List<Map<String, Object>>) sqlSchema.get("entities");
-        return entities.stream()
+        Map<String, Object> sqlMapping = entities.stream()
                 .filter(ent -> entityName.equals(ent.get("name")))
-                .map(ent -> (String) ((Map)ent.get("sql_mapping")).get("table_name"))
+                .map(ent -> (Map) ((Map) ent.get("sql_mapping")))
                 .findFirst().orElse(null);
+        if (sqlMapping != null) {
+            String tableName = (String)sqlMapping.get("table_name");
+            return tableName;
+        }
+        return null;
     }
 
     private static String expandStarTableColumns(String entityName, Map<String, Object> sqlSchema) {
@@ -126,13 +130,14 @@ public class OMRL2SQL {
                 .findFirst()
                 .orElse(null);
         if (entity != null) {
-            String tableName = (String)((Map)entity.get("sql_mapping")).get("table_name");
+            String tableName = (String)((Map)entity.get("sql_mapping")).get("table_name"); // tableName == null => from SQLSelect
             List<Object> attributes = (List)entity.get("attributes");
             List<String> columnList = new ArrayList<>();
             attributes.stream()
                     .filter(att -> ((Map<String, Object>)((Map)att).get("sql_mapping")).get("column_name") != null)
                     .forEach(att -> {
-                        String tabCol = String.format("%s.%s", tableName, ((Map<String, Object>)((Map)att).get("sql_mapping")).get("column_name"));
+                        String columnName = (String)((Map<String, Object>)((Map)att).get("sql_mapping")).get("column_name");
+                        String tabCol = (tableName != null) ? String.format("%s.%s", tableName, columnName) : String.format("%s", columnName);
                         columnList.add(tabCol);
                     });
             expanded = columnList.stream().collect(Collectors.joining(", "));
@@ -412,7 +417,8 @@ public class OMRL2SQL {
                         expandedItem = "";
                     }
                 } else {
-                    expandedItem = String.format("%s.%s", tableName, colName);
+                    // tableName == null => from SQLSelect
+                    expandedItem = (tableName != null) ? String.format("%s.%s", tableName, colName) : String.format("%s", colName);
                 }
             }
         } else if (oneMember instanceof String) {
@@ -690,6 +696,23 @@ public class OMRL2SQL {
         return foundColExpansion.get();
     }
 
+    private static boolean isSQLSelect(String entityName, Map<String, Object> sqlSchema) {
+        AtomicBoolean foundSqlSelect = new AtomicBoolean(false);
+        List<Map<String, Object>> entities = (List<Map<String, Object>>) sqlSchema.get("entities");
+        Map<String, Object> entity = entities.stream()
+                .filter(ent -> entityName.equals(ent.get("name")))
+                .findFirst().orElse(null);
+        if (entity != null) {
+            Map<String, Object> sqlMapping = ((Map<String, Object>) entity.get("sql_mapping"));
+            if (sqlMapping != null) {
+                Object sqlSelect = sqlMapping.get("sql_select");
+                Boolean found = sqlSelect != null;
+                foundSqlSelect.set(found != null && found.booleanValue());
+            }
+        }
+        return foundSqlSelect.get();
+    }
+
     /**
      *
      * @param valueNames like [ "cost", "year" ]
@@ -801,7 +824,7 @@ public class OMRL2SQL {
                                             .filter(att -> whereElement.get(1).equals(((Map) att).get("name")))
                                             .findFirst().orElse(null);
                                     if (vle != null) {
-                                        Object valueList = ((Map) vle).get("valueList");
+                                        Object valueList = ((Map) vle).get("value_list");
                                         obj = valueList;
                                         nbWildCards += 1;
                                     }
@@ -954,7 +977,11 @@ public class OMRL2SQL {
                         } else {
                             oneClause = "";
                         }
-                    } else {
+//                    } else if (false && isSQLSelect(entityName, sqlSchema)) {
+//                        // TODO SQLSelect through a relation/link? Agg function? etc.
+//                        String columnName = findDBColumnByEntityName(entityName, (String) oneElem.get(0), sqlSchema);
+//                        oneClause = String.format("%s", columnName);
+                    } else { // It's a DB table and column
                         String tableName = findDBTableByEntityName(entityName, sqlSchema);
                         String columnName = findDBColumnByEntityName(entityName, (String) oneElem.get(0), sqlSchema);
                         if (columnName == null) {
@@ -973,7 +1000,11 @@ public class OMRL2SQL {
                                 oneClause = String.format("%s.%s", tableName, columnName); // Fallback - Means if failed. Not found.
                             }
                         } else {
-                            oneClause = String.format("%s.%s", tableName, columnName);
+                            if (tableName != null) {
+                                oneClause = String.format("%s.%s", tableName, columnName);
+                            } else {
+                                oneClause = String.format("%s", columnName);
+                            }
                         }
                     }
                     return oneClause;
@@ -992,10 +1023,16 @@ public class OMRL2SQL {
                             String columnName = findDBColumnByEntityName(entityName,
                                     (String) (prm1 instanceof List ? ((List) prm1).get(0) : oneElem.get(1)),
                                     sqlSchema);
-                            oneClause = String.format("%s(%s.%s)",
-                                    aggFunc,
-                                    tableName,
-                                    columnName);
+                            if (tableName != null) {
+                                oneClause = String.format("%s(%s.%s)",
+                                        aggFunc,
+                                        tableName,
+                                        columnName);
+                            } else {
+                                oneClause = String.format("%s(%s)",
+                                        aggFunc,
+                                        columnName);
+                            }
                         } else { // Composite Entity
                             String relationName = null;
                             String columnName = null;
@@ -1361,7 +1398,17 @@ public class OMRL2SQL {
             if (entityObject.isPresent()) {
                 Map<String, Object> entityMap = entityObject.get();
                 String tableName = (String)((Map)entityMap.get("sql_mapping")).get("table_name");
-                fromClause.add(tableName);
+                if (tableName != null) {
+                    fromClause.add(tableName);
+                } else {
+                    String sqlSelect = (String)((Map)entityMap.get("sql_mapping")).get("sql_select");
+                    if (sqlSelect != null) {
+                        fromClause.add(String.format("(%s)", sqlSelect));
+                    } else {
+                        // TODO Honk!
+                        System.out.println("No Table Name, no SQL Select");
+                    }
+                }
             }
         } else {
             if (VERBOSE) {
@@ -1425,7 +1472,7 @@ public class OMRL2SQL {
         // ORDER BY
         List<Object> orderBy = (List<Object>) query.get(ORDER_BY);
         String sqlOrderByClause = "";
-        if (orderBy != null) {
+        if (orderBy != null && !orderBy.isEmpty()) {
             List<String> orderByClause = new ArrayList<>();
             orderBy.forEach(one -> {
                 Object theOneToExpand = one;
@@ -1503,6 +1550,21 @@ public class OMRL2SQL {
             });
             sqlOrderByClause = orderByClause.stream()
                     .collect(Collectors.joining(", "));
+        } else { // Is there a default order by?
+            String entityName = (String) from;
+            Object tableSQLMapping = ((List) sqlSchema.get("entities")).stream()
+                    .filter(ent -> entityName.equals(((Map) ent).get("name")))
+                    .map(ent -> ((Map) ent).get("sql_mapping"))
+                    .findFirst().orElse(null);
+            Object defaultOrderBy = null;
+            if (tableSQLMapping != null) {
+                defaultOrderBy = ((Map)tableSQLMapping).get("default_order_by");
+            }
+            // Add default order by, except if there is a group by already.
+            if (defaultOrderBy != null && !((List)defaultOrderBy).isEmpty() && (groupBy == null || groupBy.isEmpty())) {
+                sqlOrderByClause = ((List<String>)defaultOrderBy).stream()
+                        .collect(Collectors.joining(", "));
+            }
         }
 
         String sqlSelectClause = selectClause.stream()
@@ -1562,7 +1624,7 @@ public class OMRL2SQL {
                                     if (entity != null) {
                                         List<Object> attributes = (List)entity.get("attributes");
                                         attributes.stream()
-                                                .filter(att -> ((Map<String, Object>) att).get("columnName") != null)
+                                                .filter(att -> ((Map<String, Object>) ((Map)att).get("sql_mapping")).get("column_name") != null)
                                                 .forEach(att -> {
                                                     resultSetMap.add((String) ((Map<String, Object>) att).get("name"));
                                                 });
@@ -1593,17 +1655,16 @@ public class OMRL2SQL {
                                     /* Find the CompositeEntity in the returned entity, like
                                        {
                                             "name": "races",
-                                            "type": "entity",
-                                            "entityName": "race",
-                                            "multipleValues": true,
-                                            "reverse_link": "track"
+                                            "type": "composite_entity",
+                                            "entity_name": "race",
+                                            "multiple_values": true
                                         }
                                      */
                                         Map<String, Object> compositeEntityDefinition = ((List<Map<String, Object>>) holdingEntity.get("attributes")).stream()
-                                                .filter(att -> "entity".equals(att.get("type")) &&
+                                                .filter(att -> "composite_entity".equals(att.get("type")) &&
                                                         relationName.equals(att.get("name"))).findFirst().orElse(null);
                                         if (compositeEntityDefinition != null) {
-                                            String entityName = (String)compositeEntityDefinition.get("entityName");
+                                            String entityName = (String)compositeEntityDefinition.get("entity_name");
                                             List<Map<String, Object>> entities = (List)sqlSchema.get("entities");
                                             Map<String, Object> entity = entities.stream()
                                                     .filter(_entity -> entityName.equals(_entity.get("name")))
@@ -1612,7 +1673,7 @@ public class OMRL2SQL {
                                             if (entity != null) {
                                                 List<Object> attributes = (List)entity.get("attributes");
                                                 attributes.stream()
-                                                        .filter(att -> ((Map<String, Object>) att).get("columnName") != null)
+                                                        .filter(att -> ((Map<String, Object>) ((Map)att).get("sql_mapping")).get("column_name") != null)
                                                         .forEach(att -> {
                                                             resultSetMap.add(String.format("%s.%s", relationName, (String) ((Map<String, Object>) att).get("name")));
                                                         });
