@@ -13,76 +13,30 @@ import java.util.stream.Collectors;
 
 /**
  * Hard coded file names.
- * Invokes OMRL2SQL.omrlToSQLQuery {@link oliv.omrl.v2.utils.OMRL2SQL#omrlToSQLQuery(Map, Map, Object)}
+ * Invokes OMRL2SQL.omrlToSQLQuery {@link OMRL2SQL#omrlToSQLQuery(Map, Map, Object)}
  */
-public class FirstParser {
+public class EmpDeptParser {
 
     private final static boolean EXECUTE_QUERY = true; // when OMRLQuery.execute is true too.
     private final static boolean USE_PREPARED_STMT = false;
 
-    private final static String OMRL_SCHEMA_PATH = "oct29.schemas/OMRL_base_schema.json";
-    private final static String OMRL_SQL_SCHEMA_PATH = "oct29.schemas/OMRL_sql_schema.json";
+    private final static String OMRL_SCHEMA_PATH = "oct29.schemas/OMRL_base_emp_dept.json";
+    private final static String OMRL_SQL_SCHEMA_PATH = "oct29.schemas/OMRL_sql_emp_dept.json";
 
     private final static String OMRL_SCHEMA_NS = "https://oda.oracle.com/OMRL-Schema";
     private final static String OMRL_SQL_SCHEMA_NS = "https://oda.oracle.com/OMRL-Sql-Schema";
 
     public enum OMRLQuery {
-        _01("omrl.race_track.query.01.json", "race_track", true),
-        _02("omrl.race_track.query.02.json", "race_track", true),
-        _03("omrl.race_track.query.03.json", "race_track", true),
-        _04("omrl.race_track.query.04.json", "race_track", true),
-        _05("omrl.race_track.query.05.json", "race_track", true),
-        _06("omrl.race_track.query.06.json", "race_track", true),
-        _07("omrl.race_track.query.07.json", "race_track", false),
-        _08("omrl.race_track.query.08.json", "race_track", true),
-        _09("omrl.race_track.query.09.json", "race_track", true),
-        _10("omrl.race_track.query.10.json", "race_track", true),
-        _11("omrl.race_track.query.11.json", "race_track", true),
-        _12("omrl.race_track.query.12.json", "race_track", true),
-        _13("omrl.race_track.query.13.json", "race_track", true),
-        _14("omrl.race_track.query.14.json", "race_track", true),
-        _14_2("omrl.race_track.query.14.2.json", "race_track", true),
-        _15("omrl.race_track.query.15.json", "race_track", true),
-        _16("omrl.race_track.query.16.json", "race_track", true),
-        _17("omrl.race_track.query.17.json", "race_track", true),
-        _18("omrl.race_track.query.18.json", "race_track", true),
-        _19("omrl.race_track.query.19.json", "race_track", true),
-        _20("omrl.race_track.query.20.json", "race_track", false),
-        _21("omrl.race_track.query.21.json", "race_track", false),
-        _22("omrl.race_track.query.22.json", "race_track", false),
-        _23("omrl.race_track.query.23.json", "race_track", false),
-        _24("omrl.race_track.query.24.json", "race_track", false),
-        _25("omrl.race_track.query.25.json", "race_track", true), // With race_stuff. Can execute.
-        _26("omrl.race_track.query.26.json", "race_track", false),
-        _27("omrl.race_track.query.27.json", "race_track", false),
-        _28("omrl.race_track.query.28.json", "race_track", true),
-        _29("omrl.race_track.query.29.json", "race_track", false),
-        _30("omrl.race_track.query.30.json", "race_track", false),
-        _31("omrl.race_track.query.31.json", "race_track", false),
-        _32("omrl.race_track.query.32.json", "race_track", false),
-        _33("omrl.race_track.query.33.json", "race_track", true),
-        _34("omrl.race_track.query.34.json", "race_track", true),
-        _35("omrl.race_track.query.35.json", "race_track", true),
-        _36("omrl.race_track.query.36.json", "race_track", true),
-        _37("omrl.race_track.query.37.json", "race_track", true),
-        _38("omrl.race_track.query.38.json", "race_track", true),
-        _39("omrl.race_track.query.39.json", "race_track", true),
-        _40("omrl.race_track.query.40.json", "race_track", false),
-        _41("omrl.race_track.query.41.json", "race_track", false),
-        _42("omrl.race_track.query.42.json", "race_track", false),
-        _43("omrl.race_track.query.43.json", "race_track", false),
-        _44("omrl.race_track.query.44.json", "race_track", true),
-        _45("omrl.race_track.query.45.json", "race_track", true),
-        _46("omrl.race_track.query.46.json", "race_track", false),
-        _47("omrl.race_track.query.47.json", "race_track", false),
-        _48("omrl.race_track.query.48.json", "race_track", false),
-        _49("omrl.race_track.query.49.json", "race_track", true),
-        _50("omrl.race_track.query.50.json", "race_track", true),
-        _DM_01("omrl.dm.query.01.json", "department_management", false),
-        _DM_02("omrl.dm.query.02.json", "department_management", false),
-        _JC_01("omrl.jc.query.03.json", "journal_committee", false),
-        _DM_04("omrl.dm.query.04.json", "department_management", false),
-        _BK_01("omrl.bike_1.query.01.json", "bike_1", false);
+        _01("omrl.emp_dept.query.01.json", "emp_dept", true),
+        _02("omrl.emp_dept.query.02.json", "emp_dept", true),
+        _03("omrl.emp_dept.query.03.json", "emp_dept", true),
+        _04("omrl.emp_dept.query.04.json", "emp_dept", true),
+        _05("omrl.emp_dept.query.05.json", "emp_dept", true),
+        _06("omrl.emp_dept.query.06.json", "emp_dept", true),
+        _07("omrl.emp_dept.query.07.json", "emp_dept", true),
+        _08("omrl.emp_dept.query.08.json", "emp_dept", true),
+        _09("omrl.emp_dept.query.09.json", "emp_dept", true),
+        _10("omrl.emp_dept.query.10.json", "emp_dept", true);
 
         private final String fileName;
         private final String connection;
@@ -107,7 +61,7 @@ public class FirstParser {
         }
     }
 
-    private final static OMRLQuery DEFAULT_QUERY = OMRLQuery._26;
+    private final static OMRLQuery DEFAULT_QUERY = OMRLQuery._01;
 
 //    private final static String SCHEMA_NAME = ""; // "department_management", "race_track", "journal_committee";
     private final static String JDBC_HOSTNAME = "100.111.136.104";  // "100.102.84.101";
@@ -125,8 +79,7 @@ public class FirstParser {
     public static void main(String... args) {
         boolean justOne = true;
         if (justOne) {
-//            executeQuery(OMRLQuery._BK_01); // DEFAULT_QUERY); // Default one
-            executeQuery(OMRLQuery._17); // DEFAULT_QUERY); // Default one
+            executeQuery(OMRLQuery._10);
         } else {
             for (OMRLQuery query : OMRLQuery.values()) {
                 System.out.println("Executing " + query.toString());
@@ -324,24 +277,41 @@ public class FirstParser {
                                 System.out.println("Group " + x + ": " + matcher.group(x));
                             }
                         }
-                        String entity = null;
+//                        String entity = null;
                         String column = null;
 
                         if (rsMapValue.contains(".")) { // nested
+
+                            // Look for the hierarchy in oneRow.
+                            Map<String, Object> theOneToFeed = oneRow;
+                            String[] mapPath = rsMapValue.split("\\.");
+                            // Get the last parent of the leave
+                            for (int idx=0; idx<mapPath.length - 1; idx++) {
+                                String step = mapPath[idx];
+                                Map subObj = (Map)theOneToFeed.get(step);
+                                if (subObj == null) {
+                                    subObj = new HashMap<String, Object>();
+                                    theOneToFeed.put(step, subObj);
+                                }
+                                theOneToFeed = subObj;
+                            }
+
                             if (func == null) {
-                                entity = rsMapValue.substring(0, rsMapValue.indexOf(".")).trim();
-                                column = rsMapValue.substring(rsMapValue.indexOf(".") + 1).trim();
+//                                entity = rsMapValue.substring(0, rsMapValue.indexOf(".")).trim();
+//                                column = rsMapValue.substring(rsMapValue.indexOf(".") + 1).trim();
+                                column = mapPath[mapPath.length - 1]; // Last member name.
                             } else {
-                                entity = funcArg.substring(0, funcArg.indexOf(".")).trim();
+//                                entity = funcArg.substring(0, funcArg.indexOf(".")).trim();
                                 column = func + "_" + funcArg.substring(funcArg.indexOf(".") + 1).trim();
                             }
                             // Get the entity subMap, if it exists
-                            Map entityMap = (Map)oneRow.get(entity);
-                            if (entityMap == null) {
-                                entityMap = new HashMap<>();
-                                oneRow.put(entity, entityMap);
-                            }
-                            entityMap.put(column, colValue);
+//                            Map entityMap = (Map)oneRow.get(entity);
+//                            if (entityMap == null) {
+//                                entityMap = new HashMap<>();
+//                                oneRow.put(entity, entityMap);
+//                            }
+                            theOneToFeed.put(column, colValue);
+//                            entityMap.put(column, colValue);
                         } else { // in the from, top level, not nested.
                             oneRow.put(rsMapValue, colValue);
                         }

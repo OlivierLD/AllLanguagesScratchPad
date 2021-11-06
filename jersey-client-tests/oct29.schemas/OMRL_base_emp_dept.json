@@ -1,0 +1,111 @@
+[
+  {
+    "$ref": "https://oda.oracle.com/OMRL-Schema",
+    "schema": "emp_dept",
+    "entities": [
+      {
+        "name": "dept",
+        "attributes": [
+          {
+            "name": "dept_no",
+            "type": "number"
+          },
+          {
+            "name": "dept_name",
+            "type": "text"
+          },
+          {
+            "name": "dept_loc",
+            "type": "text"
+          },
+          {
+            "name": "emps",
+            "type": "composite_entity",
+            "entity_name": "emp",
+            "multiple_values": true
+          }
+        ]
+      },
+      {
+        "name": "emp",
+        "attributes": [
+          {
+            "name": "emp_no",
+            "type": "number"
+          },
+          {
+            "name": "emp_name",
+            "type": "text"
+          },
+          {
+            "name": "emp_job",
+            "type": "text"
+          },
+          {
+            "name": "emp_mgr",
+            "type": "number"
+          },
+          {
+            "name": "hiredate",
+            "type": "text"
+          },
+          {
+            "name": "salary",
+            "type": "number"
+          },
+          {
+            "name": "commission",
+            "type": "number"
+          },
+          {
+            "name": "deptno",
+            "type": "number"
+          },
+          {
+            "name": "dept",
+            "type": "composite_entity",
+            "entity_name": "dept",
+            "multiple_values": false
+          },
+          {
+            "name": "expenses",
+            "type": "composite_entity",
+            "entity_name": "expenses",
+            "multiple_values": true
+          }
+        ]
+      },
+      {
+        "name": "expenses",
+        "attributes": [
+          {
+            "name": "exp_id",
+            "type": "number"
+          },
+          {
+            "name": "empno",
+            "type": "number"
+          },
+          {
+            "name": "exp_amount",
+            "type": "number"
+          },
+          {
+            "name": "exp_vendor",
+            "type": "text"
+          },
+          {
+            "name": "exp_category",
+            "type": "text"
+          },
+          {
+            "name": "emp",
+            "type": "composite_entity",
+            "entity_name": "emp",
+            "multiple_values": false
+          }
+        ]
+      }
+    ]
+  }
+]

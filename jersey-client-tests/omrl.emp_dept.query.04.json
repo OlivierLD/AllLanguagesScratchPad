@@ -1,0 +1,11 @@
+{
+  "comment": "Simple Join, EMP -> EXPENSES",
+  "select": [
+    [ "emp_name" ],
+    [ "expenses", "exp_amount" ],
+    [ "expenses", "exp_category" ]
+  ],
+  "from": "emp",
+  "where": [],
+  "limit": 100
+}

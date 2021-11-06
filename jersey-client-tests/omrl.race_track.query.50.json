@@ -1,0 +1,9 @@
+{
+  "select": [
+    [ "name" ],
+    [ "date" ],
+    [ "track", "name" ]
+  ],
+  "from": "race",
+  "where": [ "LIKE", [ "#UPPER", [ "track", "name" ]], [ "#UPPER", [ "%chicago%" ]]]
+}

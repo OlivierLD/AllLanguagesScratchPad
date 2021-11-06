@@ -1,0 +1,12 @@
+{
+  "comment": "Multiple Join, DEPT -> EMP -> EXPENSES, with a where clause",
+  "select": [
+    [ "dept_no" ],
+    [ "emps", "emp_name" ],
+    [ "emps", "expenses", "exp_amount" ],
+    [ "emps", "expenses", "exp_category" ]
+  ],
+  "from": "dept",
+  "where": [ "=", [ "emps", "emp_name" ], "SCOTT" ],
+  "limit": 100
+}

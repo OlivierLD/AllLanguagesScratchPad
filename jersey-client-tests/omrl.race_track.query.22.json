@@ -1,12 +1,12 @@
 {
   "select": [
     [ "name" ],
-    [ "cost", "cost" ]
+    [ "cost" ]
   ],
   "from": "race",
-  "where": [ "AND", [ "AND", [ "=", [ "cost", "year" ], "2020" ],
-                             [ "=", [ "cost", "quarter" ], "Q1" ] ],
-                    [ "AND", [ ">", [ "cost", "cost" ], 10 ],
+  "where": [ "AND", [ "AND", [ "=", [ "year" ], "2020" ],
+                             [ "=", [ "quarter" ], "Q1" ] ],
+                    [ "AND", [ ">", [ "cost" ], 10 ],
                              [ "=", [ "name" ], "whatever" ] ]
            ]
 }

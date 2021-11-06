@@ -1,0 +1,10 @@
+{
+  "comment": "Simple Join, DEPT -> EMP",
+  "select": [
+    [ "dept_name" ],
+    [ "emps", "emp_name" ]
+  ],
+  "from": "dept",
+  "where": [],
+  "limit": 100
+}

@@ -1,0 +1,13 @@
+{
+  "comment": "Simple Join, EMP -> EXPENSES, with sum",
+  "select": [
+    [ "emp_name" ],
+    [ "#SUM", [ "expenses", "exp_amount" ] ]
+  ],
+  "from": "emp",
+  "where": [],
+  "group_by": [
+    [ "emp_name" ]
+  ],
+  "limit": 100
+}

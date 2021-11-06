@@ -1,0 +1,13 @@
+{
+  "comment": "Simple Join, DEPT -> EMP, with count",
+  "select": [
+    [ "dept_name" ],
+    [ "#COUNT", [ "emps", "emp_name" ] ]
+  ],
+  "from": "dept",
+  "where": [],
+  "group_by": [
+    [ "dept_name" ]
+  ],
+  "limit": 100
+}

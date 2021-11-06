@@ -1,5 +1,8 @@
 package oliv.omrl.v2.utils;
 
+// import oracle.cloud.bots.model.dialog.ExpressionResolver;
+
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -8,6 +11,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -31,6 +35,8 @@ public class OMRL2SQL {
     private final static boolean VERBOSE = false;
 
     private final static boolean LOGICAL_RESULT_SET_MAP = true;
+    private final static boolean ENTITY_BASED_RESULT_SET_MAP = true;
+    public static boolean entityBasedResultMap = ENTITY_BASED_RESULT_SET_MAP;
 
     private final static boolean ADD_WHERE_CLAUSE_COLUMNS_TO_SELECT = false;
     public static boolean usePreparedStmt = true;
@@ -52,6 +58,8 @@ public class OMRL2SQL {
     private final static String HAVING = "having";
     private final static String LIMIT = "limit";
     private final static String DISTINCT = "distinct";  // true | false
+
+    // TODO the names like SQL_MAPPING, COMPOSITE_ENTITY, ENTITY_NAME, etc.
 
     /**
      * Finds and returns the (full) entity holding the expected CompositeEntity attribute.
@@ -348,7 +356,7 @@ public class OMRL2SQL {
         Object expandedItem = null;
         if (oneMember instanceof List) {
             List<Object> oneElem = (List<Object>) oneMember;
-            if (((List<Object>) oneMember).size() == 2) {
+            if (((List<Object>) oneMember).size() > 1) {
                 if (oneElem.get(0) instanceof String && ((String)oneElem.get(0)).startsWith("#")) {
                     String aggFunc = ((String)oneElem.get(0)).substring(1);
                     if ("*".equals(oneElem.get(1))) {
@@ -356,9 +364,37 @@ public class OMRL2SQL {
                     } else {
                         if (oneElem.size() == 2) { // Current table
                             if (oneElem.get(1) instanceof List) {
-                                expandedItem = String.format("%s(%s.%s)", aggFunc, entityRef, ((List)oneElem.get(1)).get(0)); // Pfooo...
+                                String targetEntity = entityRef;
+                                if (((List)oneElem.get(1)).size() > 1) {
+                                    targetEntity = String.valueOf(((List)oneElem.get(1)).get(0));
+                                }
+                                String tableName = findDBTableByEntityName(targetEntity, sqlSchema);
+                                String attName = ((List)oneElem.get(1)).size() > 1 ?
+                                        String.valueOf(((List)oneElem.get(1)).get(1)) :
+                                        String.valueOf(((List)oneElem.get(1)).get(0));
+                                String colName = findDBColumnByEntityName(entityRef, attName, sqlSchema);
+                                if (colName != null) {
+                                    expandedItem = String.format("%s(%s.%s)",
+                                            aggFunc,
+                                            tableName,
+                                            colName);
+                                } else { // Consider it a character literal. TODO What if a character literal is also an attribute name?
+                                    if (((List)oneElem.get(1)).get(0) instanceof String) {
+                                        expandedItem = String.format("%s('%s')",
+                                                aggFunc,
+                                                ((List) oneElem.get(1)).get(0));
+                                    } else {
+                                        expandedItem = String.format("%s(%s)",
+                                                aggFunc,
+                                                ((List) oneElem.get(1)).get(0));
+                                    }
+                                }
                             } else {
-                                expandedItem = String.format("%s(%s.%s)", aggFunc, entityRef, oneElem.get(1));
+//                                expandedItem = String.format("%s(%s.%s)", aggFunc, entityRef, oneElem.get(1));
+                                expandedItem = String.format("%s(%s.%s)",
+                                        aggFunc,
+                                        findDBTableByEntityName(entityRef, sqlSchema),
+                                        findDBColumnByEntityName(entityRef, (String)oneElem.get(1), sqlSchema)); // Pfooo...
                             }
                         } else { // Composite Entity
                             String relationName = (String)oneElem.get(1);
@@ -485,7 +521,9 @@ public class OMRL2SQL {
                 attributeName = (String)((List)left).get(0);
                 if (((List)left).size() == 2) {
                     fromEntity = (String)((List)left).get(0); // TODO This can be the column_to_expand name...
-                    attributeName = (String)((List)left).get(1);
+                    if (((List)left).get(1) instanceof String) {
+                        attributeName = (String) ((List) left).get(1);
+                    }
                 }
             } else {
                 // TODO Honk?
@@ -516,7 +554,7 @@ public class OMRL2SQL {
     private static String expandWhereHavingClause(List<Object> where,
                                                   Map<String, Object> schema,
                                                   Map<String, Object> sqlSchema,
-                                                  String tableRef,
+                                                  String entityRef,
                                                   List<String> selectClause,
                                                   List<String> joinClause,
                                                   List<Object> prmValues) {
@@ -524,7 +562,7 @@ public class OMRL2SQL {
                 null,
                 schema,
                 sqlSchema,
-                tableRef,
+                entityRef,
                 selectClause,
                 joinClause,
                 prmValues, null);
@@ -534,7 +572,7 @@ public class OMRL2SQL {
                                                   List<Object> originalWhere,
                                                   Map<String, Object> schema,
                                                   Map<String, Object> sqlSchema,
-                                                  String tableRef,
+                                                  String entityRef,
                                                   List<String> selectClause,
                                                   List<String> joinClause,
                                                   List<Object> prmValues,
@@ -546,7 +584,7 @@ public class OMRL2SQL {
 
         int i = 0;
         String cond = (String) where.get(i);
-        if ("AND".equals(cond) || "OR".equals(cond)) {
+        if ("AND".equals(cond) || "OR".equals(cond)) { // TODO Ignore case?
             // Expect 2 (or more) Lists after that. Recurse.
             List<String> whereClauseElements = new ArrayList<>();
             for (int w=1; w<where.size(); w++) {
@@ -554,7 +592,7 @@ public class OMRL2SQL {
                         originalWhere,
                         schema,
                         sqlSchema,
-                        tableRef,
+                        entityRef,
                         selectClause,
                         joinClause,
                         prmValues,
@@ -595,14 +633,27 @@ public class OMRL2SQL {
                 }
             }
 
-            Object leftItem = expandWhereHavingClauseItem(left, schema, sqlSchema, tableRef, joinClause, originalWhere, usedForExpansion);
-            Object rightItem = expandWhereHavingClauseItem(right, schema, sqlSchema, tableRef, joinClause, originalWhere, usedForExpansion);
+            // TODO Consolidate expandWhereHavingClauseItem and expandOneItem
+            Object leftItem;
+            if (left instanceof List && ((List)left).size() > 2) {
+                leftItem = expandOneItem(left, schema, sqlSchema, entityRef, joinClause, originalWhere, usedForExpansion);
+            } else {
+                leftItem = expandWhereHavingClauseItem(left, schema, sqlSchema, entityRef, joinClause, originalWhere, usedForExpansion);
+            }
+//            Object leftItem = expandOneItem(left, schema, sqlSchema, tableRef, joinClause, originalWhere, usedForExpansion);
+            Object rightItem;
+            if (right instanceof List && ((List)right).size() > 2) {
+                rightItem = expandOneItem(right, schema, sqlSchema, entityRef, joinClause, originalWhere, usedForExpansion);
+            } else {
+                rightItem = expandWhereHavingClauseItem(right, schema, sqlSchema, entityRef, joinClause, originalWhere, usedForExpansion);
+            }
+//            Object rightItem = expandOneItem(right, schema, sqlSchema, tableRef, joinClause, originalWhere, usedForExpansion);
             Object thirdItem = null; // For BETWEEN
 
             if ("BETWEEN".equalsIgnoreCase(unaryOp)) {
                 if (where.size() > 3) {
                     thirdValue = where.get(i + 3);
-                    thirdItem = expandWhereHavingClauseItem(thirdValue, schema, sqlSchema, tableRef, joinClause, originalWhere, usedForExpansion);
+                    thirdItem = expandWhereHavingClauseItem(thirdValue, schema, sqlSchema, entityRef, joinClause, originalWhere, usedForExpansion);
                 } else {
                     // Bad Syntax
                 }
@@ -620,11 +671,22 @@ public class OMRL2SQL {
             }
 
             if (!rightIsASelectStmt && usePreparedStmt) {
-                prmValues.add(rightItem); // And put the value in its list
-                rightItem = "?";
-                if (thirdItem != null) {
-                    prmValues.add(thirdItem);
-                    thirdItem = "?";
+                // Literal, or literal in a function
+                if (right instanceof List) {
+                    if (String.valueOf(((List)right).get(0)).startsWith("#")) {
+                        if (((List)right).get(1) instanceof List && ((List)(((List)right).get(1))).size() == 1) {
+                            String value = String.valueOf(((List)(((List)right).get(1))).get(0));
+                            prmValues.add(value);
+                            rightItem = String.format("%s(?)", String.valueOf(((List)right).get(0)).substring(1));
+                        }
+                    }
+                } else {
+                    prmValues.add(rightItem); // And put the value in its list
+                    rightItem = "?";
+                    if (thirdItem != null) {
+                        prmValues.add(thirdItem);
+                        thirdItem = "?";
+                    }
                 }
             }
 
@@ -641,7 +703,7 @@ public class OMRL2SQL {
                     }
                 }
             }
-            if (left instanceof List && ((List)left).size() > 0 && isColumnExpansion(tableRef, (String)((List)left).get(0), sqlSchema)) {
+            if (left instanceof List && ((List)left).size() > 0 && isColumnExpansion(entityRef, (String)((List)left).get(0), sqlSchema)) {
                 // If column expansion generate mor than one column, then apply condition on each of them, and connect them with OR.
                 String[] colArray = ((String)leftItem).split(",");
                 sqlWhereClause = String.format("%s %s %s", colArray[0].trim(), unaryOp, rightItem);
@@ -807,10 +869,10 @@ public class OMRL2SQL {
 //                            System.out.println("Group " + i + ": " + valueToFind);
                             List<String> whereElement;
                             if (previousLinks == null || previousLinks.size() == 0) {
-                                whereElement = List.of(attributeName, valueToFind);
+                                whereElement = List.of(valueToFind);
                             } else {
                                 whereElement = Stream.concat(previousLinks.stream(),
-                                                List.of(attributeName, valueToFind).stream())
+                                                List.of(valueToFind).stream())
                                         .collect(Collectors.toList());
                             }
                             Object obj = findValueInWhereClause(whereElement, whereClause); // Look for [ "=", [ "cost", "year" ], "VAL" ]
@@ -821,7 +883,7 @@ public class OMRL2SQL {
                                         .filter(ent -> entityName.equals(((Map) ent).get("name"))).findFirst().orElse(null);
                                 if (currentEntity != null) {
                                     Object vle = ((List) ((Map) currentEntity).get("attributes")).stream()
-                                            .filter(att -> whereElement.get(1).equals(((Map) att).get("name")))
+                                            .filter(att -> whereElement.get(whereElement.size() - 1).equals(((Map) att).get("name")))
                                             .findFirst().orElse(null);
                                     if (vle != null) {
                                         Object valueList = ((Map) vle).get("value_list");
@@ -972,7 +1034,7 @@ public class OMRL2SQL {
                             AtomicInteger aliasIndex = new AtomicInteger(0);
                             oneClause = expandedColumns.stream()
 //                                    .map(col -> String.format("%s as \"%s_%d\"", col, attributeName, aliasIndex.addAndGet(1)))
-                                    .map(col -> String.format("%s as \"%s.%s_%d\"", col, attributeName, col.split("\\.")[1], aliasIndex.addAndGet(1)))
+                                    .map(col -> String.format("%s as \"%s_%d\"", col, col.split("\\.")[1], aliasIndex.addAndGet(1)))
                                     .collect(Collectors.joining(", "));
                         } else {
                             oneClause = "";
@@ -987,7 +1049,7 @@ public class OMRL2SQL {
                         if (columnName == null) {
                             // See if the value is in the where, about a column expansion
                             String attName = (String) oneElem.get(0);
-                            Object prmValue = findValueInWhereClause(List.of(entityName, attName), where); // TODO Verify columnName
+                            Object prmValue = findValueInWhereClause(List.of(attName), where); // TODO Verify columnName
                             if (prmValue != null) {
                                 // Find the expendable attribute this prm belongs to
                                 String parentAttributeName = "X"; // Should be the columnName in the new syntax
@@ -1065,8 +1127,6 @@ public class OMRL2SQL {
                     }
                     // look for a relationship or column_expansion
                     String relationName = (String) oneElem.get(0);
-                    // TODO Question: if len = 3, what's item 1 (2nd pos) ?
-                    String attName = (String) (oneElem.size() > 2 ? oneElem.get(2) : oneElem.get(1));
 
                     String entityFromLink = getEntityFromRelation(entityName, relationName, schema);
                     String tableName;
@@ -1076,25 +1136,36 @@ public class OMRL2SQL {
                         tableName = findDBTableByEntityName(entityName, sqlSchema);
                     }
 
+                    // TODO Question: if len = 3, what's item 1 (2nd pos) ? Will need to recurse.
+                    String attName = (String) (/*oneElem.size() > 2 ? oneElem.get(2) :*/ oneElem.get(1));
+
                     String expandedItem = "";
 
                     if ("*".equals(attName)) {
                         expandedItem = expandStarTableColumns(entityFromLink, sqlSchema);
                         // 2 - JOIN
-                        List<String> entityForeignKey = findEntityForeignKey(entityFromLink, entityName, sqlSchema);
-                        if (entityForeignKey == null) {
-                            entityForeignKey = findEntityForeignKey(entityName, entityFromLink, sqlSchema);
+                        Map<String, Object> holdingEntity = getCompositeEntity(entityName, relationName, schema);
+                        Map<String, Object> compositeEntityDefinition = ((List<Map<String, Object>>) holdingEntity.get("attributes")).stream()
+                                .filter(att -> "composite_entity".equals(att.get("type")) &&
+                                        relationName.equals(att.get("name"))).findFirst().orElse(null);
+
+                        List<String> keyFrom;
+                        if ((boolean)compositeEntityDefinition.get("multiple_values")) { // 1-1, 1-many
+                            keyFrom = findEntityForeignKey((String) compositeEntityDefinition.get("entity_name"), (String) holdingEntity.get("name"), sqlSchema);
+                        } else {
+                            keyFrom = findEntityPrimaryKey((String) compositeEntityDefinition.get("entity_name"), sqlSchema);
                         }
+                        String toTable = findDBTableByEntityName((String) holdingEntity.get("name"), sqlSchema); // entityFromLink?
+                        List<String> fkTo = findEntityForeignKey((String) holdingEntity.get("name"), (String) compositeEntityDefinition.get("name"), sqlSchema);
                         String oneJoinClause = String.format("JOIN %s ON %s", // entityFromLink, entityName
                                 tableName,
                                 generateOnJoinClause(
-                                        findDBTableByEntityName(entityName, sqlSchema),
-                                        findEntityPrimaryKey(entityName, sqlSchema), // PK
-                                        findDBTableByEntityName(entityFromLink, sqlSchema),
-                                        entityForeignKey  // FK
+                                        tableName, // findDBTableByEntityName(entityName, sqlSchema),
+                                        keyFrom,  // PK
+                                        toTable,
+                                        fkTo // FK
                                 )
                         );
-//                        findEntityForeignKey((String)holdingEntity.get("name"), (String)compositeEntityDefinition.get("entityName"), sqlSchema)); //FK
                         if (!joinClause.contains(oneJoinClause)) {
                             joinClause.add(oneJoinClause);
                         }
@@ -1104,13 +1175,13 @@ public class OMRL2SQL {
                     String dbColumnName = findDBColumnByEntityName(entityFromLink == null ? entityName : entityFromLink, attName, sqlSchema);
 
                     // More elements in oneElem ?
-                    if (oneElem.size() > 2) { // Link AND column expansion?
+                    if (oneElem.size() > 2) { // TODO Recursion ?
                         String entityFromRelation = getEntityFromRelation(entityName, relationName, schema);
                         tableName = findDBTableByEntityName(entityFromRelation, sqlSchema);
                         dbColumnName = findDBColumnByEntityName(entityFromRelation, attName, sqlSchema);
                         expandedItem = expandFromList(entityFromRelation,
-                                (String)oneElem.get(1),
-                                (String)oneElem.get(2),
+                                (String)oneElem.get(1), // TODO Check this
+                                (String)oneElem.get(2), // TODO Check this
                                 dbColumnName,
                                 tableName,
                                 oneElem,
@@ -1202,16 +1273,23 @@ public class OMRL2SQL {
             return expandedItem;
         }
 
-        if (isColumnExpansion(entityName, attName, sqlSchema) && // column_expansion at the entity level (no relation)
-                attName.equals(relationName)) {                  // like [ "cost", "cost" ]
+        String entityToReach = joinedHoldingEntity != null ? joinedHoldingEntity : entityName;
+        if (isColumnExpansion(entityToReach, attName, sqlSchema)) {
             // Use the where clause to find the patch values
             String attributeName = attName;
-            List<String> expandedColumns = expandColumns(entityName,
+            List<String> previousRelationList = previousRelations;
+            if (joinedHoldingEntity != null) {
+                if (previousRelationList == null) {
+                    previousRelationList = new ArrayList<>();
+                }
+                previousRelationList.add(relationName);
+            }
+            List<String> expandedColumns = expandColumns(entityToReach,
                     attributeName,
                     schema,
                     sqlSchema,
                     where,
-                    previousRelations,
+                    previousRelationList,
                     usedForExpansion);
             if (expandedColumns != null && expandedColumns.size() > 0) {
                 String relPrefix = attName;
@@ -1237,7 +1315,7 @@ public class OMRL2SQL {
         } else if (dbColumnName == null) {
             // Prm of a column expansion, like entityName: race, relationName: cost, columnName: year
             // See if the value is in the where, about a column expansion
-            String expColName = (String)(elemList.size() > 2 ? elemList.get(1) : elemList.get(0));
+            String expColName = (String)(elemList.size() > 2 ? elemList.get(1) : elemList.get(0)); // TODO Should go away
             // Object prmValue = findValueInWhereClause(List.of(expColName, attName), where); // TODO Verify columnName
             // elemList.stream().map(el -> (String)el).collect(Collectors.toList())
             Object prmValue = findValueInWhereClause(elemList.stream().map(el -> (String)el).collect(Collectors.toList()), where);
@@ -1304,7 +1382,10 @@ public class OMRL2SQL {
         return expandedItem;
     }
 
-    public static Map<String, Object> omrlToNestedSQLQuery(Map<String, Object> schema, Map<String, Object> sqlSchema, List<Object> query) {
+    private static Map<String, Object> omrlToNestedSQLQuery(Map<String, Object> schema,
+                                                            Map<String, Object> sqlSchema,
+                                                            List<Object> query,
+                                                            Object expressionResolver) {
 
         if (query.size() < 3) {
             throw new RuntimeException("Malformed query.");
@@ -1319,7 +1400,7 @@ public class OMRL2SQL {
         for (int i = 1; i < query.size(); i++) {
             Object oneQuery = query.get(i);
             if (oneQuery instanceof List) {
-                Map<String, Object> map = omrlToNestedSQLQuery(schema, sqlSchema, (List) oneQuery);
+                Map<String, Object> map = omrlToNestedSQLQuery(schema, sqlSchema, (List) oneQuery, expressionResolver);
                 subQueries.add((String) map.get("query"));
                 List<Object> prms = (List) map.get("prm-values");
                 if (prms != null) {
@@ -1329,7 +1410,7 @@ public class OMRL2SQL {
                     resultSetMap = (List) map.get("rs-map");
                 }
             } else { // Assume it is a map
-                Map<String, Object> map = omrlToOneSQLQuery(schema, sqlSchema, (Map) oneQuery);
+                Map<String, Object> map = omrlToOneSQLQuery(schema, sqlSchema, (Map) oneQuery, expressionResolver);
                 subQueries.add((String) map.get("query"));
                 List<Object> prms = (List) map.get("prm-values");
                 if (prms != null) {
@@ -1352,6 +1433,11 @@ public class OMRL2SQL {
                 "rs-map", resultSetMap);
     }
 
+    private static boolean expressionToBeResolved(String formula) {
+        final Matcher matcher = COLUMN_EXPANSION_PATTERN.matcher(formula);
+        return matcher.find();
+    }
+
     /**
      * Top most function, callable externally
      *
@@ -1360,7 +1446,10 @@ public class OMRL2SQL {
      * @param query     the OMRL representation of the query
      * @return a String containing the SQL query to perform.
      */
-    public static Map<String, Object> omrlToOneSQLQuery(Map<String, Object> schema, Map<String, Object> sqlSchema, Map<String, Object> query) {
+    private static Map<String, Object> omrlToOneSQLQuery(Map<String, Object> schema,
+                                                         Map<String, Object> sqlSchema,
+                                                         Map<String, Object> query,
+                                                         Object expressionResolver) {
         String sql = "";
 
         boolean distinct = false;
@@ -1403,6 +1492,19 @@ public class OMRL2SQL {
                 } else {
                     String sqlSelect = (String)((Map)entityMap.get("sql_mapping")).get("sql_select");
                     if (sqlSelect != null) {
+                        if (expressionToBeResolved(sqlSelect)) { // Patch SQL Select stmt?
+                            if (expressionResolver != null) {
+                                if (false) { // expressionResolver instanceof ExpressionResolver) {
+//                                    try {
+//                                        sqlSelect = (String) ((ExpressionResolver)expressionResolver).resolveExpressions(sqlSelect, false);
+//                                    } catch (IOException ioe) {
+//                                        // Oops TODO Surface that?
+//                                    }
+                                } else if (expressionResolver instanceof Function) { // This is for the unit tests
+                                    sqlSelect = ((Function<String, String>)expressionResolver).apply(sqlSelect);
+                                }
+                            }
+                        }
                         fromClause.add(String.format("(%s)", sqlSelect));
                     } else {
                         // TODO Honk!
@@ -1495,18 +1597,25 @@ public class OMRL2SQL {
 //                    desc = ("#DESC".equalsIgnoreCase(sortDir));
                     theOneToExpand = ((List) one).get(1);
                 }
+                // TODO Consolidate. Same expansion as in 'where'
                 String entityName = (String) from;
                 String attributeName = (theOneToExpand instanceof List) ?
                         (String)((List)theOneToExpand).get(0) :
                         theOneToExpand.toString();
-                if (theOneToExpand instanceof List && ((List)theOneToExpand).size() > 2) { // Relation, and column expansion?
-                    String relationName = (String)((List)theOneToExpand).get(0);
-                    String entityFromRelation = getEntityFromRelation(entityName, relationName, schema);
+                String relationName = attributeName; // Ugly
+                String entityFromRelation = getEntityFromRelation(entityName, relationName, schema);
+                boolean linkedExpansion = false;
+                if (entityFromRelation != null && !entityFromRelation.isEmpty()) {
+                    linkedExpansion = isColumnExpansion(entityFromRelation, (String)((List)theOneToExpand).get(1), sqlSchema);
+                }
+                if (theOneToExpand instanceof List && ((List)theOneToExpand).size() > 1 && linkedExpansion) { // Relation, and column expansion?
+                    relationName = (String)((List)theOneToExpand).get(0);
+                    entityFromRelation = getEntityFromRelation(entityName, relationName, schema);
                     String tableName = findDBTableByEntityName(entityFromRelation, sqlSchema);
                     String dbColumnName = findDBColumnByEntityName(entityFromRelation, (String)((List)theOneToExpand).get(1), sqlSchema);
                     String expandedItem = expandFromList(entityFromRelation,
-                            (String)((List)theOneToExpand).get(1),
-                            (String)((List)theOneToExpand).get(2),
+                            (String)((List)theOneToExpand).get(0), //1), // TODO Verify
+                            (String)((List)theOneToExpand).get(1), //2), // TODO Verify
                             dbColumnName,
                             tableName,
                             (List)theOneToExpand,
@@ -1695,7 +1804,27 @@ public class OMRL2SQL {
 //                                        aliases.stream().forEach(alias -> resultSetMap.add(alias));
                                         aliases.stream().forEach(alias -> resultSetMap.add(String.format("%s.%s", relationName, alias)));
                                     } else {
-                                        resultSetMap.add(String.format("%s.%s", relationName, attName));
+                                        if (one instanceof List) { // Should be always the case
+                                            if (entityBasedResultMap) {
+                                                // Map to entity name, from relation name.
+                                                String topEntity = String.valueOf(from);
+                                                List<String> entityList = new ArrayList<>();
+                                                for (int i=0; i<((List) one).size()-1; i++) {
+                                                    String link = String.valueOf(((List) one).get(i));
+                                                    String linkedEntity = getEntityFromRelation(topEntity, link, schema);
+                                                    topEntity = linkedEntity;
+                                                    entityList.add(linkedEntity);
+                                                }
+                                                entityList.add(String.valueOf(((List) one).get(((List) one).size() - 1))); // The last one
+                                                String collected = entityList.stream().collect(Collectors.joining("."));
+                                                resultSetMap.add(collected);
+                                            } else {
+                                                String collected = (String) ((List) one).stream().collect(Collectors.joining("."));
+                                                resultSetMap.add(collected);
+                                            }
+                                        } else {
+                                            resultSetMap.add(String.format("%s.%s", relationName, attName));
+                                        }
                                     }
 //                                    resultSetMap.add(String.format("%s.%s", relationName, attName));
                                 }
@@ -1746,10 +1875,10 @@ public class OMRL2SQL {
                 (distinct ? "DISTINCT " : ""),
                 sqlSelectClause,
                 sqlFromClause,
-                (sqlJoinClause.isEmpty() ? "" : String.format(" %s", sqlJoinClause)),
-                (expandedWhere.isEmpty() ? "" : String.format(" WHERE %s", expandedWhere)),
+                (sqlJoinClause.isEmpty() ?    "" : String.format(" %s", sqlJoinClause)),
+                (expandedWhere.isEmpty() ?    "" : String.format(" WHERE %s", expandedWhere)),
                 (sqlGroupByClause.isEmpty() ? "" : String.format(" GROUP BY %s", sqlGroupByClause)),
-                (expandedHaving.isEmpty() ? "" : String.format(" HAVING %s", expandedHaving)),
+                (expandedHaving.isEmpty() ?   "" : String.format(" HAVING %s", expandedHaving)),
                 (sqlOrderByClause.isEmpty() ? "" : String.format(" ORDER BY %s", sqlOrderByClause)));
 
         Map<String, Object> finalMap = new HashMap<>();
@@ -1760,12 +1889,21 @@ public class OMRL2SQL {
         return finalMap;
     }
 
-    public static Map<String, Object> omrlToSQLQuery(Map<String, Object> schema, Map<String, Object> sqlSchema, Object query) {
+    public static Map<String, Object> omrlToSQLQuery(Map<String, Object> schema,
+                                                     Map<String, Object> sqlSchema,
+                                                     Object query) {
+        return omrlToSQLQuery(schema, sqlSchema, query, null);
+    }
+
+    public static Map<String, Object> omrlToSQLQuery(Map<String, Object> schema,
+                                                     Map<String, Object> sqlSchema,
+                                                     Object query,
+                                                     Object expressionResolver) { // Can be an ExpressionResolver or a Function<String, String> (for tests)
         Map<String, Object> queryMap;
         if (query instanceof List) {
-            queryMap = OMRL2SQL.omrlToNestedSQLQuery(schema, sqlSchema, (List)query);
+            queryMap = OMRL2SQL.omrlToNestedSQLQuery(schema, sqlSchema, (List)query, expressionResolver);
         } else {
-            queryMap = OMRL2SQL.omrlToOneSQLQuery(schema, sqlSchema, (Map)query);
+            queryMap = OMRL2SQL.omrlToOneSQLQuery(schema, sqlSchema, (Map)query, expressionResolver);
         }
         return queryMap;
     }

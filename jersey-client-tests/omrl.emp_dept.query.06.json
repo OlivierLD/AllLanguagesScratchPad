@@ -1,0 +1,12 @@
+{
+  "comment": "Multiple Join, DEPT -> EMP -> EXPENSES",
+  "select": [
+    [ "dept_no" ],
+    [ "emps", "emp_name" ],
+    [ "emps", "expenses", "exp_amount" ],
+    [ "emps", "expenses", "exp_category" ]
+  ],
+  "from": "dept",
+  "where": [],
+  "limit": 100
+}

@@ -2,11 +2,11 @@
   "comment": "Expansion, 2 parameters, 1 wildcard",
   "select": [
     [ "name" ],
-    [ "cost", "cost" ]
+    [ "cost" ]
   ],
   "from": "race",
-  "where": [ "OR", [ "AND", [ "=", [ "cost", "year" ], "2020" ],
-                            [ "=", [ "cost", "quarter" ], "Q1" ]
+  "where": [ "OR", [ "AND", [ "=", [ "year" ], "2020" ],
+                            [ "=", [ "quarter" ], "Q1" ]
                    ],
                    [ "=", [ "name" ], "RaceTrack whatever" ]
            ]

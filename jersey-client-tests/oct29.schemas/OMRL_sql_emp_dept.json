@@ -1,0 +1,171 @@
+[
+  {
+    "$ref": "https://oda.oracle.com/OMRL-Sql-Schema",
+    "schema": "emp_dept",
+    "entities": [
+      {
+        "name": "dept",
+        "sql_mapping": {
+          "table_name": "DEPT",
+          "primary_key": [
+            "DEPTNO"
+          ],
+          "default_order_by": [
+          ]
+        },
+        "attributes": [
+          {
+            "name": "dept_no",
+            "sql_mapping": {
+              "column_name": "DEPTNO"
+            }
+          },
+          {
+            "name": "dept_name",
+            "sql_mapping": {
+              "column_name": "DNAME"
+            }
+          },
+          {
+            "name": "dept_loc",
+            "sql_mapping": {
+              "column_name": "LOC"
+            }
+          },
+          {
+            "name": "emps",
+            "sql_mapping": {
+              "foreign_key": [
+                "DEPTNO"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "emp",
+        "sql_mapping": {
+          "table_name": "EMP",
+          "primary_key": [
+            "EMPNO"
+          ]
+        },
+        "attributes": [
+          {
+            "name": "emp_no",
+            "sql_mapping": {
+              "column_name": "EMPNO"
+            }
+          },
+          {
+            "name": "emp_name",
+            "sql_mapping": {
+              "column_name": "ENAME"
+            }
+          },
+          {
+            "name": "emp_job",
+            "sql_mapping": {
+              "column_name": "JOB"
+            }
+          },
+          {
+            "name": "emp_mgr",
+            "sql_mapping": {
+              "column_name": "MGR"
+            }
+          },
+          {
+            "name": "hiredate",
+            "sql_mapping": {
+              "column_name": "HIREDATE"
+            }
+          },
+          {
+            "name": "salary",
+            "sql_mapping": {
+              "column_name": "SAL"
+            }
+          },
+          {
+            "name": "commission",
+            "sql_mapping": {
+              "column_name": "COMM"
+            }
+          },
+          {
+            "name": "deptno",
+            "sql_mapping": {
+              "column_name": "DEPTNO"
+            }
+          },
+          {
+            "name": "dept",
+            "sql_mapping": {
+              "foreign_key": [
+                "DEPTNO"
+              ]
+            }
+          },
+          {
+            "name": "expenses",
+            "sql_mapping": {
+              "foreign_key": [
+                "EMPNO"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "expenses",
+        "sql_mapping": {
+          "table_name": "EXPENSES",
+          "primary_key": [
+            "ID", "EMPNO"
+          ]
+        },
+        "attributes": [
+          {
+            "name": "exp_id",
+            "sql_mapping": {
+              "column_name": "ID"
+            }
+          },
+          {
+            "name": "empno",
+            "sql_mapping": {
+              "column_name": "EMPNO"
+            }
+          },
+          {
+            "name": "exp_amount",
+            "sql_mapping": {
+              "column_name": "AMOUNT"
+            }
+          },
+          {
+            "name": "exp_vendor",
+            "sql_mapping": {
+              "column_name": "VENDOR"
+            }
+          },
+          {
+            "name": "exp_category",
+            "sql_mapping": {
+              "column_name": "CATEGORY"
+            }
+          },
+          {
+            "name": "emp",
+            "sql_mapping": {
+              "foreign_key": [
+                "EMPNO"
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

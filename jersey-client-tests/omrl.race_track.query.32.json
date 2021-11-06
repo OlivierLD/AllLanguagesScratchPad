@@ -4,14 +4,14 @@
   "select": [
     [ "name" ],
     [ "location" ],
-    [ "races", "cost", "cost" ],
-    [ "races", "cost", "year" ],
-    [ "races", "cost", "period" ]
+    [ "races", "cost" ],
+    [ "races", "year" ],
+    [ "races", "period" ]
   ],
   "from": "track",
-  "where": [ "AND", [ "=", [ "races", "cost", "year" ], "2020" ],
-                    [ "=", [ "races", "cost", "quarter" ], "Q1" ],
-                    [ "=", [ "races", "cost", "period" ], "ITD" ],
-                    [ "=", [ "races", "cost", "type" ], "LBR" ] ],
+  "where": [ "AND", [ "=", [ "races", "year" ], "2020" ],
+                    [ "=", [ "races", "quarter" ], "Q1" ],
+                    [ "=", [ "races", "period" ], "ITD" ],
+                    [ "=", [ "races", "type" ], "LBR" ] ],
   "limit": 50
 }

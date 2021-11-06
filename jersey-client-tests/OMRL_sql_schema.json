@@ -1261,23 +1261,19 @@
         "attributes": [
           {
             "name": "race_id",
-            "columnName": "Race_ID",
-            "uniqueValues": true
+            "columnName": "Race_ID"
           },
           {
             "name": "name",
-            "columnName": "NAME",
-            "uniqueValues": true
+            "columnName": "NAME"
           },
           {
             "name": "class",
-            "columnName": "Race_Class",
-            "uniqueValues": false
+            "columnName": "Race_Class"
           },
           {
             "name": "date",
-            "columnName": "Race_Date",
-            "uniqueValues": true
+            "columnName": "Race_Date"
           },
           {
             "name": "num_name_date",
@@ -1304,8 +1300,7 @@
             "name": "track",
             "foreignKey": [
               "Track_ID"
-            ],
-            "uniqueValues": false
+            ]
           }
         ]
       },
@@ -1354,28 +1349,23 @@
         "attributes": [
           {
             "name": "track_id",
-            "columnName": "Track_ID",
-            "uniqueValues": true
+            "columnName": "Track_ID"
           },
           {
             "name": "name",
-            "columnName": "Name",
-            "uniqueValues": true
+            "columnName": "Name"
           },
           {
             "name": "location",
-            "columnName": "Location",
-            "uniqueValues": true
+            "columnName": "Location"
           },
           {
             "name": "seating",
-            "columnName": "Seating",
-            "uniqueValues": false
+            "columnName": "Seating"
           },
           {
             "name": "year_opened",
-            "columnName": "Year_Opened",
-            "uniqueValues": false
+            "columnName": "Year_Opened"
           },
           {
             "name": "races",

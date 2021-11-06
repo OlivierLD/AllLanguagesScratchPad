@@ -3,9 +3,9 @@
     [ "name" ]
   ],
   "from": "race",
-  "where": [ "AND", [ "AND", [ "=", [ "cost", "year" ], "2020" ],
-                             [ "=", [ "cost", "quarter" ], "Q1" ] ],
-                    [ "AND", [ ">", [ "cost", "cost" ], 10 ],
+  "where": [ "AND", [ "AND", [ "=", [ "year" ], "2020" ],
+                             [ "=", [ "quarter" ], "Q1" ] ],
+                    [ "AND", [ ">", [ "cost" ], 10 ],
                              [ "=", [ "name" ], "whatever" ],
                              [ "<>", [ "race_name_1st_char" ], "R" ]
                     ]

@@ -1,15 +1,15 @@
 {
   "select": [
     [ "name" ],
-    [ "cost", "cost" ],
-    [ "cost", "year" ],
-    [ "cost", "period" ]
+    [ "cost" ],
+    [ "year" ],
+    [ "period" ]
   ],
   "from": "race",
-  "where": [ "OR", [ "AND", [ "=", [ "cost", "year" ], "2020" ],
-                            [ "=", [ "cost", "quarter" ], "Q1" ],
-                            [ "=", [ "cost", "period" ], "ITD" ],
-                            [ "=", [ "cost", "type" ], "LBR" ] ],
+  "where": [ "OR", [ "AND", [ "=", [ "year" ], "2020" ],
+                            [ "=", [ "quarter" ], "Q1" ],
+                            [ "=", [ "period" ], "ITD" ],
+                            [ "=", [ "type" ], "LBR" ] ],
                     [ "=", [ "name" ], "RaceTrack whatever" ]
            ]
 }

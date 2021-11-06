@@ -185,7 +185,8 @@ public class OracleTestTwo {
                 sqlEx.printStackTrace();
             }
             try {
-                executeStatement("ALTER TABLE RACE ADD CONSTRAINT RACE_FK_TRACK FOREIGN KEY (TRACK_ID) REFERENCES TRACK(TRACK_ID) ON DELETE CASCADE", connection);
+                executeStatement("ALTER TABLE RACE ADD CONSTRAINT RACE_FK_TRACK FOREIGN KEY (TRACK_ID) " +
+                        "REFERENCES TRACK(TRACK_ID) ON DELETE CASCADE", connection);
             } catch (SQLException sqlEx) {
                 sqlEx.printStackTrace();
             }
