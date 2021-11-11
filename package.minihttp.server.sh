@@ -7,9 +7,9 @@ rm -rf dist
 mkdir classes
 #
 # No debug option (to keep it small)
-# Add a '-g' to the javac command to have it.
+# Remove the '-g:none' from the javac command to have it.
 #
-javac -d classes -s src/main/java \
+javac -g:none -d classes -s src/main/java \
       src/main/java/http/httpserver/StandaloneHTTPServer.java
 mkdir dist
 echo "Main-Class: http.httpserver.StandaloneHTTPServer" > manifest.txt

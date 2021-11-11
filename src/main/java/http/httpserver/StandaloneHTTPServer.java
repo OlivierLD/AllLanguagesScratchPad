@@ -34,8 +34,8 @@ public class StandaloneHTTPServer {
 		return keepWorking;
 	}
 
-	private void keepWorking(boolean b) {
-		keepWorking = b;
+	private void stopWorking() {
+		keepWorking = false;
 	}
 
 	public StandaloneHTTPServer() {
@@ -55,9 +55,9 @@ public class StandaloneHTTPServer {
 		System.out.printf("HTTP Port:%d\n", port);
 
 		if (prms != null && prms.length > 0) {
-			for (int i = 0; i < prms.length; i++) {
-				if (prms[i].startsWith(VERBOSE_PRM_PREFIX)) {
-					verbose = prms[i].substring(VERBOSE_PRM_PREFIX.length()).equalsIgnoreCase("y");
+			for (String prm : prms) {
+				if (prm.startsWith(VERBOSE_PRM_PREFIX)) {
+					verbose = prm.substring(VERBOSE_PRM_PREFIX.length()).equalsIgnoreCase("y");
 				}
 			}
 		}
@@ -96,7 +96,7 @@ public class StandaloneHTTPServer {
 					} else if (line.startsWith("POST /exit") || line.startsWith("GET /exit")) {
 						System.out.println("Received an exit signal from REST request");
 						synchronized (dummyThread) {
-							keepWorking(false);
+							stopWorking();
 							dummyThread.notify();
 						}
 						try {
@@ -149,11 +149,11 @@ public class StandaloneHTTPServer {
 					try {
 						BufferedReader br = new BufferedReader(new FileReader(data));
 						String line = "";
-						String content = "";
+						StringBuilder content = new StringBuilder();
 						while (line != null) {
 							line = br.readLine();
 							if (line != null) {
-								content += (line + "\n");
+								content.append(line + "\n");
 							}
 						}
 						br.close();
@@ -219,9 +219,8 @@ public class StandaloneHTTPServer {
 			System.exit(0);
 		}
 
-		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-			System.out.println("\nShutting down nicely...");
-		}, "Shutdown Hook"));
+		Runtime.getRuntime().addShutdownHook(new Thread(() -> System.out.println("\nShutting down nicely..."),
+				"Shutdown Hook"));
 
 		new StandaloneHTTPServer(args);
 	}
@@ -229,13 +228,13 @@ public class StandaloneHTTPServer {
 	private static boolean isHelpRequired(String... args) {
 		boolean ret = false;
 		if (args != null) {
-			for (int i = 0; i < args.length; i++) {
-				if (args[i].equalsIgnoreCase("-H") ||
-						args[i].equalsIgnoreCase("-HELP") ||
-						args[i].equalsIgnoreCase("--HELP") ||
-						args[i].equalsIgnoreCase("HELP") ||
-						args[i].equals("?") ||
-						args[i].equals("-?")) {
+			for (String arg : args) {
+				if (arg.equalsIgnoreCase("-H") ||
+						arg.equalsIgnoreCase("-HELP") ||
+						arg.equalsIgnoreCase("--HELP") ||
+						arg.equalsIgnoreCase("HELP") ||
+						arg.equals("?") ||
+						arg.equals("-?")) {
 					ret = true;
 					break;
 				}
