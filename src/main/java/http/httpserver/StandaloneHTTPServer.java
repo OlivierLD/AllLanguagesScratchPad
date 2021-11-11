@@ -1,11 +1,6 @@
 package http.httpserver;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 
@@ -70,7 +65,7 @@ public class StandaloneHTTPServer {
 			while (keepWorking()) {
 				try {
 					synchronized (this) {
-						wait(1_000L);
+						wait(1_000L); // This is what this thread is doing... Interesting, no?
 					}
 				} catch (InterruptedException ie) {
 					System.out.println("==> Bing.");
@@ -81,10 +76,10 @@ public class StandaloneHTTPServer {
 		});
 		dummyThread.start();
 
-		// Infinite loop
+		// Infinite loop, waiting for client's input.
 		try {
 			ServerSocket ss = new ServerSocket(port);
-			while (true) {
+			while (keepWorking()) {
 				Socket client = ss.accept();
 				BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
 				PrintWriter out = new PrintWriter(new OutputStreamWriter(client.getOutputStream()));
@@ -92,15 +87,18 @@ public class StandaloneHTTPServer {
 				String line;
 				while ((line = in.readLine()) != null) {
 					if (line.length() == 0) {
-						break;
-					} else if (line.startsWith("POST /exit") || line.startsWith("GET /exit")) {
+						break; // Done reading the request
+					} else if (line.startsWith("POST /exit ") || line.startsWith("GET /exit ")) {
 						System.out.println("Received an exit signal from REST request");
+						System.out.println("Client will not be happy (no response).");
 						synchronized (dummyThread) {
 							stopWorking();
 							dummyThread.notify();
 						}
 						try {
-							Thread.sleep(1_000L);
+							synchronized (this) {
+								this.wait(1_000L);
+							}
 						} // Just give it some time to stop...
 						catch (InterruptedException ie) {
 							// Boom!
@@ -130,7 +128,12 @@ public class StandaloneHTTPServer {
 		out.println(generateContent(request));
 	}
 
-	// The actual skill of the server is here.
+	/**
+	 * The skill of the server is here
+	 *
+	 * @param request One line of the request
+	 * @return A valid HTTP response (with a code), understood by an HTTP client.
+	 */
 	private String generateContent(String request) {
 		String str = ""; // "Content-Type: text/plain\r\n\r\n";
 		if (verbose) {
@@ -153,7 +156,7 @@ public class StandaloneHTTPServer {
 						while (line != null) {
 							line = br.readLine();
 							if (line != null) {
-								content.append(line + "\n");
+								content.append(String.join(line, "\n"));
 							}
 						}
 						br.close();
@@ -207,7 +210,7 @@ public class StandaloneHTTPServer {
 		System.out.println("http://localhost:" + System.getProperty("http.port", "9999"));
 		System.out.println("----------------------------------");
 		if (isHelpRequired(args)) {
-			System.out.println("Usage is: java " + new StandaloneHTTPServer().getClass().getName() + " prms");
+			System.out.println("Usage is: java " + StandaloneHTTPServer.class.getName() + " prms");
 			System.out.println("\twhere prms can be:");
 			System.out.println("\t-?\tDisplay this message");
 			System.out.println("\t-verbose=[y|n] - default is n");
@@ -215,7 +218,7 @@ public class StandaloneHTTPServer {
 			System.out.println("\t-Dhttp.port=[port number]\tThe HTTP port to listen to, 9999 by default");
 			System.out.println("\t-Dhttp.host=[hostname]   \tThe HTTP host to bind, localhost by default");
 			System.out.println("Example:");
-			System.out.println("java -Dhttp.port=6789 -Dhttp.host=localhost " + new StandaloneHTTPServer().getClass().getName());
+			System.out.println("java -Dhttp.port=6789 -Dhttp.host=localhost " + StandaloneHTTPServer.class.getName());
 			System.exit(0);
 		}
 
