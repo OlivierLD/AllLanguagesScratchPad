@@ -222,6 +222,7 @@ public class StandaloneHTTPServer {
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 			System.out.println("\nShutting down nicely...");
 		}, "Shutdown Hook"));
+
 		new StandaloneHTTPServer(args);
 	}
 
