@@ -1,3 +1,9 @@
+# Miscellaneous things
+
+### The smallest HTTP Server ever
+See `package.minihttp.server.sh`, and the class it compiles, `http.httpserver.StandaloneHTTPServer.java`.  
+It's about 5Kb big.
+
 ### To run the annotation processor (generates new code at **_Compile_** Time)
 > From <https://www.baeldung.com/java-annotation-processing-builder>
 

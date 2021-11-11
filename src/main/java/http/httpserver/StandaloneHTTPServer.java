@@ -1,36 +1,44 @@
 package http.httpserver;
 
-
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Dedicated HTTP Server.
- * This is NOT J2EE Compliant, not even CGI.
+ * Dedicated (meaning does only what it's designed to do, nothing generic) HTTP Server.
+ * This is NOT J2EE Compliant, nor CGI, nor anything.
+ *
+ * This is the smallest server ever, as an example. It illustrates the level-0 basics.
+ * Does valid HTTP Responses, in pure ASCII. Only ONE class involved.
+ *
+ * For HTTP Responses, see https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html
+ *
+ * To run it, try:
+ *       curl --location --request GET 'http://localhost:9999/device-access?dev=01&status=off'
+ * and then look in the code for details.
+ *
+ * To package and run it, use package.minihttp.server.sh
+ * The only required jar is 5kb big.
  */
 public class StandaloneHTTPServer {
 	private static boolean verbose = false;
-	private static boolean keepWorking = true;
+	private boolean keepWorking = true;
 
-	private static boolean keepWorking() {
+	private boolean keepWorking() {
 		return keepWorking;
 	}
 
-	private static void keepWorking(boolean b) {
+	private void keepWorking(boolean b) {
 		keepWorking = b;
 	}
 
 	public StandaloneHTTPServer() {
 	}
 
-	public StandaloneHTTPServer(String[] prms) {
+	private final static String VERBOSE_PRM_PREFIX = "--verbose:";
+
+	public StandaloneHTTPServer(String... prms) {
 		// Bind the server
 		String machineName = "localhost";
 		String port = "9999";
@@ -43,11 +51,9 @@ public class StandaloneHTTPServer {
 
 		if (prms != null && prms.length > 0) {
 			for (int i = 0; i < prms.length; i++) {
-//      System.out.println("Parameter[" + i + "]=" + prms[i]);
-				if (prms[i].startsWith("-verbose=")) {
-					verbose = prms[i].substring("-verbose=".length()).equals("y");
+				if (prms[i].startsWith(VERBOSE_PRM_PREFIX)) {
+					verbose = prms[i].substring(VERBOSE_PRM_PREFIX.length()).equalsIgnoreCase("y");
 				}
-//      System.out.println("verbose=" + verbose);
 			}
 		}
 
@@ -62,21 +68,19 @@ public class StandaloneHTTPServer {
 			System.out.println("Server running from [" + System.getProperty("user.dir") + "]");
 		}
 		// For the example: Start a Thread that does its own job...
-		Thread dummyThread = new Thread() {
-			public void run() {
-				while (keepWorking()) {
-					try {
-						synchronized (this) {
-							wait(1_000L);
-						}
-					} catch (InterruptedException ie) {
-						System.out.println("==> Bing.");
+		Thread dummyThread = new Thread(() -> {
+			while (keepWorking()) {
+				try {
+					synchronized (this) {
+						wait(1_000L);
 					}
-					System.out.println("Boom!");
+				} catch (InterruptedException ie) {
+					System.out.println("==> Bing.");
 				}
-				System.out.println("Told to get out.");
+				// System.out.println("Boom!");
 			}
-		};
+			System.out.println("Told to get out.");
+		});
 		dummyThread.start();
 
 
@@ -90,9 +94,9 @@ public class StandaloneHTTPServer {
 
 				String line;
 				while ((line = in.readLine()) != null) {
-					if (line.length() == 0)
+					if (line.length() == 0) {
 						break;
-					else if (line.startsWith("POST /exit") || line.startsWith("GET /exit")) {
+					} else if (line.startsWith("POST /exit") || line.startsWith("GET /exit")) {
 						System.out.println("Received an exit signal");
 						synchronized (dummyThread) {
 							keepWorking(false);
@@ -102,34 +106,37 @@ public class StandaloneHTTPServer {
 							Thread.sleep(1_000L);
 						} // Just give it some time to stop...
 						catch (InterruptedException ie) {
+							// Boom!
 						}
-						System.exit(0);
+						System.exit(0); // That's tough...
 					} else if (line.startsWith("POST /") || line.startsWith("GET /")) {
 						manageRequest(line, out);
 					}
-					if (verbose)
+					if (verbose) {
 						System.out.println("Read:[" + line + "]");
+					}
 				}
-//      out.println(generateContent());
-
 				out.flush();
 				out.close();
 				in.close();
 				client.close();
 			}
 		} catch (Exception e) {
-			System.err.println(e.toString());
 			e.printStackTrace();
 		}
 	}
 
+	// Just a wrapper, really.
 	private void manageRequest(String request, PrintWriter out) {
 		out.println(generateContent(request));
 	}
 
+	// The actual skill of the server is here.
 	private String generateContent(String request) {
-		String str = ""; // "Content-Type: text/xml\r\n\r\n";
-//  System.out.println("Managing request [" + request + "]");
+		String str = ""; // "Content-Type: text/plain\r\n\r\n";
+		if (verbose) {
+			System.out.println("Managing request [" + request + "]");
+		}
 		String[] elements = request.split(" ");
 		if (elements[0].equals("GET")) {
 			String[] parts = elements[1].split("\\?");
@@ -142,15 +149,17 @@ public class StandaloneHTTPServer {
 						String line = "";
 						while (line != null) {
 							line = br.readLine();
-							if (line != null)
+							if (line != null) {
 								str += (line + "\n");
+							}
 						}
 						br.close();
 					} catch (Exception ex) {
 						ex.printStackTrace();
 					}
-				} else
-					str = "- There is no parameter is this query -";
+				} else {
+					str = "HTTP/1.1 400\r\n\r\n- There is no parameter is this query -";
+				}
 			} else {
 				if (request.startsWith("GET /device-access")) {
 					System.out.println("--> " + request);
@@ -160,27 +169,30 @@ public class StandaloneHTTPServer {
 					for (String nv : params) {
 						String[] nvPair = nv.split("=");
 						//        System.out.println(nvPair[0] + " = " + nvPair[1]);
-						if (nvPair[0].equals("dev"))
+						if (nvPair[0].equals("dev")) {
 							dev = nvPair[1];
-						else if (nvPair[0].equals("status"))
+						} else if (nvPair[0].equals("status")) {
 							status = nvPair[1];
+						}
 					}
 					System.out.println("Setting [" + dev + "] to [" + status + "]");
 					if (("01".equals(dev) || "02".equals(dev)) &&
 							("on".equals(status) || "off".equals(status))) {
-						str = "200 OK\r\n";
+						str = String.format("HTTP/1.1 200\r\n\r\nGot it. Dev:%s, Status:%s\r\n", dev, status);
 					} else {
-						System.out.println("Unknown dev/status [" + dev + "/" + status + "]");
+						str = ("HTTP/1.1 400\r\n\r\nUnknown dev/status [" + dev + "/" + status + "]");
 					}
+				} else {
+					str = ("HTTP/1.1 400\r\n\r\nUn-managed: " + request);
 				}
 			}
-		} else
-			str = "- Not managed -";
-
+		} else {
+			str = "HTTP/1.1 400\r\n\r\n- Not managed -";
+		}
 		return str;
 	}
 
-	public static void shutdown() {
+	public void shutdown() {
 		System.out.println("Shutting down");
 	}
 
@@ -206,20 +218,38 @@ public class StandaloneHTTPServer {
 			System.out.println("java -Dhttp.port=6789 -Dhttp.host=localhost " + new StandaloneHTTPServer().getClass().getName());
 			System.exit(0);
 		}
+
+		final Thread itsMe = Thread.currentThread();
+		final AtomicReference<StandaloneHTTPServer> serverReference = new AtomicReference<>();
+
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-				System.out.println("\nShutting down nicely...");
-				shutdown();
-			}, "Shutdown Hook"));
-		new StandaloneHTTPServer(args);
+			System.out.println("\nShutting down nicely...");
+			synchronized (itsMe) {
+				if (serverReference.get() != null) {
+					serverReference.get().shutdown();
+				}
+//				itsMe.notify();
+//				try {
+//					itsMe.join();
+//					System.out.println("... Gone");
+//				} catch (InterruptedException ie) {
+//					ie.printStackTrace();
+//				}
+			}
+		}, "Shutdown Hook"));
+//		server = new StandaloneHTTPServer(args);
+		StandaloneHTTPServer server = new StandaloneHTTPServer(args);
+		serverReference.set(server);
 	}
 
 	private static boolean isHelpRequired(String... args) {
 		boolean ret = false;
 		if (args != null) {
 			for (int i = 0; i < args.length; i++) {
-				if (args[i].toUpperCase().equals("-H") ||
-						args[i].toUpperCase().equals("-HELP") ||
-						args[i].toUpperCase().equals("HELP") ||
+				if (args[i].equalsIgnoreCase("-H") ||
+						args[i].equalsIgnoreCase("-HELP") ||
+						args[i].equalsIgnoreCase("--HELP") ||
+						args[i].equalsIgnoreCase("HELP") ||
 						args[i].equals("?") ||
 						args[i].equals("-?")) {
 					ret = true;

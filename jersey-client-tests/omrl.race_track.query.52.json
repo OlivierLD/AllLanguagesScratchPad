@@ -1,0 +1,7 @@
+{
+  "select": [
+    [ "*" ],
+    [ "track", "name" ]
+  ],
+  "from": "race"
+}

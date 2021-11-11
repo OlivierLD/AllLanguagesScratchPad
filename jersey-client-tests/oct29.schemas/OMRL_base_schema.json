@@ -1040,6 +1040,12 @@
             },
             {
                 "name": "track",
+                "default_attributes": [
+                    "name", "location", "year_opened"
+                ],
+                "minimum_attributes": [
+                    "name", "location"
+                ],
                 "attributes": [
                     {
                         "name": "track_id",

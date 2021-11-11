@@ -78,6 +78,8 @@ public class FirstParser {
         _48("omrl.race_track.query.48.json", "race_track", false),
         _49("omrl.race_track.query.49.json", "race_track", true),
         _50("omrl.race_track.query.50.json", "race_track", true),
+        _51("omrl.race_track.query.51.json", "race_track", true),
+        _52("omrl.race_track.query.52.json", "race_track", true),
         _DM_01("omrl.dm.query.01.json", "department_management", false),
         _DM_02("omrl.dm.query.02.json", "department_management", false),
         _JC_01("omrl.jc.query.03.json", "journal_committee", false),
@@ -126,7 +128,7 @@ public class FirstParser {
         boolean justOne = true;
         if (justOne) {
 //            executeQuery(OMRLQuery._BK_01); // DEFAULT_QUERY); // Default one
-            executeQuery(OMRLQuery._17); // DEFAULT_QUERY); // Default one
+            executeQuery(OMRLQuery._52); // DEFAULT_QUERY); // Default one
         } else {
             for (OMRLQuery query : OMRLQuery.values()) {
                 System.out.println("Executing " + query.toString());
