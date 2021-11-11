@@ -1,12 +1,16 @@
 package http.httpserver;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Dedicated (meaning does only what it's designed to do, nothing generic) HTTP Server.
+ * Dedicated (meaning does only what it's designed to explicitly do, nothing generic) HTTP Server.
  * This is NOT J2EE Compliant, nor CGI, nor anything.
  *
  * This is the smallest server ever, as an example. It illustrates the level-0 basics.
@@ -16,10 +20,11 @@ import java.util.concurrent.atomic.AtomicReference;
  *
  * To run it, try:
  *       curl --location --request GET 'http://localhost:9999/device-access?dev=01&status=off'
+ *       curl --location --request GET 'http://localhost:9999/?file=package.minihttp.server.sh'
  * and then look in the code for details.
  *
  * To package and run it, use package.minihttp.server.sh
- * The only required jar is 5kb big.
+ * The only required jar is ~5kb big.
  */
 public class StandaloneHTTPServer {
 	private static boolean verbose = false;
@@ -41,13 +46,13 @@ public class StandaloneHTTPServer {
 	public StandaloneHTTPServer(String... prms) {
 		// Bind the server
 		String machineName = "localhost";
-		String port = "9999";
+		int port = 9999;
 
 		machineName = System.getProperty("http.host", machineName);
-		port = System.getProperty("http.port", port);
+		port = Integer.parseInt(System.getProperty("http.port", String.valueOf(port)));
 
-		System.out.println("HTTP Host:" + machineName);
-		System.out.println("HTTP Port:" + port);
+		System.out.printf("HTTP Host:%s\n", machineName);
+		System.out.printf("HTTP Port:%d\n", port);
 
 		if (prms != null && prms.length > 0) {
 			for (int i = 0; i < prms.length; i++) {
@@ -55,13 +60,6 @@ public class StandaloneHTTPServer {
 					verbose = prms[i].substring(VERBOSE_PRM_PREFIX.length()).equalsIgnoreCase("y");
 				}
 			}
-		}
-
-		int _port = 0;
-		try {
-			_port = Integer.parseInt(port);
-		} catch (NumberFormatException nfe) {
-			throw nfe;
 		}
 
 		if (verbose) {
@@ -83,10 +81,9 @@ public class StandaloneHTTPServer {
 		});
 		dummyThread.start();
 
-
 		// Infinite loop
 		try {
-			ServerSocket ss = new ServerSocket(_port);
+			ServerSocket ss = new ServerSocket(port);
 			while (true) {
 				Socket client = ss.accept();
 				BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
@@ -97,7 +94,7 @@ public class StandaloneHTTPServer {
 					if (line.length() == 0) {
 						break;
 					} else if (line.startsWith("POST /exit") || line.startsWith("GET /exit")) {
-						System.out.println("Received an exit signal");
+						System.out.println("Received an exit signal from REST request");
 						synchronized (dummyThread) {
 							keepWorking(false);
 							dummyThread.notify();
@@ -111,6 +108,8 @@ public class StandaloneHTTPServer {
 						System.exit(0); // That's tough...
 					} else if (line.startsWith("POST /") || line.startsWith("GET /")) {
 						manageRequest(line, out);
+					} else {
+						System.out.println("Un-Managed case:" + line);
 					}
 					if (verbose) {
 						System.out.println("Read:[" + line + "]");
@@ -140,25 +139,30 @@ public class StandaloneHTTPServer {
 		String[] elements = request.split(" ");
 		if (elements[0].equals("GET")) {
 			String[] parts = elements[1].split("\\?");
-			if (parts.length != 2) {
-				String fileName = parts[0];
-				File data = new File("." + fileName);
+			if (parts.length == 2 && parts[1].startsWith("file=")) {
+				String fileName = parts[1].substring("file=".length());
+				File data = new File(fileName);
+				if (verbose) {
+					System.out.println("Trying to read " + fileName);
+				}
 				if (data.exists()) {
 					try {
 						BufferedReader br = new BufferedReader(new FileReader(data));
 						String line = "";
+						String content = "";
 						while (line != null) {
 							line = br.readLine();
 							if (line != null) {
-								str += (line + "\n");
+								content += (line + "\n");
 							}
 						}
 						br.close();
+						str = "HTTP/1.1 200\r\n\r\n" + content;
 					} catch (Exception ex) {
 						ex.printStackTrace();
 					}
 				} else {
-					str = "HTTP/1.1 400\r\n\r\n- There is no parameter is this query -";
+					str = String.format("HTTP/1.1 400\r\n\r\nThere is no parameter is this query. File %s not found.", fileName);
 				}
 			} else {
 				if (request.startsWith("GET /device-access")) {
@@ -192,10 +196,6 @@ public class StandaloneHTTPServer {
 		return str;
 	}
 
-	public void shutdown() {
-		System.out.println("Shutting down");
-	}
-
 	/**
 	 * @param args see usage
 	 */
@@ -219,27 +219,10 @@ public class StandaloneHTTPServer {
 			System.exit(0);
 		}
 
-		final Thread itsMe = Thread.currentThread();
-		final AtomicReference<StandaloneHTTPServer> serverReference = new AtomicReference<>();
-
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 			System.out.println("\nShutting down nicely...");
-			synchronized (itsMe) {
-				if (serverReference.get() != null) {
-					serverReference.get().shutdown();
-				}
-//				itsMe.notify();
-//				try {
-//					itsMe.join();
-//					System.out.println("... Gone");
-//				} catch (InterruptedException ie) {
-//					ie.printStackTrace();
-//				}
-			}
 		}, "Shutdown Hook"));
-//		server = new StandaloneHTTPServer(args);
-		StandaloneHTTPServer server = new StandaloneHTTPServer(args);
-		serverReference.set(server);
+		new StandaloneHTTPServer(args);
 	}
 
 	private static boolean isHelpRequired(String... args) {
