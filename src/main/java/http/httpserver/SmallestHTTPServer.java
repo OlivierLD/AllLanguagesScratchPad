@@ -26,7 +26,7 @@ import java.net.Socket;
  * To package and run it, use package.minihttp.server.sh
  * The only required jar is ~5kb big.
  */
-public class StandaloneHTTPServer {
+public class SmallestHTTPServer {
 	private static boolean verbose = false;
 	private boolean keepWorking = true;
 
@@ -38,12 +38,9 @@ public class StandaloneHTTPServer {
 		keepWorking = false;
 	}
 
-	public StandaloneHTTPServer() {
-	}
-
 	private final static String VERBOSE_PRM_PREFIX = "--verbose:";
 
-	public StandaloneHTTPServer(String... prms) {
+	public SmallestHTTPServer(String... prms) {
 		// Bind the server
 		String machineName = "localhost";
 		int port = 9999;
@@ -65,27 +62,11 @@ public class StandaloneHTTPServer {
 		if (verbose) {
 			System.out.println("Server running from [" + System.getProperty("user.dir") + "]");
 		}
-		// For the example: Start a Thread that does its own job...
-		Thread dummyThread = new Thread(() -> {
-			while (keepWorking()) {
-				try {
-					synchronized (this) {
-						wait(1_000L); // This is what this thread is doing... Interesting, no?
-					}
-				} catch (InterruptedException ie) {
-					System.out.println("==> Bing.");
-				}
-				// System.out.println("Boom!");
-			}
-			System.out.println("Told to get out.");
-		});
-		dummyThread.start();
-
 		// Infinite loop, waiting for client's input.
 		try {
 			ServerSocket ss = new ServerSocket(port);
 			while (keepWorking()) {
-				Socket client = ss.accept();
+				Socket client = ss.accept(); // Blocking
 				BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
 				PrintWriter out = new PrintWriter(new OutputStreamWriter(client.getOutputStream()));
 
@@ -96,12 +77,9 @@ public class StandaloneHTTPServer {
 					} else if (line.startsWith("POST /exit ") || line.startsWith("GET /exit ")) {
 						System.out.println("Received an exit signal from REST request");
 						System.out.println("Client will not be happy (no response).");
-						synchronized (dummyThread) {
-							stopWorking();
-							dummyThread.notify();
-						}
 						try {
 							synchronized (this) {
+								stopWorking();
 								this.wait(1_000L);
 							}
 						} // Just give it some time to stop...
@@ -123,6 +101,7 @@ public class StandaloneHTTPServer {
 				in.close();
 				client.close();
 			}
+			System.out.println("Exiting the loop.");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -134,7 +113,7 @@ public class StandaloneHTTPServer {
 	}
 
 	/**
-	 * The skill of the server is here
+     * The skill of the server is here
 	 *
 	 * @param request One line of the request
 	 * @return A valid HTTP response (with a code), understood by an HTTP client.
@@ -170,7 +149,7 @@ public class StandaloneHTTPServer {
 						ex.printStackTrace();
 					}
 				} else {
-					str = String.format("HTTP/1.1 400\r\n\r\nThere is no parameter is this query. File %s not found.", fileName);
+					str = String.format("HTTP/1.1 400\r\n\r\nFile %s not found.", fileName);
 				}
 			} else {
 				if (request.startsWith("GET /device-access")) {
@@ -214,40 +193,21 @@ public class StandaloneHTTPServer {
 		System.out.println("Data are available at:");
 		System.out.println("http://localhost:" + System.getProperty("http.port", "9999"));
 		System.out.println("----------------------------------");
-		if (isHelpRequired(args)) {
-			System.out.println("Usage is: java " + StandaloneHTTPServer.class.getName() + " prms");
-			System.out.println("\twhere prms can be:");
-			System.out.println("\t-?\tDisplay this message");
-			System.out.println("\t--verbose:[y|n] - default is n");
-			System.out.println("The following variables can be defined in the command line (before the class name):");
-			System.out.println("\t-Dhttp.port=[port number]\tThe HTTP port to listen to, 9999 by default");
-			System.out.println("\t-Dhttp.host=[hostname]   \tThe HTTP host to bind, localhost by default");
-			System.out.println("Example:");
-			System.out.println("java -Dhttp.port=6789 -Dhttp.host=localhost " + StandaloneHTTPServer.class.getName());
-			System.exit(0);
-		}
+
+		System.out.println("Usage is: java " + SmallestHTTPServer.class.getName() + " prms");
+		System.out.println("\twhere prms can be:");
+		System.out.println("\t--verbose:[y|n] - default is n");
+		System.out.println("The following variables can be defined in the command line (before the class name):");
+		System.out.println("\t-Dhttp.port=[port number]\tThe HTTP port to listen to, 9999 by default");
+		System.out.println("\t-Dhttp.host=[hostname]   \tThe HTTP host to bind, localhost by default");
+		System.out.println("Example:");
+		System.out.println("java -Dhttp.port=6789 -Dhttp.host=localhost " + SmallestHTTPServer.class.getName());
 
 		Runtime.getRuntime().addShutdownHook(new Thread(() -> System.out.println("\nShutting down nicely..."),
 				"Shutdown Hook"));
 
-		new StandaloneHTTPServer(args);
-	}
+		new SmallestHTTPServer(args);
 
-	private static boolean isHelpRequired(String... args) {
-		boolean ret = false;
-		if (args != null) {
-			for (String arg : args) {
-				if (arg.equalsIgnoreCase("-H") ||
-						arg.equalsIgnoreCase("-HELP") ||
-						arg.equalsIgnoreCase("--HELP") ||
-						arg.equalsIgnoreCase("HELP") ||
-						arg.equals("?") ||
-						arg.equals("-?")) {
-					ret = true;
-					break;
-				}
-			}
-		}
-		return ret;
+		System.out.println("Exiting main.");
 	}
 }
