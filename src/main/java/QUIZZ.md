@@ -21,10 +21,10 @@
 - Monitor it with `jconsole`
   - `java -cp classes oliv.fibonacci.One 100`
   - `jconsole`
-    ![JConsole](../../../images/jconsole.png)
-    ![JConsole](../../../images/jconsole.2.png)
-    ![JConsole](../../../images/jconsole.3.png)
-    ![JConsole](../../../images/jconsole.4.png)
+    ![JConsole](../../../misc-tests/images/jconsole.png)
+    ![JConsole](../../../misc-tests/images/jconsole.2.png)
+    ![JConsole](../../../misc-tests/images/jconsole.3.png)
+    ![JConsole](../../../misc-tests/images/jconsole.4.png)
   - What do you see?
   - What's going to happen?
   - How can you fix that?
