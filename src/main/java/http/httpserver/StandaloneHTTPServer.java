@@ -20,7 +20,7 @@ import java.net.Socket;
  *
  * To run it, try:
  *       curl --location --request GET 'http://localhost:9999/device-access?dev=01&status=off'
- *       curl --location --request GET 'http://localhost:9999/?file=package.minihttp.server.sh'
+ *       curl --location --request GET 'http://localhost:9999/?file=robot.txt'
  * and then look in the code for details.
  *
  * To package and run it, use package.minihttp.server.sh
