@@ -70,12 +70,14 @@ public class StandaloneHTTPServer {
 			while (keepWorking()) {
 				try {
 					synchronized (this) {
-						wait(1_000L); // This is what this thread is doing... Interesting, no?
+						// This is what this thread is doing... Interesting, no?
+						// This is where you would gather sensor data, wait for events, etc.
+						wait(1_000L);
+						// System.out.println("Boom!");
 					}
 				} catch (InterruptedException ie) {
 					System.out.println("==> Bing.");
 				}
-				// System.out.println("Boom!");
 			}
 			System.out.println("Told to get out.");
 		});
