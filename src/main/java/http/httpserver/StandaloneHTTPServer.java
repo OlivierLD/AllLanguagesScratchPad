@@ -67,7 +67,7 @@ public class StandaloneHTTPServer {
 			System.out.println("Server running from [" + System.getProperty("user.dir") + "]");
 		}
 		// For the example: Start a Thread that does its own job...
-		Thread dummyThread = new Thread(() -> {
+		final Thread dummyThread = new Thread(() -> {
 			while (keepWorking()) {
 				try {
 					synchronized (this) {
