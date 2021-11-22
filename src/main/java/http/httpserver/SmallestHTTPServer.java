@@ -15,6 +15,7 @@ import java.net.Socket;
  *
  * This is the smallest server ever, as an example. It illustrates the level-0 basics.
  * Does valid HTTP Responses, in pure ASCII. Only ONE class involved.
+ * Only serves the implemented requests.
  *
  * For HTTP Responses, see https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html
  *
