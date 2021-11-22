@@ -23,8 +23,8 @@ import java.net.Socket;
  *       curl --location --request GET 'http://localhost:9999/?file=robot.txt'
  * and then look in the code for details.
  *
- * To package and run it, use package.minihttp.server.sh
- * The only required jar is ~5kb big.
+ * To package and run it, use package.snallesthttp.server.sh
+ * The only required jar is less than ~5kb big.
  */
 public class StandaloneHTTPServer {
 	private static boolean verbose = false;

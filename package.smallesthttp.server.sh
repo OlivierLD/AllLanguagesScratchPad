@@ -1,5 +1,5 @@
 #!/bin/bash
-echo -e "Packaging Smallest HTTP Server!"
+echo -e "Smallest HTTP Server packaging script"
 FROM_DIR=$(pwd)
 echo -e "Packaging the server..."
 rm -rf classes
@@ -8,6 +8,7 @@ mkdir classes
 #
 # No debug option (to keep it small)
 # Remove the '-g:none' from the javac command to have it.
+# Add -verbose if interested
 #
 javac -g:none -d classes -s src/main/java \
       src/main/java/http/httpserver/SmallestHTTPServer.java
@@ -23,4 +24,8 @@ echo -e "java [-Dhttp.port:8888] -jar smallest.http.jar --verbose:false"
 #
 cd ${FROM_DIR}
 rm manifest.txt
-echo -e "Done."
+echo -e "------------------------"
+echo -e "Done. Jar is ready:"
+echo -e "------------------------"
+ls -lisah dist
+echo -e "------------------------"
