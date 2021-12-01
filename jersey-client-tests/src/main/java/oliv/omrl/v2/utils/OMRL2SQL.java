@@ -3,6 +3,10 @@ package oliv.omrl.v2.utils;
 //import oracle.cloud.bots.model.dialog.ExpressionResolver;
 //import oracle.cloud.bots.resource.CommonLogger;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.ArrayList;
@@ -25,7 +29,7 @@ import static oliv.omrl.v2.OMRL2SQLConstants.*;
 
 
 /**
- * The method to invoke is {@link #omrlToSQLQuery(Map, Map, Object)}.
+ * The method to invoke is {@link #omrlToSQLQuery(Map, Map, JSONObject)}.
  *
  * See https://confluence.oraclecorp.com/confluence/display/IBS/ORML+to+SQL%2C+step+2
  * Earlier version, see https://confluence.oraclecorp.com/confluence/display/IBS/OMRL+to+SQL+-+Scratch+pad
@@ -35,7 +39,7 @@ import static oliv.omrl.v2.OMRL2SQLConstants.*;
  *
  * OMRL: Oracle Meaning Representation Language
  *
- * TODO ALIASES, COLUMN_EXPANSIONS through Relations/Links (WiP)
+ * TODO ALIASES, COLUMN_EXPANSIONS with wildcards (WiP)
  */
 public class OMRL2SQL {
     private static final Logger LOGGER = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME); // CommonLogger.getLogger();
@@ -415,13 +419,16 @@ public class OMRL2SQL {
                             if (oneElem.get(1) instanceof List) {
                                 String targetEntity = entityRef;
                                 if (((List)oneElem.get(1)).size() > 1) {
-                                    targetEntity = String.valueOf(((List)oneElem.get(1)).get(0));
+                                    List fullPath = (List)oneElem.get(1);
+                                    List path = fullPath.subList(0, fullPath.size() - 1);
+                                    targetEntity = findLinkedEntityName(path, entityRef, schema);
+//                                    targetEntity = String.valueOf(((List)oneElem.get(1)).get(0));
                                 }
                                 String tableName = findDBTableByEntityName(targetEntity, sqlSchema);
                                 String attName = ((List)oneElem.get(1)).size() > 1 ?
                                         String.valueOf(((List)oneElem.get(1)).get(1)) :
                                         String.valueOf(((List)oneElem.get(1)).get(0));
-                                String colName = findDBColumnByEntityName(entityRef, attName, sqlSchema);
+                                String colName = findDBColumnByEntityName(targetEntity, attName, sqlSchema);
                                 if (colName != null) {
                                     expandedItem = String.format("%s(%s.%s)",
                                             aggFunc,
@@ -515,11 +522,19 @@ public class OMRL2SQL {
         } else if (oneMember instanceof Map) { // Like a IN, NOT IN select...
             if (((Map)oneMember).get(SELECT) != null) { // select and from are mandatory members of an OMRL query
                 boolean processMinimalAttributes = false;
-                Map<String, Object> stringObjectMap = OMRL2SQL.omrlToSQLQuery(schema, sqlSchema, oneMember, processMinimalAttributes);
+                ObjectMapper mapper = new ObjectMapper();
+                JSONObject jsonQuery = null;
+                try {
+                    jsonQuery = new JSONObject(mapper.writeValueAsString(oneMember));
+                } catch (Exception ex) {
+                    throw new RuntimeException("JSON Conversion failed.");
+                }
+                Map<String, Object> stringObjectMap = OMRL2SQL.omrlToSQLQuery(schema, sqlSchema, jsonQuery /*(Map)oneMember*/, processMinimalAttributes);
                 expandedItem = String.format("(%s)", stringObjectMap.get(QUERY));
             } else {
-                if (LOGGER.isLoggable(Level.WARNING))
+                if (LOGGER.isLoggable(Level.WARNING)) {
                     LOGGER.log(Level.WARNING, "OMRL is missing SELECT clause.");
+                }
             }
         } else {
             // Type this guy?
@@ -745,12 +760,12 @@ public class OMRL2SQL {
                 // see if the item is in the select clause already
                 if (left instanceof List) { // Means it is not a literal
                     if (!selectClause.contains(leftItem) && thereIsNoAggFuncIn(selectClause)) {
-                        selectClause.add((String) leftItem); // TODO Verify that String cast
+                        selectClause.add((String) leftItem);
                     }
                 }
                 if (right instanceof List) { // Means it is not a literal
                     if (!selectClause.contains(rightItem) && thereIsNoAggFuncIn(selectClause)) {
-                        selectClause.add((String) rightItem); // TODO Verify that String cast
+                        selectClause.add((String) rightItem);
                     }
                 }
             }
@@ -1131,20 +1146,27 @@ public class OMRL2SQL {
                     if ((prm1 instanceof List && "*".equals(((List) prm1).get(0))) || "*".equals(prm1)) {
                         oneClause = String.format("%s(%s)", aggFunc, "*"); // oneElem.get(1));
                     } else {
-                        if (oneElem.size() == 2 && prm1 instanceof List && ((List)prm1).size() == 1) { // Current table
+                        if (oneElem.size() >= 2 && prm1 instanceof List && ((List)prm1).size() == 1) { // Current table
                             String tableName = findDBTableByEntityName(entityName, sqlSchema);
                             String columnName = findDBColumnByEntityName(entityName,
                                     (String) (prm1 instanceof List ? ((List) prm1).get(0) : oneElem.get(1)),
                                     sqlSchema);
+                            String extraPrm = "";
+                            if (oneElem.size() > 2) { // Extra prm, like [ "#TO_DATE" [ "xxx" ], 'MM-DD-YYY' ]
+                                extraPrm = oneElem.subList(2, oneElem.size()).stream().map(prm -> String.valueOf(prm))
+                                        .collect(Collectors.joining(", "));
+                            }
                             if (tableName != null) {
-                                oneClause = String.format("%s(%s.%s)",
+                                oneClause = String.format("%s(%s.%s%s)",
                                         aggFunc,
                                         tableName,
-                                        columnName);
+                                        columnName,
+                                        extraPrm.isEmpty() ? "" : String.format(", %s", extraPrm));
                             } else {
-                                oneClause = String.format("%s(%s)",
+                                oneClause = String.format("%s(%s%s)",
                                         aggFunc,
-                                        columnName);
+                                        columnName,
+                                        extraPrm.isEmpty() ? "" : String.format(", %s", extraPrm));
                             }
                         } else { // Composite Entity
                             String relationName = null;
@@ -1168,7 +1190,15 @@ public class OMRL2SQL {
                                     joinClause,
                                     where,
                                     usedForExpansion);
-                            oneClause = String.format("%s(%s)", aggFunc, resolved);
+
+                            // function extra parameter(s)
+                            String extraPrm = "";
+                            if (oneElem.size() > 2) { // Extra prm, like [ "#TO_DATE" [ "xxx" ], 'MM-DD-YYY' ]
+                                extraPrm = oneElem.subList(2, oneElem.size()).stream().map(prm -> String.valueOf(prm))
+                                        .collect(Collectors.joining(", "));
+                            }
+                            oneClause = String.format("%s(%s%s)", aggFunc, resolved,
+                                    extraPrm.isEmpty() ? "" : String.format(", %s", extraPrm));
                         }
                     }
                     return oneClause;
@@ -1459,7 +1489,7 @@ public class OMRL2SQL {
         for (int i = 1; i < query.size(); i++) {
             Object oneQuery = query.get(i);
             if (oneQuery instanceof List) {
-                Map<String, Object> map = omrlToNestedSQLQuery(schema, sqlSchema, (List) oneQuery, expressionResolver);
+                Map<String, Object> map = omrlToNestedSQLQuery(schema, sqlSchema, (List)oneQuery, expressionResolver);
                 subQueries.add((String) map.get(QUERY));
                 List<Object> prms = (List) map.get(PRM_VALUES);
                 if (prms != null) {
@@ -1471,8 +1501,15 @@ public class OMRL2SQL {
                 if (resultSetEntityMap == null) {
                     resultSetEntityMap = (List) map.get(RS_ENTITY_MAP);
                 }
-            } else { // Assume it is a map
-                Map<String, Object> map = omrlToOneSQLQuery(schema, sqlSchema, (Map) oneQuery, expressionResolver);
+            } else { // Assume it is a map/JSONObject
+                ObjectMapper mapper = new ObjectMapper();
+                JSONObject jsonQuery = null; // new JSONObject(mapper.writeValueAsString(oneQuery));
+                try {
+                    jsonQuery = new JSONObject(mapper.writeValueAsString(oneQuery));
+                } catch (Exception je) {
+                    throw new RuntimeException("JSON Conversion failed.");
+                }
+                Map<String, Object> map = omrlToSQLQuery(schema, sqlSchema, jsonQuery, expressionResolver);
                 subQueries.add((String) map.get(QUERY));
                 List<Object> prms = (List) map.get(PRM_VALUES);
                 if (prms != null) {
@@ -1556,6 +1593,121 @@ public class OMRL2SQL {
         return updatedList;
     }
 
+    private static boolean isFuzzyMatch(String entity, String attribute, Map<String, Object> schema) {
+        boolean isFuzzy = false;
+        Map<String, Object> foundEntity = (Map)((List)schema.get(ENTITIES)).stream()
+                .filter(ent -> entity.equals(((Map)ent).get(NAME)))
+                .findFirst().orElse(null);
+        if (foundEntity != null) {
+            Map<String, Object> foundAttribute = (Map)((List) foundEntity.get(ATTRIBUTES)).stream()
+                    .filter(att -> attribute.equals(((Map) att).get(NAME)))
+                    .findFirst().orElse(null);
+            if (foundAttribute != null) {
+                Boolean fuzzy = (Boolean)foundAttribute.get(FUZZY_MATCH);
+                isFuzzy = (fuzzy != null && fuzzy.booleanValue());
+            }
+        }
+        return isFuzzy;
+    }
+    /**
+     * Turn where clause:
+     * [ "=", [ "location" ], "Chicago" ]
+     * Into:
+     * [ "LIKE", [ "#UPPER", [ "location" ]], [ "#UPPER", [ "%Chicago%" ]]]
+     *
+     * @param where
+     * @param from
+     * @param schema
+     */
+    private static List<Object> patchFuzzyMatch(List<Object> where, Object from, Map<String, Object> schema) {
+        if ("AND".equals(where.get(0)) || "OR".equals(where.get(0))) {
+            // recurse
+            for (int i=1; i<where.size(); i++) {
+                List<Object> processedWhere = patchFuzzyMatch((List)where.get(i), from, schema);
+                where.set(i, processedWhere);
+            }
+        } else {
+            if ("=".equals(where.get(0))) { // Potential transformation into fuzzy match
+                if (where.size() >= 3) {
+                    if (where.get(2) instanceof String) { // Literal. Could match
+                        if (where.get(1) instanceof List) {
+                            List<Object> attributeCoordinates = (List)where.get(1);
+                            String attribute = (String)attributeCoordinates.get(attributeCoordinates.size() - 1);
+                            String entity = (String)from;
+                            if (attributeCoordinates.size() > 1) { // Relation?
+                                entity = findLinkedEntityName(((List) attributeCoordinates).subList(0, ((List) attributeCoordinates).size() - 1),
+                                        (String) from, schema);
+                            }
+                            // Now, is it labeled with a fuzzy_match?
+                            if (isFuzzyMatch(entity, attribute, schema)) {
+                                List<Object> processedWhere = List.of("LIKE",
+                                        List.of("#UPPER", attributeCoordinates),
+                                        List.of("#UPPER", List.of(String.format("%%%s%%", (String)where.get(2)))));
+                                where = processedWhere;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return where;
+    }
+
+    private static boolean isSortInverted(String entity, String attribute, Map<String, Object> schema) {
+        boolean isInverted = false;
+        Map<String, Object> foundEntity = (Map)((List)schema.get(ENTITIES)).stream()
+                .filter(ent -> entity.equals(((Map)ent).get(NAME)))
+                .findFirst().orElse(null);
+        if (foundEntity != null) {
+            Map<String, Object> foundAttribute = (Map)((List) foundEntity.get(ATTRIBUTES)).stream()
+                    .filter(att -> attribute.equals(((Map) att).get(NAME)))
+                    .findFirst().orElse(null);
+            if (foundAttribute != null) {
+                Boolean invert = (Boolean)foundAttribute.get(INVERT_COMPARISON);
+                isInverted = (invert != null && invert.booleanValue());
+            }
+        }
+        return isInverted;
+    }
+
+    private static String getLinkedEntityName(String entityName, Object path, Map<String, Object> schema) {
+        String linkedEntity = entityName;
+        if (path instanceof List) {
+            List<String> nextPath = ((List)path).subList(0, ((List)path).size() - 1);
+            linkedEntity = findLinkedEntityName(nextPath, entityName, schema);
+        }
+        return linkedEntity;
+    }
+
+    private static boolean isMeasureBy(String entityName, List<Object> orderBy, Map<String, Object> schema) {
+        boolean isMeasureBy = false;
+        if (orderBy != null && orderBy.size() == 1) { // One clause only.
+            // Star? [ "*" ] or [[ "xx", ..., "*" ]]
+            Object path = orderBy.get(0);
+            if ("*".equals(path) || (path instanceof List && "*".equals(((List)path).get(((List)path).size() - 1)))) {
+                String linkedEntity = getLinkedEntityName(entityName, path, schema);
+                Object baseEntity = ((List) schema.get(ENTITIES)).stream()
+                        .filter(ent -> linkedEntity.equals(((Map) ent).get(NAME)))
+                        .findFirst().orElse(null);
+                if (baseEntity != null) {
+                    String measureBy = (String) ((Map<String, Object>) baseEntity).get(MEASURE_BY);
+                    if (measureBy != null) {
+                        isMeasureBy = true;
+                    }
+                }
+            }
+        }
+        return isMeasureBy;
+    }
+
+//    private static List<Object> jsonArrayToList(JSONArray jsonArray) {
+//        List<Object> list = new ArrayList<>();
+//        for (int i=0; i<jsonArray.length(); i++) {
+//            list.add(jsonArray.get(i));
+//        }
+//        return list;
+//    }
+//
     /**
      * Top most function, callable externally
      *
@@ -1566,17 +1718,25 @@ public class OMRL2SQL {
      */
     private static Map<String, Object> omrlToOneSQLQuery(Map<String, Object> schema,
                                                          Map<String, Object> sqlSchema,
-                                                         Map<String, Object> query,
+                                                         JSONObject query,
                                                          Object expressionResolver) {
         return omrlToOneSQLQuery(schema, sqlSchema, query, expressionResolver, true);
     }
 
     private static Map<String, Object> omrlToOneSQLQuery(Map<String, Object> schema,
                                                          Map<String, Object> sqlSchema,
-                                                         Map<String, Object> query,
+                                                         JSONObject jsonQuery,
                                                          Object expressionResolver,
                                                          boolean processMinimalAttributes) {
         String sql = "";
+
+        ObjectMapper mapper = new ObjectMapper();
+        Map<String, Object> query = null;
+        try {
+            query = mapper.readValue(jsonQuery.toString(), Map.class);
+        } catch (Exception je) {
+            throw new RuntimeException("JSON Conversion failed.");
+        }
 
         boolean distinct = false;
         if (query.get(DISTINCT) != null) {
@@ -1587,7 +1747,7 @@ public class OMRL2SQL {
         Object from = query.get(FROM); // We assume ONE element, as a String
 
         // SELECT
-        final List<Object> select = (List<Object>) query.get(SELECT);
+        final List<Object> select = (List<Object>) query.get(SELECT); //  jsonArrayToList((JSONArray)query.get(SELECT)); //
         List<Object> where = (List<Object>) query.get(WHERE); // Used for column expansions
         List<Object> groupBy = (List<Object>) query.get(GROUP_BY);
 
@@ -1601,13 +1761,20 @@ public class OMRL2SQL {
             select.addAll(minimalSelect);
         }
 
+        // Is there a fuzzy match?
+        if (where != null && where.size() > 0) {
+            List<Object> patchedWhere = patchFuzzyMatch(where, from, schema);
+            // Replace all element
+            for (int i=0; i<patchedWhere.size(); i++) {
+                where.set(i, patchedWhere.get(i));
+            }
+        }
+
         List<String> selectClause = new ArrayList<>();
         select.forEach(one -> {
             String expanded = expandOneItem(one, schema, sqlSchema, (String) from, joinClause, where, usedForExpansion);
             selectClause.add(expanded);
         });
-//        String sqlSelectClause = selectClause.stream()
-//                .collect(Collectors.joining(", "));
 
         // FROM
         List<String> fromClause = new ArrayList<>();
@@ -1630,11 +1797,11 @@ public class OMRL2SQL {
                         if (expressionToBeResolved(sqlSelect)) { // Patch SQL Select stmt?
                             if (expressionResolver != null) {
                                 if (false) { // expressionResolver instanceof ExpressionResolver) {
-//                                    try {
-//                                        sqlSelect = (String) ((ExpressionResolver)expressionResolver).resolveExpressions(sqlSelect, false);
-//                                    } catch (IOException ioe) {
-//                                        // Oops TODO Surface that?
-//                                    }
+                                    try {
+                                        sqlSelect = ""; // (String) ((ExpressionResolver)expressionResolver).resolveExpressions(sqlSelect, false);
+                                    } catch (Exception ioe) {
+                                        // Oops TODO Surface that?
+                                    }
                                 } else if (expressionResolver instanceof Function) { // This is for the unit tests
                                     sqlSelect = ((Function<String, String>)expressionResolver).apply(sqlSelect);
                                 }
@@ -1642,16 +1809,12 @@ public class OMRL2SQL {
                         }
                         fromClause.add(String.format("(%s)", sqlSelect));
                     } else {
-                        if (LOGGER.isLoggable(Level.WARNING))
-                            LOGGER.log(Level.WARNING, "SQL backend mapping has not table_name and sql_select.");
+                        throw new RuntimeException("SQL backend mapping has no table_name nor sql_select");
                     }
                 }
             }
         } else {
-            if (VERBOSE) {
-                System.out.printf("FROM Un-managed [%s]\n", from.getClass().getName());
-            }
-            throw new RuntimeException(String.format("FROM Un-managed [%s]", from.getClass().getName()));
+            throw new RuntimeException("Invalid FROM clause");
         }
         String sqlFromClause = fromClause.stream()
                 .collect(Collectors.joining(", "));
@@ -1710,87 +1873,118 @@ public class OMRL2SQL {
         String sqlOrderByClause = "";
         if (orderBy != null && !orderBy.isEmpty()) {
             List<String> orderByClause = new ArrayList<>();
-            orderBy.forEach(one -> {
-                Object theOneToExpand = one;
-//                boolean desc = false;
-                String sortDirective = ""; // Behind whatever starts with '#' in [ "#SORT", [ "ENT", "ATT" ] ]
-                if (one instanceof List && ((List) one).size() > 1 && ((List) one).get(0) instanceof List) { // like [ "#desc", [ "ent", "att" ] ]
-                    String sortDir = (String) ((List) one).get(0);
-                    theOneToExpand = ((List) one).get(1);
-                    if (sortDir.startsWith("#")) {
-                        sortDirective = sortDir.substring(1);
+
+            // Is it a measure_by?
+            if (isMeasureBy((String) from, orderBy, schema) && (groupBy == null || groupBy.isEmpty())) {
+                String entityName = (String)from;
+                String linkedEntity = getLinkedEntityName(entityName, orderBy.get(0), schema);
+                Object baseEntity = ((List) schema.get(ENTITIES)).stream()
+                        .filter(ent -> linkedEntity.equals(((Map) ent).get(NAME)))
+                        .findFirst().orElse(null);
+                if (baseEntity != null) {
+                    String measureBy = (String)((Map<String, Object>) baseEntity).get(MEASURE_BY);
+                    if (measureBy != null) {
+                        // Is there an INVERT_COMPARISON to true?
+                        Object attribute = ((List) ((Map<String, Object>) baseEntity).get(ATTRIBUTES)).stream()
+                                .filter(att -> measureBy.equals(((Map) att).get(NAME)))
+                                .findFirst().orElse(null);
+                        Boolean invert = (Boolean)((Map) attribute).get(INVERT_COMPARISON);
+                        String dbTableByEntityName = findDBTableByEntityName(linkedEntity, sqlSchema);
+                        String dbColumnByEntityName = findDBColumnByEntityName(linkedEntity, measureBy, sqlSchema);
+                        orderByClause.add(String.format("%s.%s%s",
+                                dbTableByEntityName,
+                                dbColumnByEntityName,
+                                (invert != null && invert.booleanValue() ? " DESC" : "")));
                     }
-//                    desc = ("#DESC".equalsIgnoreCase(sortDir));
-                } else if (((List) one).get(0) instanceof List) { // No direction, only the sort key like [ [ "ent", "att" ] ]
-                    theOneToExpand = ((List) one).get(0);
-                } else if (((List) one).get(0) instanceof String && ((List) one).size() > 1) { // [ "#XX", [ "att" ]]
-                    String sortDir = (String) ((List) one).get(0);
-                    if (sortDir.startsWith("#")) {
-                        sortDirective = sortDir.substring(1);
-                    }
-//                    desc = ("#DESC".equalsIgnoreCase(sortDir));
-                    theOneToExpand = ((List) one).get(1);
                 }
-                // TODO Consolidate. Same expansion as in 'where'
-                String entityName = (String) from;
-                String attributeName = (theOneToExpand instanceof List) ?
-                        (String)((List)theOneToExpand).get(0) :
-                        theOneToExpand.toString();
-                String relationName = attributeName; // Ugly
-                String entityFromRelation = getEntityFromRelation(entityName, relationName, schema);
-                boolean linkedExpansion = false;
-                if (entityFromRelation != null && !entityFromRelation.isEmpty()) {
-                    linkedExpansion = isColumnExpansion(entityFromRelation, (String)((List)theOneToExpand).get(1), sqlSchema);
-                }
-                if (theOneToExpand instanceof List && ((List)theOneToExpand).size() > 1 && linkedExpansion) { // Relation, and column expansion?
-                    relationName = (String)((List)theOneToExpand).get(0);
-                    entityFromRelation = getEntityFromRelation(entityName, relationName, schema);
-                    String tableName = findDBTableByEntityName(entityFromRelation, sqlSchema);
-                    String dbColumnName = findDBColumnByEntityName(entityFromRelation, (String)((List)theOneToExpand).get(1), sqlSchema);
-                    String expandedItem = expandFromList(entityFromRelation,
-                            (String)((List)theOneToExpand).get(0), //1), // TODO Verify
-                            (String)((List)theOneToExpand).get(1), //2), // TODO Verify
-                            dbColumnName,
-                            tableName,
-                            (List)theOneToExpand,
-                            schema,
-                            sqlSchema,
-                            where,
-                            joinClause,
-                            usedForExpansion,
-                            List.of(relationName), // TODO ... more than 1 relation ?
-                            true);
-//                    System.out.println(expandedItem);
-                    List<String> expandedColumns = Arrays.asList(expandedItem.split(","));
-                    if (expandedColumns != null && expandedColumns.size() > 0) {
-                        final String _sortDirective = sortDirective;
-                        expandedColumns.stream().forEach(exp -> {
-                            orderByClause.add(String.format("%s%s", exp.trim(),
-                                    (!_sortDirective.trim().isEmpty() ? String.format(" %s", _sortDirective.trim()) : "")));
-                        });
+            } else {
+                orderBy.forEach(one -> {
+                    Object theOneToExpand = one;
+                    String sortDirective = ""; // Behind whatever starts with '#' in [ "#SORT", [ "ENT", "ATT" ] ]
+                    if (one instanceof List && ((List) one).size() > 1 && ((List) one).get(0) instanceof List) { // like [ "#desc", [ "ent", "att" ] ]
+                        String sortDir = (String) ((List) one).get(0);
+                        theOneToExpand = ((List) one).get(1);
+                        if (sortDir.startsWith("#")) {
+                            sortDirective = sortDir.substring(1);
+                        }
+                    } else if (((List) one).get(0) instanceof List) { // No direction, only the sort key like [ [ "ent", "att" ] ]
+                        theOneToExpand = ((List) one).get(0);
+                    } else if (((List) one).get(0) instanceof String && ((List) one).size() > 1) { // [ "#XX", [ "att" ]]
+                        String sortDir = (String) ((List) one).get(0);
+                        if (sortDir.startsWith("#")) {
+                            sortDirective = sortDir.substring(1);
+                        }
+                        theOneToExpand = ((List) one).get(1);
                     }
-                } else if (isColumnExpansion(entityName, attributeName, sqlSchema)) { // Column Expansion ?
-                    // Use the where clause to find the patch values
-                    List<String> expandedColumns = expandColumns(entityName,
-                            attributeName,
-                            schema,
-                            sqlSchema,
-                            where,
-                            usedForExpansion);
-                    if (expandedColumns != null && expandedColumns.size() > 0) {
-                        final String _sortDirective = sortDirective;
-                        expandedColumns.stream().forEach(exp -> {
-                            orderByClause.add(String.format("%s%s", exp,
-                                    (!_sortDirective.trim().isEmpty() ? String.format(" %s", _sortDirective.trim()) : "")));
-                        });
+                    // TODO Consolidate. Same expansion as in 'where'
+                    String entityName = (String) from;
+                    String attributeName = (theOneToExpand instanceof List) ?
+                            (String) ((List) theOneToExpand).get(0) :
+                            theOneToExpand.toString();
+                    String relationName = attributeName; // Ugly
+                    String entityFromRelation = getEntityFromRelation(entityName, relationName, schema);
+
+                    // InvertComparison ?
+                    if (entityFromRelation != null) {
+                        List path = ((List) theOneToExpand).subList(0, ((List) theOneToExpand).size() - 1);
+                        entityName = findLinkedEntityName(path, (String) from, schema);
                     }
-                } else {
-                    String expanded = expandOneItem(theOneToExpand, schema, sqlSchema, (String) from, joinClause);
-                    orderByClause.add(String.format("%s%s", expanded,
-                            (!sortDirective.trim().isEmpty() ? String.format(" %s", sortDirective.trim()) : "")));
-                }
-//                orderByClause.add(String.format("%s%s", expanded, (desc ? " DESC" : "")));
-            });
+                    if (isSortInverted(entityName, attributeName, schema)) {
+                        sortDirective = ("DESC".equalsIgnoreCase(sortDirective) ? "ASC" : "DESC"); // THIS is the flip.
+                    }
+
+                    boolean linkedExpansion = false;
+                    if (entityFromRelation != null && !entityFromRelation.isEmpty()) {
+                        linkedExpansion = isColumnExpansion(entityFromRelation, (String) ((List) theOneToExpand).get(1), sqlSchema);
+                    }
+                    if (theOneToExpand instanceof List && ((List) theOneToExpand).size() > 1 && linkedExpansion) { // Relation, and column expansion?
+                        relationName = (String) ((List) theOneToExpand).get(0);
+                        entityFromRelation = getEntityFromRelation(entityName, relationName, schema);
+                        String tableName = findDBTableByEntityName(entityFromRelation == null ? entityName : entityFromRelation, sqlSchema);
+                        String dbColumnName = findDBColumnByEntityName(entityFromRelation == null ? entityName : entityFromRelation, (String) ((List) theOneToExpand).get(1), sqlSchema);
+                        String expandedItem = expandFromList(entityFromRelation == null ? entityName : entityFromRelation,
+                                (String) ((List) theOneToExpand).get(0), //1), // TODO Verify
+                                (String) ((List) theOneToExpand).get(1), //2), // TODO Verify
+                                dbColumnName,
+                                tableName,
+                                (List) theOneToExpand,
+                                schema,
+                                sqlSchema,
+                                where,
+                                joinClause,
+                                usedForExpansion,
+                                List.of(relationName), // TODO ... more than 1 relation ?
+                                true);
+                        List<String> expandedColumns = Arrays.asList(expandedItem.split(","));
+                        if (expandedColumns != null && expandedColumns.size() > 0) {
+                            final String _sortDirective = sortDirective;
+                            expandedColumns.stream().forEach(exp -> {
+                                orderByClause.add(String.format("%s%s", exp.trim(),
+                                        (!_sortDirective.trim().isEmpty() ? String.format(" %s", _sortDirective.trim()) : "")));
+                            });
+                        }
+                    } else if (isColumnExpansion(entityName, attributeName, sqlSchema)) { // Column Expansion ?
+                        // Use the where clause to find the patch values
+                        List<String> expandedColumns = expandColumns(entityName,
+                                attributeName,
+                                schema,
+                                sqlSchema,
+                                where,
+                                usedForExpansion);
+                        if (expandedColumns != null && expandedColumns.size() > 0) {
+                            final String _sortDirective = sortDirective;
+                            expandedColumns.stream().forEach(exp -> {
+                                orderByClause.add(String.format("%s%s", exp,
+                                        (!_sortDirective.trim().isEmpty() ? String.format(" %s", _sortDirective.trim()) : "")));
+                            });
+                        }
+                    } else {
+                        String expanded = expandOneItem(theOneToExpand, schema, sqlSchema, (String) from, joinClause);
+                        orderByClause.add(String.format("%s%s", expanded,
+                                (!sortDirective.trim().isEmpty() ? String.format(" %s", sortDirective.trim()) : "")));
+                    }
+                });
+            }
             sqlOrderByClause = orderByClause.stream()
                     .collect(Collectors.joining(", "));
         } else { // Is there a default order by?
@@ -1804,8 +1998,26 @@ public class OMRL2SQL {
                 defaultOrderBy = ((Map)tableSQLMapping).get(DEFAULT_ORDER_BY);
             }
             // Add default order by, except if there is a group by already.
+            // TODO invert_comparisons?
             if (defaultOrderBy != null && !((List)defaultOrderBy).isEmpty() && (groupBy == null || groupBy.isEmpty())) {
-                sqlOrderByClause = ((List<String>)defaultOrderBy).stream()
+                List<String> defaultOrderByList = new ArrayList<>();
+                ((List<String>)defaultOrderBy).stream()
+                        .forEach(oneDefault -> {
+                            String[] attAndDir = oneDefault.split(" ");
+                            String att = attAndDir[0].trim();
+                            String dbTableByEntityName = findDBTableByEntityName(entityName, sqlSchema);
+                            String dbColumnByEntityName = findDBColumnByEntityName(entityName, att, sqlSchema);
+                            String direction = "";
+                            if (attAndDir.length > 1) {
+                                direction = attAndDir[1];
+                            }
+                            defaultOrderByList.add(String.format("%s.%s%s",
+                                    dbTableByEntityName,
+                                    dbColumnByEntityName,
+                                    direction.isEmpty() ? "" : String.format(" %s", direction)));
+                        });
+
+                sqlOrderByClause = defaultOrderByList.stream()
                         .collect(Collectors.joining(", "));
             }
         }
@@ -1946,7 +2158,6 @@ public class OMRL2SQL {
                                         }
                                     }
                                     if (aliases.size() > 0) {
-//                                        aliases.stream().forEach(alias -> resultSetMap.add(alias));
                                         aliases.stream().forEach(alias -> resultSetMap.add(String.format("%s.%s", relationName, alias)));
                                         final String _topEntity = topEntity;
                                         aliases.stream().forEach(alias -> resultSetEntityMap.add(String.format("%s.%s", getEntityFromRelation(_topEntity, relationName, schema), alias)));
@@ -1971,7 +2182,6 @@ public class OMRL2SQL {
                                             resultSetEntityMap.add(String.format("%s.%s", getEntityFromRelation(topEntity, relationName, schema), attName));
                                         }
                                     }
-//                                    resultSetMap.add(String.format("%s.%s", relationName, attName));
                                 }
                             }
                         }
@@ -2033,41 +2243,53 @@ public class OMRL2SQL {
         finalMap.put(PRM_VALUES, prmValues);
         finalMap.put(RS_MAP, resultSetMap);
         finalMap.put(RS_ENTITY_MAP, resultSetEntityMap);
-//        return Map.of("query", sql, "prm-values", prmValues, "rs-map", resultSetMap, "rs-entity-map", resultSetEntityMap);
         return finalMap;
     }
 
     public static Map<String, Object> omrlToSQLQuery(Map<String, Object> schema,
                                                      Map<String, Object> sqlSchema,
-                                                     Object query,
+                                                     JSONObject query,
                                                      boolean processMinimalAttributes) {
         return omrlToSQLQuery(schema, sqlSchema, query, null, processMinimalAttributes);
     }
 
     public static Map<String, Object> omrlToSQLQuery(Map<String, Object> schema,
                                                      Map<String, Object> sqlSchema,
-                                                     Object query) {
+                                                     JSONObject query) {
         return omrlToSQLQuery(schema, sqlSchema, query, null);
     }
 
     public static Map<String, Object> omrlToSQLQuery(Map<String, Object> schema,
                                                      Map<String, Object> sqlSchema,
-                                                     Object query,
+                                                     JSONObject query,
                                                      Object expressionResolver) { // Can be an ExpressionResolver or a Function<String, String> (for tests)
         return omrlToSQLQuery(schema, sqlSchema, query, expressionResolver, true);
     }
 
     public static Map<String, Object> omrlToSQLQuery(Map<String, Object> schema,
                                                      Map<String, Object> sqlSchema,
-                                                     Object query,
+                                                     JSONObject query,
                                                      Object expressionResolver, // Can be an ExpressionResolver or a Function<String, String> (for tests)
                                                      boolean processMinimalAttributes) {
         Map<String, Object> queryMap;
-        if (query instanceof List) {
-            queryMap = OMRL2SQL.omrlToNestedSQLQuery(schema, sqlSchema, (List)query, expressionResolver, processMinimalAttributes);
-        } else {
-            queryMap = OMRL2SQL.omrlToOneSQLQuery(schema, sqlSchema, (Map)query, expressionResolver, processMinimalAttributes);
+        queryMap = OMRL2SQL.omrlToOneSQLQuery(schema, sqlSchema, query, expressionResolver, processMinimalAttributes);
+        return queryMap;
+    }
+    public static Map<String, Object> omrlToSQLQuery(Map<String, Object> schema,
+                                                     Map<String, Object> sqlSchema,
+                                                     JSONArray queryArray,
+                                                     Object expressionResolver, // Can be an ExpressionResolver or a Function<String, String> (for tests)
+                                                     boolean processMinimalAttributes) {
+
+        ObjectMapper mapper = new ObjectMapper();
+        List<Object> query = null;
+        try {
+            query = mapper.readValue(queryArray.toString(), List.class);
+        } catch (Exception ex) {
+            throw new RuntimeException("JSON Conversion failed.");
         }
+        Map<String, Object> queryMap;
+        queryMap = OMRL2SQL.omrlToNestedSQLQuery(schema, sqlSchema, query, expressionResolver, processMinimalAttributes);
         return queryMap;
     }
 }

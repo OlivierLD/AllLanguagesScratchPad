@@ -45,6 +45,7 @@ dependencies {
     // EvilPlot
 //    compile 'com.cibo:evilplot-repl_2.12:0.7.0'
 //    compile 'com.cibo:evilplot-repl_2.13:0.8.0'
+    implementation group: 'org.json', name: 'json', version: '20190722'
 
     implementation 'oliv.raspi.coffee:common-utils:1.0' // Java Celestial Almanac TODO remove...
 

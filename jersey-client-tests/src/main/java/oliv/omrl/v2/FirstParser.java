@@ -2,6 +2,7 @@ package oliv.omrl.v2;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import oliv.omrl.v2.utils.OMRL2SQL;
+import org.json.JSONObject;
 
 import java.io.File;
 import java.net.URL;
@@ -13,7 +14,7 @@ import java.util.stream.Collectors;
 
 /**
  * Hard coded file names.
- * Invokes OMRL2SQL.omrlToSQLQuery {@link oliv.omrl.v2.utils.OMRL2SQL#omrlToSQLQuery(Map, Map, Object)}
+ * Invokes OMRL2SQL.omrlToSQLQuery {@link oliv.omrl.v2.utils.OMRL2SQL#omrlToSQLQuery(Map, Map, org.json.JSONObject)}
  */
 public class FirstParser {
 
@@ -157,6 +158,14 @@ public class FirstParser {
             List<Object> sqlSchemas = mapper.readValue(sqlSchemaResource.openStream(), List.class);
             // Query Object
             Map<String, Object> query = mapper.readValue(queryResource.openStream(), Map.class);
+
+            JSONObject jsonQuery = null;
+            try {
+                jsonQuery = new JSONObject(mapper.writeValueAsString(query));
+            } catch (Exception ex) {
+                throw new RuntimeException("JSON Conversion failed.");
+            }
+
             // System.out.println("Done generating resources, processing the OMRL query.");
 
             Map<String, Object> schema = null; // schemas.get(SCHEMA_NAME);
@@ -195,7 +204,7 @@ public class FirstParser {
                  *  HERE IS THE SKILL. Query Generation.
                  */
                 OMRL2SQL.usePreparedStmt = USE_PREPARED_STMT;
-                omrlSql = OMRL2SQL.omrlToSQLQuery(schema, sqlSchema, query);
+                omrlSql = OMRL2SQL.omrlToSQLQuery(schema, sqlSchema, jsonQuery);
             } else {
                 System.out.printf("Schema [%s] not found.\n", omrlQuery.connection());
                 System.exit(1);

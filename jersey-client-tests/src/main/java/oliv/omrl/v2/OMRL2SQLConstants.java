@@ -53,6 +53,10 @@ public class OMRL2SQLConstants {
     public static final String VALUE_LIST = "value_list";
     public static final String MINIMUM_ATTRIBUTES = "minimum_attributes";
     public static final String DEFAULT_ATTRIBUTES = "default_attributes";
+    public static final String MEASURE_BY = "measure_by";
+    public static final String INVERT_COMPARISON = "invert_comparisons";
+    public static final String FUZZY_MATCH = "fuzzy_match";
+
 
     // Enums
     public enum ALIGNMENTS {
