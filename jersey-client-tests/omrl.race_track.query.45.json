@@ -1,9 +1,9 @@
 {
   "select": [
     [ "name" ],
-    [ "race_stuff", "race_stuff" ],
-    [ "race_stuff", "stuff" ]
+    [ "race_stuff" ],
+    [ "stuff" ]
   ],
   "from": "race",
-  "where": [ "AND" , [ "=", [ "race_stuff", "stuff" ], "CLASS" ], [ "=", [ "name" ], "RumBum.com 250" ] ]
+  "where": [ "AND" , [ "=", [ "stuff" ], "CLASS" ], [ "=", [ "name" ], "RumBum.com 250" ] ]
 }

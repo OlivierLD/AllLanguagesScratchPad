@@ -2,11 +2,11 @@
   "comment": "race_stuff is a column expansion",
   "select": [
     [ "name" ],
-    [ "race_stuff", "race_stuff" ],
-    [ "race_stuff", "stuff" ]
+    [ "race_stuff" ],
+    [ "stuff" ]
   ],
   "from": "race",
-  "where": [ "AND", [ "=", [ "race_stuff", "stuff" ], "DATE" ],
+  "where": [ "AND", [ "=", [ "stuff" ], "DATE" ],
                     [ "=", [ "name" ], "Lime Rock GT Classic 250" ]
            ]
 }

@@ -129,7 +129,9 @@ public class FirstParser {
         boolean justOne = true;
         if (justOne) {
 //            executeQuery(OMRLQuery._BK_01); // DEFAULT_QUERY); // Default one
-            executeQuery(OMRLQuery._52); // DEFAULT_QUERY); // Default one
+            OMRLQuery q = OMRLQuery._48;
+            System.out.println(">> Processing query " + q);
+            executeQuery(q); // DEFAULT_QUERY); // Default one
         } else {
             for (OMRLQuery query : OMRLQuery.values()) {
                 System.out.println("Executing " + query.toString());

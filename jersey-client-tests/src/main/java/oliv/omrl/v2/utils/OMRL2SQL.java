@@ -7,13 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
@@ -24,7 +18,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-//import static oracle.cloud.bots.model.nlu.omrl.OMRL2SQLConstants.*;
 import static oliv.omrl.v2.OMRL2SQLConstants.*;
 
 
@@ -900,7 +893,84 @@ public class OMRL2SQL {
                 usedForExpansion);
     }
 
-    // Used for column expansion. Should also manage the wildcards.
+    private static boolean isWildcardExpandColumns(String entityName,
+                                                   String attributeName,
+                                                   Map<String, Object> baseSchema,
+                                                   Map<String, Object> sqlSchema,
+                                                   List<Object> whereClause,
+                                                   List<String> previousLinks) {
+        AtomicBoolean itIs = new AtomicBoolean(false);
+
+        List<Map<String, Object>> entities = (List<Map<String, Object>>) sqlSchema.get(ENTITIES);
+        Map<String, Object> entity = entities.stream()
+                .filter(ent -> entityName.equals(ent.get(NAME)))
+                .findFirst().orElse(null);
+        if (entity != null) {
+            Stream<Map<String, Object>> attributes = ((List<Map<String, Object>>) entity.get(ATTRIBUTES)).stream()
+                    .filter(att -> attributeName.equals(att.get(NAME)));
+            List<String> expansionFormulas = attributes.map(att -> (List<String>)((Map)att.get(SQL_MAPPING)).get(COLUMN_EXPANSIONS)).findFirst().orElse(null);
+            if (expansionFormulas != null && expansionFormulas.size() > 0) {
+                // Found it.
+                expansionFormulas.stream().forEach(formula -> {
+//                    System.out.println("Analyzing " + formula);
+                    List<String> stringsToSubstitute = new ArrayList<>();
+                    List<Object> valuesToPatch = new ArrayList<>();
+                    int nbWildCards = 0;
+                    final Matcher matcher = COLUMN_EXPANSION_PATTERN.matcher(formula);
+                    while (matcher.find()) {
+                        String fullMatch = matcher.group(0);
+                        stringsToSubstitute.add(fullMatch);
+//                        System.out.println("Full match: " + fullMatch);
+                        for (int i = 1; i <= matcher.groupCount(); i++) {
+                            String valueToFind = matcher.group(i); // Find in the where clause
+//                            System.out.println("Group " + i + ": " + valueToFind);
+                            List<String> whereElement;
+                            if (previousLinks == null || previousLinks.size() == 0) {
+                                whereElement = List.of(valueToFind);
+                            } else {
+                                whereElement = Stream.concat(previousLinks.stream(),
+                                                List.of(valueToFind).stream())
+                                        .collect(Collectors.toList());
+                            }
+                            Object obj = findValueInWhereClause(whereElement, whereClause); // Look for [ "=", [ "cost", "year" ], "VAL" ]
+
+                            if (obj == null) { // Not found in where clause. Wildcard?
+                                // look for entityName, whereElement.get(1) in baseSchema
+                                Object currentEntity = ((List) baseSchema.get(ENTITIES)).stream()
+                                        .filter(ent -> entityName.equals(((Map) ent).get(NAME))).findFirst().orElse(null);
+                                if (currentEntity != null) {
+                                    Object vle = ((List) ((Map) currentEntity).get(ATTRIBUTES)).stream()
+                                            .filter(att -> whereElement.get(whereElement.size() - 1).equals(((Map) att).get(NAME)))
+                                            .findFirst().orElse(null);
+                                    if (vle != null) {
+                                        Object valueList = ((Map) vle).get(VALUE_LIST);
+                                        obj = valueList;
+                                        nbWildCards += 1;
+                                    }
+                                }
+                            }
+                            valuesToPatch.add(obj);
+//                            if (obj != null && usedForExpansion != null) {
+//                                if (!usedForExpansion.contains(whereElement)) {
+//                                    usedForExpansion.add(whereElement); // Not to use in the SQL WHERE clause.
+//                                }
+//                            }
+                        }
+                    }
+                    String finalColumnName = formula;
+                    assert (stringsToSubstitute.size() == valuesToPatch.size());
+
+                    List<String> finalColumnList = new ArrayList<>();
+                    finalColumnList.add(finalColumnName);
+
+                    itIs.set(stringsToSubstitute.size() == nbWildCards);
+                });
+            }
+        }
+        return itIs.get();
+    }
+
+    // Used for column expansion. Should also manage the wildcards?
     private static List<String> expandColumns(String entityName,
                                               String attributeName,
                                               Map<String, Object> baseSchema,
@@ -1489,7 +1559,7 @@ public class OMRL2SQL {
         for (int i = 1; i < query.size(); i++) {
             Object oneQuery = query.get(i);
             if (oneQuery instanceof List) {
-                Map<String, Object> map = omrlToNestedSQLQuery(schema, sqlSchema, (List)oneQuery, expressionResolver);
+                Map<String, Object> map = omrlToNestedSQLQuery(schema, sqlSchema, (List)oneQuery, expressionResolver, processMinimalAttributes);
                 subQueries.add((String) map.get(QUERY));
                 List<Object> prms = (List) map.get(PRM_VALUES);
                 if (prms != null) {
@@ -1509,7 +1579,7 @@ public class OMRL2SQL {
                 } catch (Exception je) {
                     throw new RuntimeException("JSON Conversion failed.");
                 }
-                Map<String, Object> map = omrlToSQLQuery(schema, sqlSchema, jsonQuery, expressionResolver);
+                Map<String, Object> map = omrlToSQLQuery(schema, sqlSchema, jsonQuery, expressionResolver, processMinimalAttributes, false);
                 subQueries.add((String) map.get(QUERY));
                 List<Object> prms = (List) map.get(PRM_VALUES);
                 if (prms != null) {
@@ -1728,6 +1798,15 @@ public class OMRL2SQL {
                                                          JSONObject jsonQuery,
                                                          Object expressionResolver,
                                                          boolean processMinimalAttributes) {
+        return omrlToOneSQLQuery(schema, sqlSchema, jsonQuery, expressionResolver, processMinimalAttributes, true);
+    }
+
+    private static Map<String, Object> omrlToOneSQLQuery(Map<String, Object> schema,
+                                                         Map<String, Object> sqlSchema,
+                                                         JSONObject jsonQuery,
+                                                         Object expressionResolver,
+                                                         boolean processMinimalAttributes,
+                                                         boolean processWildCards) {
         String sql = "";
 
         ObjectMapper mapper = new ObjectMapper();
@@ -1767,6 +1846,44 @@ public class OMRL2SQL {
             // Replace all element
             for (int i=0; i<patchedWhere.size(); i++) {
                 where.set(i, patchedWhere.get(i));
+            }
+        }
+
+        // Column Expansion with wildcard?
+        // See isColumnExpansion, and expandColumns, nbWildcards...
+        // If yes, generate new query with UNION,
+        //   and pass it to omrlToSQLQuery(Map<String, Object> schema,
+        //                                 Map<String, Object> sqlSchema,
+        //                                 JSONArray queryArray,
+        //                                 Object expressionResolver,
+        //                                 boolean processMinimalAttributes)
+        if (processWildCards) {
+            AtomicBoolean wildcardExpansion = new AtomicBoolean(false);
+            select.forEach(oneSelect -> {
+                String attName = (String) (((List) oneSelect).size() == 1 ? ((List) oneSelect).get(0) : ((List) oneSelect).get(1));
+                List<String> prevLinks = null;
+                if (((List) oneSelect).size() > 1) {
+                    prevLinks = new ArrayList<>();
+                    prevLinks.add((String) ((List) oneSelect).get(0));
+                }
+                if (isColumnExpansion((String) from, attName, sqlSchema)) {
+                    boolean itIs = isWildcardExpandColumns((String) from, attName, schema, sqlSchema, where, prevLinks);
+                    System.out.printf("%s wildcard ? %b\n", oneSelect, itIs);
+                    boolean b = wildcardExpansion.get();
+                    wildcardExpansion.set(b || itIs);
+                }
+            });
+            if (wildcardExpansion.get()) {
+                System.out.println("Needs Query reworking");
+                // TODO Do the right thing here, rework the queries
+                List<Object> newQueryList = List.of("UNION", jsonQuery, jsonQuery);
+                JSONArray newQuery = new JSONArray(newQueryList.toArray());
+                // => ByPass!
+                return omrlToSQLQuery(schema,
+                        sqlSchema,
+                        newQuery,
+                        expressionResolver, // Can be an ExpressionResolver or a Function<String, String> (for tests)
+                        processMinimalAttributes);
             }
         }
 
@@ -2271,8 +2388,17 @@ public class OMRL2SQL {
                                                      JSONObject query,
                                                      Object expressionResolver, // Can be an ExpressionResolver or a Function<String, String> (for tests)
                                                      boolean processMinimalAttributes) {
+        return omrlToSQLQuery(schema, sqlSchema, query, expressionResolver, processMinimalAttributes, true);
+    }
+
+    public static Map<String, Object> omrlToSQLQuery(Map<String, Object> schema,
+                                                     Map<String, Object> sqlSchema,
+                                                     JSONObject query,
+                                                     Object expressionResolver, // Can be an ExpressionResolver or a Function<String, String> (for tests)
+                                                     boolean processMinimalAttributes,
+                                                     boolean processWildcards) {
         Map<String, Object> queryMap;
-        queryMap = OMRL2SQL.omrlToOneSQLQuery(schema, sqlSchema, query, expressionResolver, processMinimalAttributes);
+        queryMap = OMRL2SQL.omrlToOneSQLQuery(schema, sqlSchema, query, expressionResolver, processMinimalAttributes, processWildcards);
         return queryMap;
     }
     public static Map<String, Object> omrlToSQLQuery(Map<String, Object> schema,
