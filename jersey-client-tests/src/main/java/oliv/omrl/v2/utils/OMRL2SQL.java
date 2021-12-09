@@ -1222,7 +1222,7 @@ public class OMRL2SQL {
                                     (String) (prm1 instanceof List ? ((List) prm1).get(0) : oneElem.get(1)),
                                     sqlSchema);
                             String extraPrm = "";
-                            if (oneElem.size() > 2) { // Extra prm, like [ "#TO_DATE" [ "xxx" ], 'MM-DD-YYY' ]
+                            if (oneElem.size() > 2) { // Extra prm, like [ "#TO_DATE" [ "xxx" ], 'MM-DD-YYYY' ]
                                 extraPrm = oneElem.subList(2, oneElem.size()).stream().map(prm -> String.valueOf(prm))
                                         .collect(Collectors.joining(", "));
                             }
@@ -1263,7 +1263,7 @@ public class OMRL2SQL {
 
                             // function extra parameter(s)
                             String extraPrm = "";
-                            if (oneElem.size() > 2) { // Extra prm, like [ "#TO_DATE" [ "xxx" ], 'MM-DD-YYY' ]
+                            if (oneElem.size() > 2) { // Extra prm, like [ "#TO_DATE" [ "xxx" ], 'MM-DD-YYYY' ]
                                 extraPrm = oneElem.subList(2, oneElem.size()).stream().map(prm -> String.valueOf(prm))
                                         .collect(Collectors.joining(", "));
                             }
