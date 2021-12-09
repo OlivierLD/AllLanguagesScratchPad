@@ -6,7 +6,7 @@ import java.time.ZoneId;
 import java.time.zone.ZoneRulesException;
 
 /**
- * Uses modern classes:
+ * Uses modern classes (Java 11):
  * See java.time.Instant
  *     java.time.OffsetDateTime
  *     java.time.ZonedDateTime
