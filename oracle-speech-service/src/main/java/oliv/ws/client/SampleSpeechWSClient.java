@@ -25,6 +25,8 @@ import java.util.logging.Logger;
  * Upgrade: websocket
  *
  * Uses TooTallNate, org.java-websocket:Java-WebSocket:1.5.2
+ *
+ * Modify the WEB_SOCKET_URI to fit yours.
  */
 
 public class SampleSpeechWSClient {
@@ -38,14 +40,15 @@ public class SampleSpeechWSClient {
     private final static String AUDIO_FILE = "foo.wav";
 
     private WebSocketClient wsClient = null;
-    private SampleSpeechWSClient instance = this;
+    private final SampleSpeechWSClient instance = this;
 
-    private boolean isWsConnected = false;
+    private Boolean isWsConnected = false;
 
     private final static boolean SPEAK_UP = "true".equals(System.getProperty("speak-up"));
     private final static boolean VERBOSE = "true".equals(System.getProperty("verbose"));
+    private final static boolean SLOW_DOWN = "true".equals(System.getProperty("slow-down"));
 
-    private ObjectMapper mapper = new ObjectMapper();
+    private final ObjectMapper mapper = new ObjectMapper();
 
     public SampleSpeechWSClient(String wsUri, Map<String, String> headers) {
         try {
@@ -53,7 +56,9 @@ public class SampleSpeechWSClient {
                 @Override
                 public void onOpen(ServerHandshake serverHandshake) {
                     System.out.println("WS On Open");
-                    instance.isWsConnected = true;
+                    synchronized (instance.isWsConnected) {
+                        instance.isWsConnected = true;
+                    }
                 }
 
                 @Override
@@ -67,7 +72,9 @@ public class SampleSpeechWSClient {
                 @Override
                 public void onClose(int i, String string, boolean b) {
                     System.out.printf("WS On Close: %d, %s, %b\n", i, string, b);
-                    instance.isWsConnected = false;
+                    synchronized (instance.isWsConnected) {
+                        instance.isWsConnected = false;
+                    }
                 }
 
                 @Override
@@ -84,14 +91,14 @@ public class SampleSpeechWSClient {
     public void fireDataRead(Object data) {
         if (data instanceof String) {
             try {
-                Map<String, Object> resultMap = mapper.readValue((String) data, Map.class);
+                Map<String, Object> resultMap = (Map<String, Object>)mapper.readValue((String) data, Map.class);
                 Object nbest = resultMap.get("nbest");
                 if (nbest != null) {
                     if (nbest instanceof List) {
-                        List<Object> list = (List)nbest;
+                        List<Object> list = (List<Object>)nbest;
                         list.forEach(obj -> {
                             if (obj instanceof Map) {
-                                Map<String, String> oneMap = (Map)obj;
+                                Map<String, String> oneMap = (Map<String, String>)obj;
                                 String toSpeak = String.format("Transcription for file %s is the following one. \"%s\". Score is %s %%.",
                                         AUDIO_FILE,
                                         oneMap.get("utterance"),
@@ -184,23 +191,30 @@ public class SampleSpeechWSClient {
         SampleSpeechWSClient speechClient = new SampleSpeechWSClient(WEB_SOCKET_URI, headers);
         speechClient.start();
 
-//        SampleSpeechWSClient.sleep(1_000L);
+        if (SLOW_DOWN) {
+            SampleSpeechWSClient.sleep(1_000L);
+        }
 
         File file = new File(AUDIO_FILE);
         if (!file.exists()) {
             throw new RuntimeException(String.format("File %s not found in %s", AUDIO_FILE, System.getProperty("user.dir")));
         }
         byte[] audioContent = new byte[(int) file.length()];
-        DataInputStream dis = new DataInputStream(new FileInputStream(file));
-        dis.readFully(audioContent);
-        dis.close();
+
+        try (DataInputStream dis = new DataInputStream(new FileInputStream(file))) { // AutoClose
+            dis.readFully(audioContent);
+        }
+        // dis.close();
 
         // Send data for processing
         System.out.printf("Sending content of %s for processing.\n", AUDIO_FILE);
         speechClient.sendData(audioContent);
 
-//        SampleSpeechWSClient.sleep(1_000L);
-//        speechClient.stop();
+        if (SLOW_DOWN) {
+            SampleSpeechWSClient.sleep(2_000L);
+        }
+
+        System.out.println("Done with the process. You can wait for the result, and/or Ctrl-C any time now.");
 
         synchronized(me) {
             try {

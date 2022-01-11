@@ -7,4 +7,6 @@ LOGGING_FLAGS="-Djava.util.logging.config.file=./logging.properties"
 JAVA_OPTS=
 JAVA_OPTS="${JAVA_OPTS} -Dverbose=true"
 JAVA_OPTS="${JAVA_OPTS} -Dspeak-up=true"
+# JAVA_OPTS="${JAVA_OPTS} -Dslow-down=true"
+#
 java -cp ${CP} ${LOGGING_FLAGS} ${JAVA_OPTS} oliv.ws.client.SampleSpeechWSClient
