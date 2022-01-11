@@ -1,0 +1,160 @@
+
+
+pour découvrir ODA :
+https://docs.oracle.com/en/cloud/paas/digital-assistant/sdk-js/index.html.
+Il faudra surement que l'on crée une instance ODA ( + 1 Skill avec son channel ) mais tu pourrais me
+demander en temps voulu
+
+Pour découvrir OCI Speech :
+https://confluence.oci.oraclecorp.com/pages/viewpage.action?spaceKey=SPEECHAI&title=Speech+Service+Internal+Bug+Bash
+( on a utilisé us-ashburn-1 mais il est préférable
+ d'utiliser phoenix aujourd'hui car il y a des tests bloquants en cours sur le "metering" sur ashburn
+
+
+Le format dit "ATR", qui nous sert en interne pour représenter les bases de données audios:
+https://confluence.oraclecorp.com/confluence/display/IBS/ATR+file%2C+a+TSV+file+format+for+audio+text+transcriptions
+
+Babble Noise
+
+AM = Acoustic Model
+LP = Language Pack (AM + lexique de prononciation + modèle de pronguessing)
+LM = Language Model : en gros SLM [mais certains "mots" du modèle peuvent être en fait des classes (comme "heure", "date", "point-of-interest", "celebrities", "brands"), et du coup un LM n'est plus seulement une seule grammaire, mais une hiérarchie de grammaires, que l'on appelle "DHLM" (Dynamic Hierarchical Language Model).]
+Speech Model (ce qui est déployé par Anthony... et toi) : AM + LM + ITN model
+
+
+== From Anthony ==
+je suis sur "devdigital (root)/development"
+pour l'image j'ai "https://console.us-phoenix-1.oraclecloud.com/compute/images/ocid1.image.oc1.phx.aaaaaaaabiykdgdrzwyowiv54tmvsau4kwrko4xeqhiwxb2wnp74ixoaq53q" (créer à partir de Oracle-Linux-7.8-2020.09.23-0) je regarde si page confluence sur cette image
+FYI: pour ODA Speech (et aussi OCI Speech LM/AM/Core), nous utilisons cette espace confluence : https://confluence.oraclecorp.com/confluence/display/IBS/Speech+Service
+il y a une section " Sub-pages" dans laquelle tu peux faire des recherches "locales"
+
+je pense que "Speech Developer custom image" doit etre configurer avec un plus gros boot volume et les bonnes versions de git et docker-compose
+il semble qu'elle ne soit pas compatible Flex.E4 :disappointed: (moi je suis en Flex.E3), on peut la selectionner (edited)
+
+=== On Compute Instance, upgrade git ===
+See instructions at https://oracle-base.com/articles/linux/git-2-installation-on-linux
+
+On the instance:
+$ sudo su
+$ yum install curl-devel expat-devel gettext-devel openssl-devel zlib-devel -y
+$ yum install gcc perl-ExtUtils-MakeMaker -y
+To remove existing version of git:
+$ yum remove git -y
+
+
+From laptop (Like Mac)
+$ export http_proxy=http://www-proxy.us.oracle.com:80
+$ wget -e use_proxy=yes -e http_proxy=$http_proxy -e https_proxy=$http_proxy https://www.kernel.org/pub/software/scm/git/git-2.30.0.tar.gz
+Send to Compute Instance
+$ scp -i ~/.ssh/id_rsa_00 ./git-2.30.0.tar.gz  opc@100.111.136.104:~
+
+On the instance:
+$ sudo mv ~/git-2.30.0.tar.gz /usr/src
+$ cd /usr/src
+$ sudo su
+$ tar xzf git-2.30.0.tar.gz
+$ make prefix=/usr/local/git all
+$ make prefix=/usr/local/git install
+$ echo "export PATH=/usr/local/git/bin:$PATH" >> /etc/bashrc
+$ exit
+$ source /etc/bashrc
+$ git --version
+git version 2.30.0
+$
+Before starting the build, do a "git clean -fdx"
+$
+docker-compose in the PATH:
+/usr/local/bin
+
+=== From Anthony ===
+sudo yum install -y curl-devel expat-devel gettext-devel openssl-devel zlib-devel gcc perl-ExtUtils-MakeMaker
+
+sudo yum remove git
+# https://tecadmin.net/install-git-on-centos-fedora/
+wget https://www.kernel.org/pub/software/scm/git/git-2.21.0.tar.gz
+tar xzf git-2.21.0.tar.gz
+cd git-2.21.0
+make prefix=/usr/local all
+sudo make prefix=/usr/local install
+
+=== Docker compose ===
+sudo su -
+yum remove docker-compose
+source /home/opc/.proxies.sh
+# export http_proxy=http://www-proxy-hqdc.us.oracle.com:80
+# export https_proxy=http://www-proxy-hqdc.us.oracle.com:80
+curl -L "https://github.com/docker/compose/releases/download/1.24.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+chmod 755 /usr/local/bin/docker-compose
+
+
+=====
+in bots, ./buildDeploy.sh -x tests
+
+> Configure project :
+=======================================
+Bots Build Helper says hello!
+  Gradle Version        : 6.8.3
+  OS Info               : Linux 5.4.17-2011.6.2.el7uek.x86_64 (amd64)
+  JDK Version           : 11 (Oracle Corporation 11.0.7 [Java HotSpot(TM) 64-Bit Server VM 11.0.7+8-LTS])
+  JAVA_HOME             : /usr/java/jdk-11.0.7
+  Python Version        : 2.7.5
+  Git Version           : 2.30.0
+  Docker Client Version : 19.03.11-ol
+  Docker Server Version : 19.03.11-ol
+  Helm Version          : v2.14.3+g0e7f3b6
+  Helm3 Version         : v3.1.2+gd878d4d
+  Node Version          : v8.17.0
+  Npm Version           : 6.13.4
+  JQ Version            : 1.6
+  YQ Version            : 2.4.1
+  Bots Build Version    : 19.1.3-100
+  ORACLE_ID             : olivier.lediouris@oracle.com
+=======================================
+
+=== Reboot the instance ===
+=== Then the buildDeploy.sh works on bots-speech ===
+
+tu peux aussi regarder assez vite la section "Test through embedded WebSDK in development environment" dans le readme.md (https://bitbucket.oci.oraclecorp.com/projects/ODA/repos/bots-speech/browse)
+
+http://100.111.136.104/test/dev-latest
+
+Chrome configuration:
+chrome://flags
+- enabled Insecure origins treated as secure
+- add http://<ip>
+
+http://100.111.136.104/haproxy?stats
+
+============================
+Internal Bug Bash: https://confluence.oci.oraclecorp.com/pages/viewpage.action?spaceKey=SPEECHAI&title=Speech+Service+Internal+Bug+Bash
+Speech SDKs, described at https://bitbucket.oci.oraclecorp.com/projects/ODA/repos/bots-speech/browse
+
+IntelliJ License Server: http://slcibhf.us.oracle.com:1111/
+
+=== Artifactory Search ===
+https://artifactory.oci.oraclecorp.com/webapp/#/home
+
+=== NodeRED, WebSDK ===
+Node RED Web UI available at http://100.111.136.104:1881/
+
+=== Speech SDKs ===
+https://confluence.oci.oraclecorp.com/pages/viewpage.action?spaceKey=SPEECHAI&title=Speech+Service+Internal+Bug+Bash#SpeechServiceInternalBugBash-SDK/APITestingInstructions
+Look for "SDK/API Testing Instructions"
+
+=== Java SDK ===
+https://confluence.oci.oraclecorp.com/pages/viewpage.action?pageId=623435527#SpeechPreviewSDK/CLISetup-JavaSDK
+
+
+
+=== To check ===
+https://bitbucket.oci.oraclecorp.com/projects/ODA/repos/bots-speech/browse
+Look for WebSocket URI. web socat and pv.
+
+
+=== Java SDK issues ===
+
+Jeff Wildman, you can set the following as the config in your ~/.oci directory in the course of following the instructions linked above. We don't want to share the private key over Confluence, but Andrew Bleeker
+
+Speech Service Internal Bug Bash
+https://confluence.oci.oraclecorp.com/pages/viewpage.action?spaceKey=SPEECHAI&title=Speech+Service+Internal+Bug+Bash#SpeechServiceInternalBugBash-SDK/APITestingInstructions
+Section SDK/API Testing Instructions

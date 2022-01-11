@@ -17,3 +17,6 @@ include ":HLL"
 include ':jersey-client-tests'
 //findProject(':jersey-client-tests')?.name = 'jersey-client-tests'
 
+include ':oracle-speech-service'
+
+
