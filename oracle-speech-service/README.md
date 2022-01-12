@@ -48,6 +48,13 @@ Bye!
 WebSocket request, from the directory where `foo.wav` lives:
 ```
 $ python3 src/main/python/ws_speech_client.py 
+Sending foo.wav for processing
+### Connection Opened ###
+Service Response: "Change the name to waking up"
+Closing WS Connection...
+Thread terminating.
+### Connection Closed ###
+Bye
 ```
 
 ### Notes
