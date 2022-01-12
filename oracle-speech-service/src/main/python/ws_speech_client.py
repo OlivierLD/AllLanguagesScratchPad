@@ -8,7 +8,8 @@ import _thread
 import time
 import json
 
-WEB_SOCKET_URI: str = "ws://100.111.136.104/voice/stream/recognize/en-us/generic"
+INSTANCE_IP: str = "100.111.136.104"
+WEB_SOCKET_URI: str = f"ws://{INSTANCE_IP}/voice/stream/recognize/en-us/generic"
 AUDIO_FILE: str = "foo.wav"
 response_received: bool = False
 
