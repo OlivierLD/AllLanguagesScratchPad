@@ -12,17 +12,17 @@ import requests
 import json
 import traceback
 
-AUDIO_FILE:str = "foo.wav"
+AUDIO_FILE: str = "foo.wav"
 
-TENANT_ID:str = "odaserviceinstance00"
-MACHINE:str = "100.111.136.104"
-OPTION:str = "generic"
+TENANT_ID: str = "odaserviceinstance00"
+MACHINE: str = "100.111.136.104"
+OPTION: str = "generic"
 
-MACHINE_ARG_PREFIX:str = '--machine:'
-AUDIO_FILE_ARG_PREFIX:str = "--audio-file:"
+MACHINE_ARG_PREFIX: str = '--machine:'
+AUDIO_FILE_ARG_PREFIX: str = "--audio-file:"
 
 
-def do_request(uri) -> Any:
+def do_request(uri: str) -> Any:
     # print("Using {}".format(uri))
     # headers = {'Content-Type' : 'audio/wav', 'Bots-TenantId': TENANT_ID, 'channelId': 'recognize'}
     headers = {'Content-Type' : 'audio/wav'}
@@ -46,10 +46,10 @@ if __name__ == "__main__":
             print(f"Managing parameter {AUDIO_FILE_ARG_PREFIX}")
             AUDIO_FILE = arg[len(AUDIO_FILE_ARG_PREFIX):]
 
-    rest_url = f"http://{MACHINE}/voice/recognize/en-us/{OPTION}"
+    rest_url: str = f"http://{MACHINE}/voice/recognize/en-us/{OPTION}"
     try:
-        response = do_request(rest_url)
-        transcription:str = ''
+        response: Any = do_request(rest_url)
+        transcription: str = ''
         try:
             transcription = response['nbest'][0]['utterance']
         except:
