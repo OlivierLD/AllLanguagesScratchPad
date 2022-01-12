@@ -32,7 +32,7 @@ $ ./run.ws.sample.sh
 
 Look into the shell scripts for details and options.
 
-#### Python (3)
+#### Python (use Python3)
 May require a 
 ```
 $ pip3 install [--proxy http://www-proxy.us.oracle.com:80] requests
