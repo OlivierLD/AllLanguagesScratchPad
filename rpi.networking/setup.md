@@ -16,7 +16,6 @@ Resources:
 - April 22, 2013: <https://spin.atomicobject.com/2013/04/22/raspberry-pi-wireless-communication/>
 - May 6, 2020:  <https://www.maketecheasier.com/how-to-turn-raspberry-pi-into-wireless-access-point/>
 
-
 ### Other option, ad-hoc network:
 ```
 auto lo
