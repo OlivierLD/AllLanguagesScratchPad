@@ -6,6 +6,7 @@
 #
 # This is a REST Client.
 #
+from typing import Any
 import sys
 import requests
 import json
@@ -20,16 +21,8 @@ OPTION:str = "generic"
 MACHINE_ARG_PREFIX:str = '--machine:'
 AUDIO_FILE_ARG_PREFIX:str = "--audio-file:"
 
-for arg in sys.argv:
-    if arg[:len(MACHINE_ARG_PREFIX)] == MACHINE_ARG_PREFIX:
-        MACHINE = arg[len(MACHINE_ARG_PREFIX):]
-    elif arg[:len(AUDIO_FILE_ARG_PREFIX)] == AUDIO_FILE_ARG_PREFIX:
-        AUDIO_FILE = arg[len(AUDIO_FILE_ARG_PREFIX):]
 
-rest_url = f"http://{MACHINE}/voice/recognize/en-us/{OPTION}"
-
-
-def do_request(uri):
+def do_request(uri) -> Any:
     # print("Using {}".format(uri))
     # headers = {'Content-Type' : 'audio/wav', 'Bots-TenantId': TENANT_ID, 'channelId': 'recognize'}
     headers = {'Content-Type' : 'audio/wav'}
@@ -44,17 +37,27 @@ def do_request(uri):
         return json_obj
 
 
-try:
-    response = do_request(rest_url)
-    transcription:str = ''
-    try:
-        transcription = response['nbest'][0]['utterance']
-    except:
-        transcription = response
-    print("Response: {}".format(json.dumps(transcription, indent=2)))
-except KeyboardInterrupt:
-    print("\n\t\tUser interrupted, exiting.")
-except:
-    traceback.print_exc(file=sys.stdout)
+if __name__ == "__main__":
+    for arg in sys.argv:
+        if arg[:len(MACHINE_ARG_PREFIX)] == MACHINE_ARG_PREFIX:
+            print(f"Managing parameter {MACHINE_ARG_PREFIX}")
+            MACHINE = arg[len(MACHINE_ARG_PREFIX):]
+        elif arg[:len(AUDIO_FILE_ARG_PREFIX)] == AUDIO_FILE_ARG_PREFIX:
+            print(f"Managing parameter {AUDIO_FILE_ARG_PREFIX}")
+            AUDIO_FILE = arg[len(AUDIO_FILE_ARG_PREFIX):]
 
-print("Bye!")
+    rest_url = f"http://{MACHINE}/voice/recognize/en-us/{OPTION}"
+    try:
+        response = do_request(rest_url)
+        transcription:str = ''
+        try:
+            transcription = response['nbest'][0]['utterance']
+        except:
+            transcription = response
+        print("Service Response: {}".format(json.dumps(transcription, indent=2)))
+    except KeyboardInterrupt:
+        print("\n\t\tUser interrupted, exiting.")
+    except:
+        traceback.print_exc(file=sys.stdout)
+
+    print("Bye!")
