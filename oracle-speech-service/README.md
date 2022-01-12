@@ -12,6 +12,7 @@ First, on a new OCI Compute Instance, build the Speech Service as explained [her
 - In Java, REST approach, see `oliv.rest.client.SampleSpeechRESTClient`.
 - In Java, WebSocket approach, see `oliv.ws.client.SampleSpeechWSClient`.
 - In Python, REST approach, see `rest_client.py`.
+- In Python, WebSocket approach, see `ws_speech_client.py`.
 
 ### Usage
 #### Java
