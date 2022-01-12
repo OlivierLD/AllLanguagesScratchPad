@@ -23,7 +23,7 @@ $ ../gradlew clean shadowJar
 Then, to run the examples:  
 REST approach:
 ```
-$ ./run.rst.sample.sh
+$ ./run.rest.sample.sh
 ```
 WebSocket approach:
 ```
