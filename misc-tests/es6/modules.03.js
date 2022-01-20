@@ -5,8 +5,13 @@ function reverseString(str) {
     return joinArray;
 }
 
+function displayMessage(mess) {
+	console.log(mess);
+};
+
 function reverseMessage(mess) {
 	console.log(reverseString(mess));
 };
 
-export default reverseMessage;
+exports.displayMessage = displayMessage;
+exports.reverseMessage = reverseMessage;
