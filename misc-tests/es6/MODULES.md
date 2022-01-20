@@ -57,7 +57,7 @@ Hello JavaScript World!                           modules.02.js:9
 ```
 
 ---
-### `export default () =>...`
+### `export default () => { ... }`
 See a `export default` of an _**anonymous function**_ sample in
 `module.01.bis.js` and `module.01.ter.js`, and the way to consume them
 from `modules.bis.html`.
