@@ -49,6 +49,11 @@ The expected output will be seen in the JS console of the browser.
 > ```
 > and then access <http://localhost:8080/modules.html> from your browser.
 
+---
+See a `default export` of an _**anonymous function**_ sample in
+`module.01.bis.js` and `module.01.ter.js`, and the way to consume them
+from `modules.bis.html`.
+
 ## From NodeJS
 See `modules.03.js`:
 ```javascript

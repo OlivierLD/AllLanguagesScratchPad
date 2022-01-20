@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Consume Modules</title>
+    <script type="module" src="./modules.01.bis.consume.js"></script>
+</head>
+<body>
+    Check the Console.
+
+    <div id="my-div" style="font-family: 'Courier New'; margin: 20px; border: 2px solid red; border-radius: 5px;">
+    </div>
+</body>
+<script type="module">
+
+    import * as module from  './modules.01.ter.js';
+
+    window.onload = () => {
+       document.getElementById('my-div').innerHTML = module.default("Hello JavaScript World!");
+    };
+</script>
+</html>
