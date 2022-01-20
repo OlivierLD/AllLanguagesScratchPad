@@ -95,7 +95,7 @@ const mod = require('./modules.03');
 mod.displayMessage("Hello JavaScript World!");
 mod.reverseMessage("Hello JavaScript World!");
 ```
-It `require`s the `modules.03` (notice: there is no `,js` extension), and invokes the exposed (exported)
+It `require`s the `modules.03` (notice: there is no `.js` extension), and invokes the exposed (exported)
 functions.
 
 ```
