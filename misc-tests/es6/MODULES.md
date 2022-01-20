@@ -49,8 +49,14 @@ The expected output will be seen in the JS console of the browser.
 > ```
 > and then access <http://localhost:8080/modules.html> from your browser.
 
----
+The console output looks like this:
+```
+!dlroW tpircSavaJ olleH                           modules.01.js:9 
+Hello JavaScript World!                           modules.02.js:9 
+!dlroW tpircSavaJ olleH                           modules.02.js:13
+```
 
+---
 ### `export default () =>...`
 See a `export default` of an _**anonymous function**_ sample in
 `module.01.bis.js` and `module.01.ter.js`, and the way to consume them
