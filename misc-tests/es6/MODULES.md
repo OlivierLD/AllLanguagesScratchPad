@@ -55,7 +55,6 @@ The console output looks like this:
 Hello JavaScript World!                           modules.02.js:9 
 !dlroW tpircSavaJ olleH                           modules.02.js:13
 ```
-
 ---
 ### `export default () => { ... }`
 See a `export default` of an _**anonymous function**_ sample in

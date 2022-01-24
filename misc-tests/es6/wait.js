@@ -6,7 +6,6 @@ for (let i = 1; i < 10; i++) {
 }
 console.log("End of the story");
 
-
 // Ok
 (function theLoop (i) {
 	setTimeout(() => {
