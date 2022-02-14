@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<data>
+    <items>
+        <item name="item1">One</item>
+        <item name="item2">Two</item>
+        <item name="item3">Three</item>
+        <item name="item4">Four</item>
+    </items>
+</data>

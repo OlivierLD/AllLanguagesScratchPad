@@ -58,7 +58,7 @@ print("First query:")
 nb: int = 0
 for row in cursor.execute('select * from pytab'):
     nb += 1
-    # print(f"Row is a ${type(row)}")
+    # print(f"Row is a {type(row)}")
     print(f"Row #{nb}: {row}")
 
 print("Second query:")

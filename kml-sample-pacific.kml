@@ -1,0 +1,326 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://earth.google.com/kml/2.2">
+  <Document>
+    <name>Test-Trace-VR.kml</name>
+            <open>1</open>
+            <description>
+            <![CDATA[ trace de mon premier tour du monde virtuel janv 2022 ]]>
+            </description>
+            <Style id="path"><LineStyle><color>b20000ff</color><width>8</width></LineStyle></Style>
+            <Style id="routepoint"><IconStyle><Icon><href>http://maps.google.com/mapfiles/kml/shapes/placemark_square.png</href></Icon></IconStyle></Style>
+            <Style id="waypoint"><IconStyle><Icon><href>http://maps.google.com/mapfiles/kml/shapes/placemark_circle.png</href></Icon></IconStyle></Style>
+            <!-- Integration d'1 style pour différencier les differents elements du tracking
+			-->
+<Folder>
+      <name>Utilisation de timestamps</name>
+      <open>1</open>
+      <description>Last update: 9.Fev.2022</description>
+      <Placemark>
+        <TimeStamp>
+          <when>2022-02-03T17:09:00Z</when>
+        </TimeStamp>
+        <styleUrl>#routepoint</styleUrl>
+        <Point>
+          <coordinates>-87.45000,-39.05000</coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <TimeStamp>
+          <when>2022-02-03T20:40:00Z</when>
+        </TimeStamp>
+        <styleUrl>#routepoint</styleUrl>
+        <Point>
+          <coordinates>-86.433333,-38.383333</coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <TimeStamp>
+          <when>2022-02-04T07:45:00Z</when>
+        </TimeStamp>
+        <styleUrl>#seeadler-dot-icon</styleUrl>
+        <Point>
+          <coordinates>-89.383333,-36.900000</coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <TimeStamp>
+          <when>2022-02-04T13:21:00Z</when>
+        </TimeStamp>
+        <styleUrl>#routepoint</styleUrl>
+        <Point>
+          <coordinates>-89.616666,-35.850000</coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <TimeStamp>
+          <when>2022-02-04T18:56:00Z</when>
+        </TimeStamp>
+        <styleUrl>#routepoint</styleUrl>
+        <Point>
+          <coordinates>-89.683333,-34.516667</coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <TimeStamp>
+          <when>2022-02-04T22:50:00Z</when>
+        </TimeStamp>
+        <styleUrl>#routepoint</styleUrl>
+        <Point>
+          <coordinates>-89.783333,-33.450000</coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <TimeStamp>
+          <when>2022-02-05T07:35:00Z</when>
+        </TimeStamp>
+        <styleUrl>#seeadler-dot-icon</styleUrl>
+        <Point>
+          <coordinates>-90.600000,-31.000000</coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <TimeStamp>
+          <when>2022-02-05T14:03:00Z</when>
+        </TimeStamp>
+        <styleUrl>#routepoint</styleUrl>
+        <Point>
+          <coordinates>-92.433333,-31.683333</coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <TimeStamp>
+          <when>2022-02-05T22:35:00Z</when>
+        </TimeStamp>
+        <styleUrl>#routepoint</styleUrl>
+        <Point>
+          <coordinates>-94.433333,-30.250000</coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <TimeStamp>
+          <when>2022-02-06T08:30:00Z</when>
+        </TimeStamp>
+        <styleUrl>#seeadler-dot-icon</styleUrl>
+        <Point>
+          <coordinates>-96.216667,-27.983333</coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <TimeStamp>
+          <when>2022-02-06T16:49:00Z</when>
+        </TimeStamp>
+        <styleUrl>#routepoint</styleUrl>
+        <Point>
+          <coordinates>-96.233333,-26.020000</coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <TimeStamp>
+          <when>2022-02-06T22:54:00Z</when>
+        </TimeStamp>
+        <styleUrl>#routepoint</styleUrl>
+        <Point>
+          <coordinates>-96.133333,-24.750000</coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <TimeStamp>
+          <when>2022-02-07T07:22:00Z</when>
+        </TimeStamp>
+        <styleUrl>#seeadler-dot-icon</styleUrl>
+        <Point>
+          <coordinates>-97.983333,-25.116667</coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <TimeStamp>
+          <when>2022-02-07T12:13:00Z</when>
+        </TimeStamp>
+        <styleUrl>#routepoint</styleUrl>
+        <Point>
+          <coordinates>-99.200000,-25.116667</coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <TimeStamp>
+          <when>2022-02-09T15:18:00Z</when>
+        </TimeStamp>
+        <styleUrl>#seeadler-dot-icon</styleUrl>
+        <Point>
+          <coordinates>-109.650000,-20.833333</coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <TimeStamp>
+          <when>2022-02-09T16:23:00Z</when>
+        </TimeStamp>
+        <styleUrl>#routepoint</styleUrl>
+        <Point>
+          <coordinates>-110.016667,-20.983333</coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <TimeStamp>
+          <when>2022-02-09T23:35:00Z</when>
+        </TimeStamp>
+        <styleUrl>#routepoint</styleUrl>
+        <Point>
+          <coordinates>-111.923333,-22.983333</coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <TimeStamp>
+          <when>2022-02-10T08:05:00Z</when>
+        </TimeStamp>
+        <styleUrl>#seeadler-dot-icon</styleUrl>
+        <Point>
+          <coordinates>-114.516667,-24.766666</coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <TimeStamp>
+          <when>2022-02-10T15:30:00Z</when>
+        </TimeStamp>
+        <styleUrl>#routepoint</styleUrl>
+        <Point>
+          <coordinates>-116.416667,-26.683333</coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <TimeStamp>
+          <when>2022-02-10T23:16:00Z</when>
+        </TimeStamp>
+        <styleUrl>#routepoint</styleUrl>
+        <Point>
+          <coordinates>-117.666667,-28.783333</coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <TimeStamp>
+          <when>2022-02-11T05:06:00Z</when>
+        </TimeStamp>
+        <styleUrl>#seeadler-dot-icon</styleUrl>
+        <Point>
+          <coordinates>-119.233333,-28.250000</coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <TimeStamp>
+          <when>2022-02-11T13:19:00Z</when>
+        </TimeStamp>
+        <styleUrl>#routepoint</styleUrl>
+        <Point>
+          <coordinates>-120.733333,-29.600000</coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <TimeStamp>
+          <when>2022-02-11T21:15:00Z</when>
+        </TimeStamp>
+        <styleUrl>#routepoint</styleUrl>
+        <Point>
+          <coordinates>-122.150000,-30.900000</coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <TimeStamp>
+          <when>2022-02-12T08:50:00Z</when>
+        </TimeStamp>
+        <styleUrl>#seeadler-dot-icon</styleUrl>
+        <Point>
+          <coordinates>-125.500000,-29.283333</coordinates>
+        </Point>
+      </Placemark>
+       <Placemark>
+        <TimeStamp>
+          <when>2022-02-12T20:24:00Z</when>
+        </TimeStamp>
+        <styleUrl>#routepoint</styleUrl>
+        <Point>
+          <coordinates>-127.816667,-31.483333</coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <TimeStamp>
+          <when>2022-02-13T09:44:00Z</when>
+        </TimeStamp>
+        <styleUrl>#seeadler-dot-icon</styleUrl>
+        <Point>
+          <coordinates>-131.566667,-29.900000</coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <TimeStamp>
+          <when>2022-02-13T16:04:00Z</when>
+        </TimeStamp>
+        <styleUrl>#routepoint</styleUrl>
+        <Point>
+          <coordinates>-132.800000,-31.0666667</coordinates>
+        </Point>
+      </Placemark>
+      <Placemark>
+        <TimeStamp>
+          <when>2022-02-14T06:42:00Z</when>
+        </TimeStamp>
+        <styleUrl>#seeadler-dot-icon</styleUrl>
+        <Point>
+          <coordinates>-136.750000,-28.850000</coordinates>
+        </Point>
+      </Placemark>
+      </Folder>
+    <Placemark>
+      <name>Route pacifique</name>
+      <styleUrl>#path</styleUrl> 
+      <LineString>
+        <tessellate>1</tessellate>
+        <altitudeMode>absolute</altitudeMode>
+        <coordinates>
+-87.45000,-39.05000
+-86.433333,-38.383333
+-89.383333,-36.900000
+-89.616666,-35.850000
+-89.683333,-34.516667
+-89.783333,-33.450000
+-90.600000,-31.000000
+-92.433333,-31.683333
+-94.433333,-30.250000
+-96.216667,-27.983333
+-96.233333,-26.020000
+-96.133333,-24.750000
+-97.983333,-25.116667
+-99.200000,-25.116667
+-109.650000,-20.833333
+-110.016667,-20.983333
+-111.923333,-22.983333
+-114.516667,-24.766666
+-116.416667,-26.683333
+-117.666667,-28.783333
+-119.233333,-28.250000
+-120.733333,-29.600000
+-122.150000,-30.900000
+-125.500000,-29.283333
+-127.816667,-31.483333
+-131.566667,-29.900000
+-132.800000,-31.066667
+-136.750000,-28.850000
+		</coordinates>
+      </LineString>
+    </Placemark>
+    <Placemark>
+  <name>Waypoint-intermediaire-NZ</name>
+  <styleUrl>#waypoint</styleUrl>
+  <description>WI-NZ</description>
+  <Point>
+    <coordinates>-139.06667,-30.566667,0</coordinates>
+  </Point>
+	</Placemark>
+	<Placemark>
+  <name>Waypoint-intermediaire-NZ2</name>
+  <styleUrl>#waypoint</styleUrl>
+  <description>WI-NZ</description>
+  <Point>
+    <coordinates>-169.000000,-29.000000,0</coordinates>
+  </Point>
+	</Placemark>
+  </Document>
+</kml>
