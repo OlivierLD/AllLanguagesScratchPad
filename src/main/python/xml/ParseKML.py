@@ -53,6 +53,8 @@ if __name__ == '__main__':
         placemarks = folderNode[0].getElementsByTagName('Placemark')
         print(f"There are {len(placemarks)} Placemark(s)")
         for pm in placemarks:
+            timestamps = pm.getElementsByTagName('when')
+            timestamp: str = timestamps[0].firstChild.data
             ptCoordinates = pm.getElementsByTagName('coordinates')
             # print(f"Coord: {type(ptCoordinates)}")
             # print(f"coordinates: {ptCoordinates[0].firstChild.data}")
@@ -61,7 +63,7 @@ if __name__ == '__main__':
             if len(coordArray) == 2:
                 lng: float = float(coordArray[0])
                 lat: float = float(coordArray[1])
-                print(f"{dec_to_hex(lat, NS)} / {dec_to_hex(lng, EW)}")
+                print(f"{timestamp}: {dec_to_hex(lat, NS)} / {dec_to_hex(lng, EW)}")
             else:
                 print(f"What kind of coord is that? [{strCoord}]")
         print("Done")
