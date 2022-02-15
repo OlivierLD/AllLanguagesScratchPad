@@ -5,7 +5,8 @@
 from typing import Any
 import math
 from xml.dom import minidom
-from io import TextIOWrapper
+# from io import TextIOWrapper
+from typing import TextIO
 import sys
 from typing import List
 
@@ -64,7 +65,8 @@ def main(args: List[str]) -> None:
         print(f"Nb Document(s): {len(document_list)}")
         if len(document_list) > 0:
             # Create output file
-            gpx: TextIOWrapper = open(output_file_name, "w")
+            gpx: TextIO = open(output_file_name, "w")
+            # gpx: Any = open(output_file_name, "w")
             # print(f"file is a {type(gpx)}")
             # Header
             gpx.write("<?xml version=\"1.0\"?>\n" +
