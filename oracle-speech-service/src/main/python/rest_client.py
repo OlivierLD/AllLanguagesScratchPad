@@ -11,6 +11,7 @@ import sys
 import requests
 import json
 import traceback
+from typing import List
 
 AUDIO_FILE: str = "foo.wav"
 
@@ -25,7 +26,7 @@ AUDIO_FILE_ARG_PREFIX: str = "--audio-file:"
 def do_request(uri: str) -> Any:
     # print("Using {}".format(uri))
     # headers = {'Content-Type' : 'audio/wav', 'Bots-TenantId': TENANT_ID, 'channelId': 'recognize'}
-    headers = {'Content-Type' : 'audio/wav'}
+    headers = {'Content-Type': 'audio/wav'}
     with open(AUDIO_FILE, 'rb') as f:
         audio_content = f.read()
     resp = requests.post(uri, data=audio_content, headers=headers)
@@ -37,7 +38,9 @@ def do_request(uri: str) -> Any:
         return json_obj
 
 
-if __name__ == "__main__":
+# Main part
+def main(args: List[str]) -> None:
+    global MACHINE, AUDIO_FILE, OPTION
     for arg in sys.argv:
         if arg[:len(MACHINE_ARG_PREFIX)] == MACHINE_ARG_PREFIX:
             print(f"Managing parameter {MACHINE_ARG_PREFIX}")
@@ -49,7 +52,7 @@ if __name__ == "__main__":
     rest_url: str = f"http://{MACHINE}/voice/recognize/en-us/{OPTION}"
     try:
         response: Any = do_request(rest_url)
-        transcription: str = ''
+        transcription: str
         try:
             transcription = response['nbest'][0]['utterance']
         except:
@@ -61,3 +64,7 @@ if __name__ == "__main__":
         traceback.print_exc(file=sys.stdout)
 
     print("Bye!")
+
+
+if __name__ == "__main__":
+    main(sys.argv)

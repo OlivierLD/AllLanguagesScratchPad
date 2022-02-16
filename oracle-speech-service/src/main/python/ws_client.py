@@ -8,6 +8,8 @@
 import websocket
 import _thread
 import time
+import sys
+from typing import List
 
 
 def on_message(ws, message):
@@ -30,15 +32,21 @@ def on_open(ws):
         time.sleep(1)
         ws.close()
         print("thread terminating...")
+
     _thread.start_new_thread(run, ())
 
 
-if __name__ == "__main__":
+# Main part
+def main(args: List[str]) -> None:
     websocket.enableTrace(True)
     ws = websocket.WebSocketApp("ws://echo.websocket.org/",
-                              on_open=on_open,
-                              on_message=on_message,
-                              on_error=on_error,
-                              on_close=on_close)
+                                on_open=on_open,
+                                on_message=on_message,
+                                on_error=on_error,
+                                on_close=on_close)
 
     ws.run_forever()
+
+
+if __name__ == "__main__":
+    main(sys.argv)

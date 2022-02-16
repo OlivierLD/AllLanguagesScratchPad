@@ -3,10 +3,13 @@
 # pip3 install websocket-client
 #
 from typing import Any
+from typing import List
+import sys
 import websocket
 import _thread
 import time
 import json
+
 
 INSTANCE_IP: str = "100.111.136.104"
 WEB_SOCKET_URI: str = f"ws://{INSTANCE_IP}/voice/stream/recognize/en-us/generic"
@@ -50,7 +53,7 @@ def on_open(ws: websocket._app.WebSocketApp) -> None:
     _thread.start_new_thread(run, ())
 
 
-if __name__ == "__main__":
+def main(args: List[str]) -> None:
     print(f"Sending {AUDIO_FILE} for processing")
     websocket.enableTrace(False)   # True)
     ws = websocket.WebSocketApp(WEB_SOCKET_URI,
@@ -62,3 +65,7 @@ if __name__ == "__main__":
     # print(f"Type of ws: {type(ws)}")
     ws.run_forever()
     print("Bye")
+
+
+if __name__ == "__main__":
+    main(sys.argv)
