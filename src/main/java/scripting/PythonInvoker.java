@@ -11,7 +11,7 @@ public class PythonInvoker {
 
 	public static void main(String... args) throws Exception {
 		System.out.println(String.format("Running from %s", System.getProperty("user.dir")));
-		ProcessBuilder processBuilder = new ProcessBuilder("python", "./src/main/python/hello.py");
+		ProcessBuilder processBuilder = new ProcessBuilder("python3", "./src/main/python/hello.py");
 		processBuilder.redirectErrorStream(true);
 		Process process = processBuilder.start();
 		InputStream inputStream = process.getInputStream(); // Process output

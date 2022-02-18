@@ -40,6 +40,10 @@ def do_request(uri: str) -> Any:
 
 # Main part
 def main(args: List[str]) -> None:
+    if len(args) > 1:
+        print(f"{len(args)} arguments:")
+        for arg in args:
+            print(f"\t{arg}")
     global MACHINE, AUDIO_FILE, OPTION
     for arg in sys.argv:
         if arg[:len(MACHINE_ARG_PREFIX)] == MACHINE_ARG_PREFIX:
@@ -55,12 +59,12 @@ def main(args: List[str]) -> None:
         transcription: str
         try:
             transcription = response['nbest'][0]['utterance']
-        except:
+        except Exception:
             transcription = response
         print("Service Response: {}".format(json.dumps(transcription, indent=2)))
     except KeyboardInterrupt:
         print("\n\t\tUser interrupted, exiting.")
-    except:
+    except Exception:
         traceback.print_exc(file=sys.stdout)
 
     print("Bye!")

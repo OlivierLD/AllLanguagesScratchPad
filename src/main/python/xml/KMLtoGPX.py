@@ -1,6 +1,8 @@
+#!/usr/bin/env python3
 #
 # This is for python3
-# Use it like python3 KMLtoGPX.py ./path/to/data.kml
+# Use it like in:
+#   python3 KMLtoGPX.py ./path/to/data.kml
 #
 from typing import Any
 import math
