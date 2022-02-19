@@ -107,4 +107,5 @@ def main(args):
 
 
 if __name__ == '__main__':
+    print("Python version {}.{}.{}".format(sys.version_info.major, sys.version_info.minor, sys.version_info.micro))
     main(sys.argv)
