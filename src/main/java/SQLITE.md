@@ -1,4 +1,4 @@
-# SQLite in the Raspberry Pi
+# SQLite on the Raspberry Pi
 
 See:
 - <https://pimylifeup.com/raspberry-pi-sqlite/>
