@@ -121,6 +121,7 @@ export PROMPT_COMMAND="$PROMPT_COMMAND; timer_stop"
 
 
 export PS1="\u@\h [\${CLUSTER_NAME}] [\${timer_show}s] \[\033[32m\]\w\[\033[33m\]\$(parse_git_branch)\[\033[00m\] $ "
+
 export PATH=/home/opc/bin:$PATH
 
 export DOCKER_CLIENT_TIMEOUT=120
