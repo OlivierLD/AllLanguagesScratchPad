@@ -75,7 +75,6 @@ dependencies {
     implementation ("org.glassfish.tyrus:tyrus-client:2.0.1")
 //    implementation("org.glassfish:javax.json:1.0.4")
 
-
     implementation 'org.java-websocket:Java-WebSocket:1.5.2'
 
     // Require tools.jar, from the JDK (Doclet and Co)

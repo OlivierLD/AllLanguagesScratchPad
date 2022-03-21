@@ -1,0 +1,61 @@
+plugins {
+    id 'java'
+    id 'scala'
+    id 'idea'
+//    id 'maven'
+    id 'maven-publish'
+    id 'com.github.johnrengelman.shadow' // version '7.0.0' // '6.0.0' // '5.2.0'
+}
+
+//compileJava.options.encoding = 'ISO-8859-1'
+//compileJava.options.compilerArgs += ["-Xlint:unchecked"]
+
+group = 'speech.sdk.oliv'
+version = '1.0'
+
+// sourceCompatibility = 1.8
+// targetCompatibility = 1.8
+
+tasks.withType(JavaCompile) {
+  if (JavaVersion.current() != project.targetCompatibility) {
+//    throw new GradleException(
+    println "+------ Warning: Java version (JAVA_HOME) possible mismatch -----\n" +
+            "| In task $name ($project.name), the java version used ${JavaVersion.current()} is not the expected version ${project.targetCompatibility}.\n" +
+            "+----------------------------------------------------------------"
+//    )
+  } else {
+    println ">> From task $name (in $project.name), using java version ${JavaVersion.current()} "
+  }
+  options.encoding = 'UTF-8'
+}
+
+dependencies {
+    implementation group: 'org.json', name: 'json', version: '20190722'
+    // https://mvnrepository.com/artifact/commons-cli/commons-cli
+    implementation group: 'commons-cli', name: 'commons-cli', version: '1.4'
+
+    // Require tools.jar, from the JDK (Doclet and Co)
+//    compile files(org.gradle.internal.jvm.Jvm.current().toolsJar)
+    implementation files("${System.getProperty('java.home')}/../lib/tools.jar")
+    testImplementation group: 'junit', name: 'junit', version: '4.13'
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+//    maven { url "https://plugins.gradle.org/m2/" }
+    maven { url "https://www.datanucleus.org/downloads/maven2" } // Contains xmlparserv2 from Oracle
+    maven { url "https://mvnrepository.com/artifact" }
+    // Search artifactory: https://artifactory.oci.oraclecorp.com/webapp/#/home
+//    maven { url = 'https://artifacthub-phx.oci.oraclecorp.com/artifactory/bot-build-local' }
+//    maven { url = 'https://artifactory.oraclecorp.com/artifactory/repo1' }
+    maven { url = 'https://artifactory.oci.oraclecorp.com/libs-snapshot' }
+//    maven { url = 'https://artifactory.oci.oraclecorp.com/libs-release' }
+//    maven { url = "https://artifactory.oci.oraclecorp.com/sherlock-release-maven-local" }
+}
+
+build.doFirst {
+    println "-------------------------------------------------------"
+    println ">>> Using JAVA_HOME: ${System.getProperty('java.home')}"
+    println "-------------------------------------------------------"
+}
