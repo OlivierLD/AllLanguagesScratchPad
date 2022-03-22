@@ -1,8 +1,14 @@
 ## JSON to SRT
 
 ### Java flavor
+Build it first
 ```text
-$ java -cp json-20180813.jar:commons-cli-1.4.jar OCIJson2Srt.java -i input.json -o output.srt --max-l 1 --max-c 80
+$ ../gradlew shadowJar
+```
+Then run it
+```text
+$ CP=./build/libs/JSON2SRT-1.0-all.jar
+$ java -cp ${CP} oci.convert.OCIJson2Srt_v2 -i input.json -o output.srt --max-l 1 --max-c 80
 ```
 
 
@@ -11,3 +17,10 @@ $ java -cp json-20180813.jar:commons-cli-1.4.jar OCIJson2Srt.java -i input.json 
 $ node json2srt.js -i ../input.json -o converted.srt --max-l 1 --max-c 80
 ```
 
+#### Debugging NodeJS
+See <https://nodejs.org/en/docs/guides/debugging-getting-started/>
+
+Use `--inspect`
+```text
+$ node --inspect json2srt.js -i ../input.json -o output.srt  --max-l 1 --max-c 80
+```
