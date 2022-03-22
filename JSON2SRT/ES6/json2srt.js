@@ -594,15 +594,15 @@ let main = (args) => {
       case HELP_PROMPT:
       case HELP_PROMPT2:
       case HELP_PROMPT3:
-            console.log(`Parameters of ${__filename} are:`);
-            console.log(`${INPUT_PROMPT} inputFile.json (mandatory)`);
-            console.log(`${OUTPUT_PROMPT} outputFile.srt (mandatory)`);
-            console.log(`${MAX_C_PROMPT} max characters per line (default ${prmValues.maxCharPerLine})`);
-            console.log(`${MAX_L_PROMPT} max lines per segment (default ${prmValues.maxLinesPerSegment})`);
-            console.log(`${MAX_D_PROMPT} max duration (default ${prmValues.maxDuration})`);
-            console.log(`${MAX_P_PROMPT} max pause (default ${prmValues.maxPause})`);
-            console.log(`${MIN_D_PROMPT} min duration (default ${prmValues.minDuration})`);
-            process.exit(0);
+        console.log(`Parameters of ${path.basename(__filename)} are:`);
+        console.log(`${INPUT_PROMPT} inputFile.json (mandatory)`);
+        console.log(`${OUTPUT_PROMPT} outputFile.srt (mandatory)`);
+        console.log(`${MAX_C_PROMPT} max characters per line (default ${prmValues.maxCharPerLine})`);
+        console.log(`${MAX_L_PROMPT} max lines per segment (default ${prmValues.maxLinesPerSegment})`);
+        console.log(`${MAX_D_PROMPT} max duration (default ${prmValues.maxDuration})`);
+        console.log(`${MAX_P_PROMPT} max pause (default ${prmValues.maxPause})`);
+        console.log(`${MIN_D_PROMPT} min duration (default ${prmValues.minDuration})`);
+        process.exit(0);
         break;
     }
   }
