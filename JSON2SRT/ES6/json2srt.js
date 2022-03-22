@@ -1,14 +1,21 @@
+/**
+ * Convert JSON to SRT
+ * Usage:
+ *   node json2srt.js -i ../input.json -o converted.srt --max-l 1 --max-c 80
+ */
 "use strict";
 
 process.title = 'JSON2SRT';
 
 let fs = require('fs');
+let path = require("path");
 
-let VERBOSE = true;
+let VERBOSE = false;
 let workDir = process.cwd();
 
 console.log("----------------------------------------------------");
-console.log("Usage: node " + __filename + " --help");
+console.log("Running from " + workDir);
+console.log("Usage: node " + path.basename(__filename) + " --help");
 console.log("----------------------------------------------------");
 
 const INPUT_PROMPT = "-i";
@@ -101,7 +108,9 @@ let loadJson = (ociJsonFile) => {
   let jsonObj = JSON.parse(fs.readFileSync(ociJsonFile, 'utf8'));
 
   let transcriptions = jsonObj['transcriptions'];
-  console.log(`Got ${transcriptions.length} transcription(s)`);
+  if (VERBOSE) {
+    console.log(`Got ${transcriptions.length} transcription(s)`);
+  }
   if (transcriptions.length === 0) {
     System.out.println("[E] no transcriptions in json file");
   } else {
@@ -115,6 +124,10 @@ let loadJson = (ociJsonFile) => {
       beginTime: -1,
       endTime: -1
     };
+
+    if (VERBOSE) {
+      console.log(`Found ${jTokens.length} token(s).`);
+    }
 
     jTokens.forEach(token => {
       let wordText = token["token"];
@@ -140,6 +153,7 @@ let loadJson = (ociJsonFile) => {
           addTrueToken(extendedWordBuilder, wordText, begin, end);
       }
     });
+    flushWord(extendedWordBuilder);
   }
 };
 
@@ -510,8 +524,8 @@ let time_int2str = (value) => {
   let m = Math.floor(((value - ms) - 1000 * s) / 60000) % 60;
   let h = Math.floor(((value - ms) - 1000 * s - 60000 * m) / 3600000);
 
-  // let formatted = `${lpad(h, 2, '0')}:${lpad(m, 2, '0')}:${lpad(s, 2, '0')},${lpad(ms, 3, '0')}`;
-  let formatted = `${h}:${m}:${s},${lpad(ms.toFixed(0), 3, '0')}`;
+  let formatted = `${lpad(h.toString(), 2, '0')}:${lpad(m.toString(), 2, '0')}:${lpad(s.toString(), 2, '0')},${lpad(ms.toString(), 3, '0')}`;
+  // let formatted = `${h}:${m}:${s},${lpad(ms.toFixed(0), 3, '0')}`;
   // console.log(`With ${value}, ms:${ms}, formatted: ${formatted}`);
   // return String.format("%02d", h) + ":" + String.format("%02d", m) + ":" + String.format("%02d", s) + "," + String.format("%03d", ms);
   return formatted;
@@ -554,7 +568,7 @@ let main = (args) => {
   let srtFile = null;
   
   for (let i=0; i<args.length; i++) {
-    console.log("arg #%d: %s", i, args[i]);
+    // console.log("arg #%d: %s", i, args[i]);
     switch (args[i]) {
       case INPUT_PROMPT:
         jsonFile = args[i + 1];
@@ -601,21 +615,29 @@ let main = (args) => {
     throw new Error("No -o parameter...");
   }
   
-  console.log(`Moving on. Converting ${jsonFile} into ${srtFile}`);
-  
+  if (VERBOSE) {
+    console.log(`Moving on. Converting ${jsonFile} into ${srtFile}`);
+  }
   // Reset. Should not be required
   wordList = [];
   segments = [];
 
   // Step 1
   loadJson(jsonFile);
-  console.log(`We have ${wordList.length} words`);
-  for (let i=0; i<Math.min(wordList.length, 10); i++) {
-    console.log(JSON.stringify(wordList[i], null, 2));
+  if (VERBOSE) {
+    console.log(`We have ${wordList.length} words`);
+    // for (let i=0; i<Math.min(wordList.length, 10); i++) {
+    //   console.log(JSON.stringify(wordList[i], null, 2));
+    // }
+    console.log(JSON.stringify(wordList[0], null, 2));
+    console.log(". . .");
+    console.log(JSON.stringify(wordList[wordList.length - 1], null, 2));
   }
   // Step 2
   createSegments(wordList);
-  console.log(`We have ${segments.length} segment(s)`);
+  if (VERBOSE) {
+    console.log(`We have ${segments.length} segment(s)`);
+  }
 
   // Step 3
   verifySegments(wordList, segments);

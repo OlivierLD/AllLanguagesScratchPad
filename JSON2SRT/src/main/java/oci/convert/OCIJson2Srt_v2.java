@@ -321,8 +321,10 @@ public class OCIJson2Srt_v2 {
             if (jtranscriptions.length() == 0) {
                 System.out.println("[E] no transcriptions in json file");
             } else {
-                // just take the first transcrption
+                // just take the first transcription
                 JSONArray jtokens = jtranscriptions.getJSONObject(0).getJSONArray("tokens");
+                System.out.println(String.format("Found %d token(s).", jtokens.length()));
+
                 ExtendedWordBuilder extendedWordBuilder = new ExtendedWordBuilder();
 
                 for (int i = 0; i < jtokens.length(); ++i) {
