@@ -34,7 +34,7 @@ public class OCIJson2Srt_v2 {
 
 
     // helper class to represent a word token from json file
-    // possibly accompanied with a preceding or following punctuation sign
+    // possibly accompanied by a preceding or following punctuation sign
     public class Word {
         String _word;
         String _punctBefore;

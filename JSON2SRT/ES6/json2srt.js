@@ -533,31 +533,22 @@ let time_int2str = (value) => {
 
 let writeSRT = (srtFile, segments) => {
   
-  function spitOut(fileName, data) {
-    fs.writeFileSync(fileName, data, {flag: 'a+'});
+  function spitOut(fileId, data) {
+    fs.writeFileSync(fileId, data, {flag: 'a+'});
   }
-
-  fs.open(srtFile, 'w', function (err, file) {
-    if (err) {
-      throw err;
-    }
-    // console.log('Saved!');
-  });
-
-  // for (let i=0; i<10; i++) {
-  //   spitOut(srtFile, `Line #${i}\n`);
-  // }
+  let fileHandle = fs.openSync(srtFile, 'w');
 
   segments.forEach((segment, idx) => {
-    spitOut(srtFile, `${idx + 1}\n`);
+    spitOut(fileHandle, `${idx + 1}\n`);
     let oneLine = time_int2str(segmentBegin(segment)) + " --> " + time_int2str(segmentEnd(segment));
-    spitOut(srtFile, `${oneLine}\n`);
+    spitOut(fileHandle, `${oneLine}\n`);
     let formattedLines = getSegmentLines(segment, prmValues.maxCharPerLine);
     formattedLines.forEach((line, idx) => {
-      spitOut(srtFile, `${line}\n`);
+      spitOut(fileHandle, `${line}\n`);
     });
-    spitOut(srtFile, "\n");
+    spitOut(fileHandle, "\n");
   });
+  fs.close(fileHandle);
 };
 
 // Main starts here
