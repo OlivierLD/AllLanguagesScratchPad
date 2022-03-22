@@ -558,7 +558,6 @@ let writeSRT = (srtFile, segments) => {
     });
     spitOut(srtFile, "\n");
   });
-  
 };
 
 // Main starts here
@@ -633,6 +632,7 @@ let main = (args) => {
     console.log(". . .");
     console.log(JSON.stringify(wordList[wordList.length - 1], null, 2));
   }
+
   // Step 2
   createSegments(wordList);
   if (VERBOSE) {
@@ -640,6 +640,9 @@ let main = (args) => {
   }
 
   // Step 3
+  // only for debug !!
+  //   - verify if the word sequence is the same between json and srt
+  //   - verify timestamps
   verifySegments(wordList, segments);
 
   // Step 4
