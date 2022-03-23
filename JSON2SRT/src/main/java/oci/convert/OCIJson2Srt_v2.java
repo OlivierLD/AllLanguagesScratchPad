@@ -5,6 +5,7 @@ import java.io.*;
 import org.json.JSONObject;
 import org.json.JSONArray;
 
+import java.util.Arrays;
 import java.util.Iterator;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -96,9 +97,11 @@ public class OCIJson2Srt_v2 {
 
         String wordString() {
             ArrayList<String> words = new ArrayList<>();
-            for (int i = 0; i < _words.size(); ++i) {
-                words.add(_words.get(i).getGlyphs());
-            }
+//            for (int i = 0; i < _words.size(); ++i) {
+//                words.add(_words.get(i).getGlyphs());
+//            }
+            _words.forEach(word -> words.add(word.getGlyphs()));
+
             String joined = String.join(" ", words);
             return joined;
         }

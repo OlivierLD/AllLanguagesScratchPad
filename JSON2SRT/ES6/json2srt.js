@@ -1,5 +1,5 @@
 /**
- * Convert JSON to SRT
+ * Convert (oci)JSON to SRT
  * Usage:
  *   node json2srt.js -i ../input.json -o converted.srt --max-l 1 --max-c 80
  */
