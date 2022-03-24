@@ -2,16 +2,19 @@
  * Convert (oci)JSON to Gecko Json
  * Usage:
  *   node oci2gecko.js -i ../input.json -o converted.json --max-l 1 --max-c 80
+ * 
+ * Do look at the VERBOSE and DO_VERIFY variables.
  */
 "use strict";
 
 process.title = 'Oci2Gecko';
 
+let VERBOSE = true;
+let DO_VERIFY = true;
+let workDir = process.cwd();
+
 let fs = require('fs');
 let path = require("path");
-
-let VERBOSE = true;
-let workDir = process.cwd();
 
 console.log("----------------------------------------------------");
 console.log("Running from " + workDir);
@@ -677,10 +680,12 @@ let main = (args) => {
   }
 
   // Step 3
-  // only for debug !!
-  //   - verify if the word sequence is the same between json and srt
-  //   - verify timestamps
-  verifySegments(wordList, segments);
+  if (DO_VERIFY) {
+    // only for debug !!
+    //   - verify if the word sequence is the same between json and srt
+    //   - verify timestamps
+    verifySegments(wordList, segments);
+  }
 
   // Step 4
   writeNewJSON(newJson, segments);
