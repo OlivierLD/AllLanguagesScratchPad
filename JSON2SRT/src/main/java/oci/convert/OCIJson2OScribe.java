@@ -183,11 +183,11 @@ public class OCIJson2OScribe {
     private List<Segment> _segments;
 
     // Segmentation parameters
-    private static int _maxPause = 200;
-    private static int _minDuration = 800;
-    private static int _maxDuration = 7_000;
-    private static int _maxCharsPerLine = 80;
-    private static int _maxLinesPerSegment = 1;
+    private static int _maxPause           =   200;
+    private static int _minDuration        =   800;
+    private static int _maxDuration        = 7_000;
+    private static int _maxCharsPerLine    =    80;
+    private static int _maxLinesPerSegment =     1;
 
     private int getMaxPause() {
         return _maxPause;
