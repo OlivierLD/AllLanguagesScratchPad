@@ -20,8 +20,12 @@ public class OCIJson2OScribe {
     private final static boolean VERBOSE = false;
     private final static String PUNCTUATION = "PUNCTUATION";
 
-    // Convert time from millisecond to SRT format (legacy)
-    static String time_int2str(int value) {
+    /**
+     * Convert time from milliseconds to SRT format (legacy code)
+     * @param value Time in milliseconds
+     * @return Something formatted for SRT.
+     */
+    private static String time_int2str(int value) {
         int ms = value % 1_000;
         int s = (int) Math.floor((value - ms) / 1_000.0) % 60;
         int m = (int) Math.floor(((value - ms) - 1_000.0 * s) / 60_000.0) % 60;
@@ -31,7 +35,7 @@ public class OCIJson2OScribe {
     }
 
     /**
-     * helper class to represent a word token from json file
+     * Helper class to represent a word token from json file
      * possibly accompanied by a preceding or following punctuation sign
      */
     public static class Word {
@@ -78,7 +82,7 @@ public class OCIJson2OScribe {
     }
 
     /**
-     * helper class to represent a segment in the result
+     * Helper class to represent a segment in the result
      * it mainly contains a list of word tokens
      */
     public static class Segment {
@@ -151,7 +155,6 @@ public class OCIJson2OScribe {
         public List<String> getLines(int maxCharsPerLine) {
             List<String> lines = new ArrayList<>();
             _words.forEach(w -> {
-//                String word = _words.get(i).getGlyphs();
                 String word = w.getGlyphs();
 
                 if (lines.size() == 0) {
