@@ -22,6 +22,7 @@ public class OCIJson2OScribe {
 
     /**
      * Convert time from milliseconds to SRT format (legacy code)
+     *
      * @param value Time in milliseconds
      * @return Something formatted for SRT.
      */
@@ -40,36 +41,36 @@ public class OCIJson2OScribe {
      */
     public static class Word {
         String _word;
-        String _punctBefore;
-        String _punctAfter;
+        String _punctuationBefore;
+        String _punctuationAfter;
         int _begin;
         int _end;
         List<JSONObject> _tokens;
 
-        public Word(String word, String punctBefore, String punctAfter, int begin, int end, List<JSONObject> tokens) {
+        public Word(String word, String punctuationBefore, String punctuationAfter, int begin, int end, List<JSONObject> tokens) {
             _word = word;
-            _punctBefore = punctBefore;
-            _punctAfter = punctAfter;
+            _punctuationBefore = punctuationBefore;
+            _punctuationAfter = punctuationAfter;
             _begin = begin;
             _end = end;
             _tokens = tokens;
         }
 
         public String getGlyphs() {
-            return _punctBefore + _word + _punctAfter;
+            return _punctuationBefore + _word + _punctuationAfter;
         }
 
-        public boolean hasStopPunctuationAtEnd() {
-            if (_punctAfter.length() > 0) {
-                char lastChar = _punctAfter.charAt(_punctAfter.length() - 1);
+        public boolean endsWithPunctuation() {
+            if (_punctuationAfter.length() > 0) {
+                char lastChar = _punctuationAfter.charAt(_punctuationAfter.length() - 1);
                 return lastChar == '.' || lastChar == '?' || lastChar == ';' || lastChar == '!';
             }
             return false;
         }
 
-        public boolean hasStopPunctuationAtBegin() {
-            if (_punctBefore.length() > 0) {
-                char firstChar = _punctBefore.charAt(0);
+        public boolean startsWithPunctuation() {
+            if (_punctuationBefore.length() > 0) {
+                char firstChar = _punctuationBefore.charAt(0);
                 return firstChar == '¿' || firstChar == '¡';
             }
             return false;
@@ -183,11 +184,11 @@ public class OCIJson2OScribe {
     private List<Segment> _segments;
 
     // Segmentation parameters
-    private static int _maxPause           =   200;
-    private static int _minDuration        =   800;
-    private static int _maxDuration        = 7_000;
-    private static int _maxCharsPerLine    =    80;
-    private static int _maxLinesPerSegment =     1;
+    private static int _maxPause = 200;
+    private static int _minDuration = 800;
+    private static int _maxDuration = 7_000;
+    private static int _maxCharsPerLine = 80;
+    private static int _maxLinesPerSegment = 1;
 
     private int getMaxPause() {
         return _maxPause;
@@ -233,9 +234,9 @@ public class OCIJson2OScribe {
      * Utility class, for the word processing.
      */
     private static class ExtendedWordBuilder {
-        String _prePunct;
+        String _prePunctuation;
         String _trueToken;
-        String _postPunct;
+        String _postPunctuation;
         int beginTime;
         int endTime;
         List<JSONObject> tokens;
@@ -245,50 +246,50 @@ public class OCIJson2OScribe {
         }
 
         public void reset() {
-            _prePunct = "";
+            _prePunctuation = "";
             _trueToken = "";
-            _postPunct = "";
+            _postPunctuation = "";
             beginTime = -1;
             endTime = -1;
             tokens = new ArrayList<>();
         }
 
         public void flushWord() {
-            if (!(_trueToken.isEmpty() && _prePunct.isEmpty() && _postPunct.isEmpty())) {
-                Word word = new Word(_trueToken, _prePunct, _postPunct, beginTime, endTime, tokens);
+            if (!(_trueToken.isEmpty() && _prePunctuation.isEmpty() && _postPunctuation.isEmpty())) {
+                Word word = new Word(_trueToken, _prePunctuation, _postPunctuation, beginTime, endTime, tokens);
                 _wordList.add(word);
             }
             reset();
         }
 
-        public boolean okToFlushOnPrePunct() {
-            return !(_trueToken.isEmpty() && _postPunct.isEmpty());
+        public boolean okToFlushOnPrePunctuation() {
+            return !(_trueToken.isEmpty() && _postPunctuation.isEmpty());
         }
 
         public boolean okToFlushOnTrueToken() {
-            return !(_trueToken.isEmpty() && _postPunct.isEmpty());
+            return !(_trueToken.isEmpty() && _postPunctuation.isEmpty());
         }
 
-        public void addPrePunct(String pre_p, int begin, int end, JSONObject token) {
-            if (okToFlushOnPrePunct()) {
+        public void addPrePunctuation(String pre_p, int begin, int end, JSONObject token) {
+            if (okToFlushOnPrePunctuation()) {
                 flushWord();
             }
             if (beginTime != -1 && beginTime != begin) {
-                System.out.println("[W]: addPrePunct: begin = " + begin + "(end=" + end + "), beginTime = " + beginTime);
+                System.out.println("[W]: addPrePunctuation: begin = " + begin + "(end=" + end + "), beginTime = " + beginTime);
             }
             beginTime = begin;
-            _prePunct = _prePunct + pre_p;
+            _prePunctuation = _prePunctuation + pre_p;
             tokens.add(token);
         }
 
-        public void addPostPunct(String post_p, int begin, int end, JSONObject token) {
+        public void addPostPunctuation(String post_p, int begin, int end, JSONObject token) {
             if (endTime != -1 && endTime != end) {
                 System.out.printf("[W]: addPostToken: begin = %s, beginTime = %s\n",
                         NumberFormat.getInstance().format(begin),
                         NumberFormat.getInstance().format(beginTime));
             }
             endTime = end;
-            _postPunct = _postPunct + post_p;
+            _postPunctuation = _postPunctuation + post_p;
             tokens.add(token);
         }
 
@@ -308,6 +309,7 @@ public class OCIJson2OScribe {
 
     /**
      * load OCI json file and create list of word tokens
+     *
      * @param jsonFile the name of the original file
      */
     private void loadJson(String jsonFile) {
@@ -318,22 +320,22 @@ public class OCIJson2OScribe {
             String jsonTxt = Files.readString(filePath);
 
             JSONObject jo = new JSONObject(jsonTxt);
-            JSONArray jtranscriptions = jo.getJSONArray("transcriptions");
-            if (jtranscriptions.length() == 0) {
+            JSONArray jTranscriptions = jo.getJSONArray("transcriptions");
+            if (jTranscriptions.length() == 0) {
                 System.out.println("[E] no transcriptions in json file");
             } else {
                 // just take the first transcription
-                JSONArray jtokens = jtranscriptions.getJSONObject(0).getJSONArray("tokens");
-                System.out.printf("Found %d token(s).\n", jtokens.length());
+                JSONArray jTokens = jTranscriptions.getJSONObject(0).getJSONArray("tokens");
+                System.out.printf("Found %d token(s).\n", jTokens.length());
 
                 ExtendedWordBuilder extendedWordBuilder = new ExtendedWordBuilder();
 
-                for (int i = 0; i < jtokens.length(); i++) {
-                    JSONObject jtoken = jtokens.getJSONObject(i);
-                    String wordText = jtoken.getString("token");
-                    String beginText = jtoken.getString("startTime");
-                    String endText = jtoken.getString("endTime");
-                    String typeText = jtoken.getString("type");
+                for (int i = 0; i < jTokens.length(); i++) {
+                    JSONObject jToken = jTokens.getJSONObject(i);
+                    String wordText = jToken.getString("token");
+                    String beginText = jToken.getString("startTime");
+                    String endText = jToken.getString("endTime");
+                    String typeText = jToken.getString("type");
                     beginText = beginText.substring(0, beginText.length() - 1);
                     endText = endText.substring(0, endText.length() - 1);
                     // convert duration in ms
@@ -342,14 +344,14 @@ public class OCIJson2OScribe {
 
                     if (typeText.equals(PUNCTUATION)) {
                         // Facing a punctuation
-                        boolean isPrePunct = wordText.equals("¿") || wordText.equals("¡");
-                        if (isPrePunct) {
-                            extendedWordBuilder.addPrePunct(wordText, begin, end, jtoken);
+                        boolean prePunctuation = wordText.equals("¿") || wordText.equals("¡");
+                        if (prePunctuation) {
+                            extendedWordBuilder.addPrePunctuation(wordText, begin, end, jToken);
                         } else {
-                            extendedWordBuilder.addPostPunct(wordText, begin, end, jtoken);
+                            extendedWordBuilder.addPostPunctuation(wordText, begin, end, jToken);
                         }
                     } else {
-                        extendedWordBuilder.addTrueToken(wordText, begin, end, jtoken);
+                        extendedWordBuilder.addTrueToken(wordText, begin, end, jToken);
                     }
                 }
                 extendedWordBuilder.flushWord();
@@ -366,11 +368,12 @@ public class OCIJson2OScribe {
 
     /**
      * Split a too long segment into several segments
-     * @param segment original segment
-     * @param nbSplit nb chunks
-     * @param maxCharsPerLine CLI prm
+     *
+     * @param segment            original segment
+     * @param nbSplit            nb chunks
+     * @param maxCharsPerLine    CLI prm
      * @param maxLinesPerSegment CLI prm
-     * @return the list of splitted segments
+     * @return the list of split segments
      */
     private List<Segment> splitSegment(Segment segment, int nbSplit, int maxCharsPerLine, int maxLinesPerSegment) {
         List<Segment> newSegments = new ArrayList<>();
@@ -408,12 +411,12 @@ public class OCIJson2OScribe {
             }
             Segment currentSegment = newSegments.get(newSegments.size() - 1);
 
-            if (word.hasStopPunctuationAtBegin() && currentSegment.duration() >= minDuration) {
+            if (word.startsWithPunctuation() && currentSegment.duration() >= minDuration) {
                 // current segment is already long enough, create new segment starting with current word
                 newSegments.add(new Segment());
                 currentSegment = newSegments.get(newSegments.size() - 1);
                 currentSegment.pushBehind(word);
-            } else if (word.hasStopPunctuationAtEnd() && currentSegment.duration() + word.duration() >= minDuration) {
+            } else if (word.endsWithPunctuation() && currentSegment.duration() + word.duration() >= minDuration) {
                 // current segment with this word is long enough, add current word and create new segment
                 currentSegment.pushBehind(word);
                 newSegments.add(new Segment());
@@ -540,8 +543,8 @@ public class OCIJson2OScribe {
         segments = segments2;
         List<Segment> segments3 = new ArrayList<>();
         segments.forEach(seg -> {
-            List<Segment> newSegmentsPunct = splitSegmentOnPunctuation(seg, _minDuration);
-            segments3.addAll(newSegmentsPunct);
+            List<Segment> newSegmentsPunctuation = splitSegmentOnPunctuation(seg, _minDuration);
+            segments3.addAll(newSegmentsPunctuation);
         });
         System.out.printf("Step 3 - %d segments.\n", segments3.size());
 
@@ -561,8 +564,8 @@ public class OCIJson2OScribe {
                     System.out.println("------ split -----");
                     System.out.println(seg);
                 }
-                int nbNeededSplitForLines = (int) Math.ceil((double)nbNeededLines / (double)_maxLinesPerSegment);
-                int nbNeededSplitForDuration = (int) Math.ceil((double)seg.duration() / (double)_maxDuration);
+                int nbNeededSplitForLines = (int) Math.ceil((double) nbNeededLines / (double) _maxLinesPerSegment);
+                int nbNeededSplitForDuration = (int) Math.ceil((double) seg.duration() / (double) _maxDuration);
                 int nbSplit = Math.max(nbNeededSplitForLines, nbNeededSplitForDuration);
 
                 List<Segment> newSegments = splitSegment(seg, nbSplit, _maxCharsPerLine, _maxLinesPerSegment);
@@ -604,7 +607,7 @@ public class OCIJson2OScribe {
             System.out.println("[ERROR] word sequence is different");
             System.out.println("wordStringFromJson size=" + wordStringFromJson.length());
             System.out.println("wordStringFromSegments size=" + wordStringFromSegments.length());
-        // } else {
+            // } else {
             // System.out.println("[OK] same word sequence");
         }
         // verify timestamps
@@ -624,6 +627,7 @@ public class OCIJson2OScribe {
 
     /**
      * Write the new JSON file
+     *
      * @param file output file name
      */
     private void writeNewJSON(String file) {
@@ -642,8 +646,8 @@ public class OCIJson2OScribe {
                 segment._words.forEach(word -> {
                     List<JSONObject> foundTokens = word._tokens;
                     foundTokens.forEach(token -> {
-                        String tokenStartTime = (String)token.get("startTime");
-                        String tokenEndTime = (String)token.get("endTime");
+                        String tokenStartTime = (String) token.get("startTime");
+                        String tokenEndTime = (String) token.get("endTime");
                         // Remove the trailing 's'
                         String beginText = tokenStartTime.substring(0, tokenStartTime.length() - 1);
                         String endText = tokenEndTime.substring(0, tokenEndTime.length() - 1);
@@ -653,9 +657,9 @@ public class OCIJson2OScribe {
                         JSONObject term = new JSONObject(Map.of(
                                 "start", begin,
                                 "end", end,
-                                "text", (String)token.get("token"),
-                                "type", (String)token.get("type"),
-                                "confidence", Double.parseDouble((String)token.get("confidence"))
+                                "text", (String) token.get("token"),
+                                "type", (String) token.get("type"),
+                                "confidence", Double.parseDouble((String) token.get("confidence"))
                         ));
                         oneLine.getJSONArray("terms").put(term);
                     });
@@ -664,8 +668,8 @@ public class OCIJson2OScribe {
             });
 
             // Spit out the new JSON object
-            File fout = new File(file);
-            FileOutputStream fos = new FileOutputStream(fout);
+            File fOut = new File(file);
+            FileOutputStream fos = new FileOutputStream(fOut);
             OutputStreamWriter osw = new OutputStreamWriter(fos);
 
             String jsonString = newJson.toString(2);
