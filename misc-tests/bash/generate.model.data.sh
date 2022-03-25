@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Write some java code, from a text file.
+# Write some java code, from a text file (model.data.txt)
 # Use ./generate.model.data.sh > temp.java
 #
 LINE_NO=1

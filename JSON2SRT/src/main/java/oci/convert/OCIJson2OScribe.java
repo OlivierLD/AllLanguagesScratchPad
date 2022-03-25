@@ -15,10 +15,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * This one uses org.json
+ * See https://github.com/stleary/JSON-java
+ */
 public class OCIJson2OScribe {
 
     private final static boolean VERBOSE = false;
     private final static String PUNCTUATION = "PUNCTUATION";
+    private final static boolean DO_VERIFY = true;
 
     /**
      * Convert time from milliseconds to SRT format (legacy code)
@@ -742,9 +747,11 @@ public class OCIJson2OScribe {
                 ociJson2OScribe._segments.size() > 1 ? "s" : "");
 
         // only for debug !!
-        //   - verify if the word sequence is the same between json and srt
-        //   - verify timestamps
-        ociJson2OScribe.verifySegments();
+        if (DO_VERIFY) {
+            //   - verify if the word sequence is the same between json and srt
+            //   - verify timestamps
+            ociJson2OScribe.verifySegments();
+        }
 
         // Write expected JSON
         ociJson2OScribe.writeNewJSON(newJSONFile);
