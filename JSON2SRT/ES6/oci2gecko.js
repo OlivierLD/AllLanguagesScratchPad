@@ -9,15 +9,14 @@
 
 process.title = 'Oci2Gecko';
 
-let VERBOSE = true;
+let VERBOSE = false;
 let DO_VERIFY = true;
-let workDir = process.cwd();
 
 let fs = require('fs');
 let path = require('path');
 
 console.log("----------------------------------------------------");
-console.log("Running from " + workDir);
+console.log("Running from " + process.cwd());
 console.log("Usage: node " + path.basename(__filename) + " --help");
 console.log("----------------------------------------------------");
 
@@ -70,19 +69,19 @@ let flushWord = (wordBuilder) => {
   reset(wordBuilder);
 };
 
-let condForFlushOnPrePunct = (wordBuilder) => {
+let okToFlushOnPrePunct = (wordBuilder) => {
   return !(wordBuilder._trueToken.trim().length === 0 && wordBuilder._postPunct.trim().length === 0);
 }
-let condForFlushOnTrueToken = (wordBuilder) => {
+let okToFlushOnTrueToken = (wordBuilder) => {
   return !(wordBuilder._trueToken.trim().length === 0 && wordBuilder._postPunct.trim().length === 0);
 };
 
 let addPrePunct = (wordBuilder, pre_p, begin, end, token) => {
-  if (condForFlushOnPrePunct(wordBuilder)) { 
+  if (okToFlushOnPrePunct(wordBuilder)) { 
     flushWord(wordBuilder); 
   }
   if (wordBuilder.beginTime != -1 && wordBuilder.beginTime != begin) {
-      console.log("[W]: addPrePunct: begin = " + begin + ", beginTime = " + beginTime);
+      console.log(`[W]: addPrePunct: begin = ${begin}, beginTime = ${beginTime}, pre_p= ${pre_p}`);
   }
   wordBuilder.beginTime = begin;
   wordBuilder._prePunct = wordBuilder._prePunct + pre_p;
@@ -91,7 +90,7 @@ let addPrePunct = (wordBuilder, pre_p, begin, end, token) => {
 
 let addPostPunct = (wordBuilder, post_p, begin, end, token) => {
   if (wordBuilder.endTime != -1 && wordBuilder.endTime != end) {
-      console.log("[W]: addTrueToken: begin = " + begin + ", beginTime = " + wordBuilder.beginTime);
+      console.log(`[W]: addPostPunct: begin = ${begin}, beginTime = ${wordBuilder.beginTime}, post_p= ${post_p}`);
   }
   wordBuilder.endTime = end;
   wordBuilder._postPunct = wordBuilder._postPunct + post_p;
@@ -99,11 +98,11 @@ let addPostPunct = (wordBuilder, post_p, begin, end, token) => {
 };
 
 let addTrueToken = (wordBuilder, tt, begin, end, token) => {
-  if (condForFlushOnTrueToken(wordBuilder)) { 
+  if (okToFlushOnTrueToken(wordBuilder)) { 
     flushWord(wordBuilder); 
   }
   if (wordBuilder.beginTime != -1 && wordBuilder.beginTime != begin) {
-    console.log("[W]: addTrueToken: begin = " + begin + ", beginTime = " + wordBuilder.beginTime);
+    console.log(`[W]: addTrueToken: begin = ${begin}, beginTime = ${wordBuilder.beginTime}, tt= ${tt}`);
   }
   wordBuilder.beginTime = begin; 
   wordBuilder.endTime = end;
@@ -112,7 +111,7 @@ let addTrueToken = (wordBuilder, tt, begin, end, token) => {
 };
 
 let addToken = (wordBuilder, tt, begin, end, confidence, type) => {
-  if (condForFlushOnTrueToken(wordBuilder)) { 
+  if (okToFlushOnTrueToken(wordBuilder)) { 
     flushWord(wordBuilder); 
   }
   if (wordBuilder.beginTime != -1 && wordBuilder.beginTime != begin) {
@@ -487,7 +486,9 @@ let createSegments = (listOfWords) => {
       // it may happen more splits than nbSplit were done, that may result in a single word for the last segment
       // in that case, ask for a larger number of splits
       if (newSegments.length > nbSplit) {
-          console.log("ask for a larger number of split ");
+          if (VERBOSE) {
+            console.log("ask for a larger number of split ");
+          }
           newSegments = splitSegment(seg, nbSplit + 1, prmValues.maxCharPerLine, prmValues.maxLinesPerSegment);
       }
 

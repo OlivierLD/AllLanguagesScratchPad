@@ -9,17 +9,16 @@
  */
 "use strict";
 
-process.title = 'Oci2Gecko';
+process.title = 'Oci2Gecko-Class';
 
-const VERBOSE = true;
+const VERBOSE = false;
 const DO_VERIFY = true;
-let workDir = process.cwd();
 
 let fs = require('fs');
 let path = require('path');
 
 console.log("----------------------------------------------------");
-console.log("Running from " + workDir);
+console.log("Running from " + process.cwd());
 console.log("Usage: node " + path.basename(__filename) + " --help");
 console.log("----------------------------------------------------");
 
@@ -229,16 +228,16 @@ class ExtendedWordBuilder {
         this.reset();
     }
     
-    condForFlushOnPrePunct() {
+    okToFlushOnPrePunct() {
         return !(this._trueToken === "" && this._postPunct === "");
     }
     
-    condForFlushOnTrueToken() {
+    okToFlushOnTrueToken() {
         return !(this._trueToken === "" && this._postPunct === "");
     }
     
     addPrePunct(pre_p, begin, end, token) {
-        if (this.condForFlushOnPrePunct()) { this.flushWord(); }
+        if (this.okToFlushOnPrePunct()) { this.flushWord(); }
         if (this._beginTime !== -1 && this._beginTime !== begin) {
             console.log(`[W]: addPrePunct: begin = ${begin}, _beginTime = ${this._beginTime}, pre_p= ${pre_p}`);
         }
@@ -258,7 +257,7 @@ class ExtendedWordBuilder {
     }
     
     addTrueToken(tt, begin, end, token) {
-        if (this.condForFlushOnTrueToken()) { this.flushWord(); }
+        if (this.okToFlushOnTrueToken()) { this.flushWord(); }
         if (this._beginTime != -1 && this._beginTime != begin) {
             console.log(`[W]: addTrueToken: begin = ${begin}, _beginTime = ${this._beginTime}, tt= ${tt}`);
         }
