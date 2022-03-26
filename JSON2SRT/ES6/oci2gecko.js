@@ -14,7 +14,7 @@ let DO_VERIFY = true;
 let workDir = process.cwd();
 
 let fs = require('fs');
-let path = require("path");
+let path = require('path');
 
 console.log("----------------------------------------------------");
 console.log("Running from " + workDir);
