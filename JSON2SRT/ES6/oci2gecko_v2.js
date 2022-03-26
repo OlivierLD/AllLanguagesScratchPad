@@ -33,6 +33,7 @@ const MIN_D_PROMPT = "--min-d";
 const HELP_PROMPT = "-h";
 const HELP_PROMPT2 = "--help";
 const HELP_PROMPT3 = "-help";
+const HELP_PROMPT4 = "-?";
 
 let prmValues = {
     maxPause: 200,
@@ -272,7 +273,6 @@ class ExtendedWordBuilder {
 // Main class to convert OCI json to OScribe format
 //-------------------------------------------------
 class OCIJson2OScribe {
-    
     // Segmentation parameters
     _maxPause = 200;
     _minDuration = 800;
@@ -653,7 +653,7 @@ class OCIJson2OScribe {
 }
 
 //-------------------- convert_oci_json(jsonObj) -----------------------------
-// adapt oci json format to OScribe
+// Adapt oci json format to OScribe
 // - field names adaptation
 // - create segments
 //---------------------------------------------------------------------------
@@ -724,9 +724,10 @@ let main = (args) => {
        case HELP_PROMPT:
        case HELP_PROMPT2:
        case HELP_PROMPT3:
+       case HELP_PROMPT4:
          console.log(`Parameters of ${path.basename(__filename)} are:`);
-         console.log(`${INPUT_PROMPT} inputFile.json (mandatory)`);
-         console.log(`${OUTPUT_PROMPT} outputFile.srt (mandatory)`);
+         console.log(`${INPUT_PROMPT} inputFile.json (mandatory parameter)`);
+         console.log(`${OUTPUT_PROMPT} outputFile.json (mandatory parameter)`);
          console.log(`${MAX_C_PROMPT} max characters per line (default ${prmValues.maxCharPerLine})`);
          console.log(`${MAX_L_PROMPT} max lines per segment (default ${prmValues.maxLinesPerSegment})`);
          console.log(`${MAX_D_PROMPT} max duration (default ${prmValues.maxDuration})`);

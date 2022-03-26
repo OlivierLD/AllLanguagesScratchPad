@@ -636,8 +636,8 @@ let main = (args) => {
       case HELP_PROMPT2:
       case HELP_PROMPT3:
         console.log(`Parameters of ${path.basename(__filename)} are:`);
-        console.log(`${INPUT_PROMPT} inputFile.json (mandatory)`);
-        console.log(`${OUTPUT_PROMPT} outputFile.srt (mandatory)`);
+        console.log(`${INPUT_PROMPT} inputFile.json (mandatory parameter)`);
+        console.log(`${OUTPUT_PROMPT} outputFile.json (mandatory parameter)`);
         console.log(`${MAX_C_PROMPT} max characters per line (default ${prmValues.maxCharPerLine})`);
         console.log(`${MAX_L_PROMPT} max lines per segment (default ${prmValues.maxLinesPerSegment})`);
         console.log(`${MAX_D_PROMPT} max duration (default ${prmValues.maxDuration})`);
