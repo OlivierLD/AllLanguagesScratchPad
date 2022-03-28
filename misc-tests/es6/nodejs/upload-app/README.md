@@ -15,7 +15,6 @@ Like `http://localhost:8080/palm.04.jpg` in our case.
 ## Web Client
 From a browser, reach <http://localhost:8080/index.html>, and use the page to upload the file (from its URL).
 
-
 ## CURL Client
 ```
 $ curl -X POST http://localhost:8080/upload-service -H "file-url: http://localhost:8080/palm.04.jpg" -H "file-name: duh.jpg"
