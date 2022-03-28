@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+
+<!DOCTYPE html>
+<html lang="en_US">
+<head>
+    <meta charset="UTF-8">
+    <title>Upload from here</title>
+	<link rel="icon" type="image/jpg" href="./palm.04.jpg">
+    <script type="module" src="app.js"></script>
+    <style>
+        * {
+            font-family: 'Courier New', Courier, monospace;
+        }
+    </style>
+    <script>
+let process = () => {
+    let url = document.getElementById("doc-url").value;
+    let name = document.getElementById("doc-name").value;
+
+    doUpload(url, name);
+};        
+    </script>
+</head>
+<body>
+    <h1>Upload from here</h1>
+    <table>
+        <tr>
+            <td>Document URL</td>
+            <td><input type="text" id="doc-url" placeholder="URL of the document to fetch" size="60"></td>
+        </tr>
+        <tr>
+            <td>Name on the server</td>
+            <td><input type="text" id="doc-name" placeholder="Downloaded file ame on the server" size="20"></td>
+        </tr>
+    </table>
+    <button onclick="process();">Do it.</button>
+</body>
+<script>
+    window.onload = () => {
+        console.log("Loaded!");
+    };
+</script>
+</html>
