@@ -10,14 +10,14 @@ $ node server.js
 ```
 
 ## Identify a URL pointing to a file to upload
-Like `http://localhost:8080/palm.04.jpg` in our case.
+Like `http://localhost:8080/palm.04.jpg`, or better, `http://donpedro.lediouris.net/journal/trip/P1241389.JPG` in our case.
 
 ## Web Client
 From a browser, reach <http://localhost:8080/index.html>, and use the page to upload the file (from its URL).
 
-## CURL Client
+## `curl` Client
 ```
-$ curl -X POST http://localhost:8080/upload-service -H "file-url: http://localhost:8080/palm.04.jpg" -H "file-name: duh.jpg"
+$ curl -X POST http://localhost:8080/upload-service -H "file-url: http://donpedro.lediouris.net/journal/trip/P1241389.JPG" -H "file-name: duh.jpg"
 ```
 
 After execution, you should see a `duh.jpg` on the server.
