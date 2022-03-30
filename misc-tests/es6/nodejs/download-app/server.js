@@ -227,8 +227,7 @@ let handler = (req, res) => {
 			}
 			console.log((exist === true ? "Loading static " : ">> Warning: not found << ") + req.url + " (" + resource + ")");
 
-			fs.readFile(workDir + '/' + resource,
-					(err, data) => {
+			fs.readFile(workDir + '/' + resource, (err, data) => {
 						if (err) {
 							res.writeHead(400);
 							return res.end('Error loading ' + resource);

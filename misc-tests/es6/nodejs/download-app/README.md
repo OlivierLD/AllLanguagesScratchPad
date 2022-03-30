@@ -29,5 +29,15 @@ The client part is done in `upload.html`, function `process`, and in `app.js`, f
 The server part in implemented in `server.js`, by the service `POST /upload-service`.  
 Important: See the management of the data going back and forth (file content), they are base64 encoded, you need to be aware all this.
 
+### Use case
+The IP of your server-machine is like `100.111.136.104`, you have started the node server with
+```
+$ node server.js --port:1234
+```
+From a browser pointing on `http://100.111.136.104:1234/upload.html`, you upload a file like `image.jpg`, that will be uploaded on the server, as `new_image.jpg`.  
+Once the poricess is completed, you might be able to reach the new image, from <http://100.111.136.104:1234/new_image.jpg>.
+
+> Make sure the file types you deal with are managed in `server.js`, around lines `230` or so....
+
 
 ---
