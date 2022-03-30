@@ -98,7 +98,7 @@ let writeBase64DataToFile = (fileName, content) => {
 	// console.log("Converted content:");
 	// console.log(binBuf);
 
-	console.log(`Writing file: ${content.length} bytes long.`);
+	console.log(`Writing file ${fileName}: ${content.length} becomes ${binBuf.length} bytes long.`);
 	// console.log(`binBuf is a ${typeof(binBuf)}`);
     let stream = fs.createWriteStream(fileName);
 	stream.write(binBuf);
@@ -245,9 +245,9 @@ let handler = (req, res) => {
 							contentType = "text/xml";
 						} else if (resource.endsWith(".js") || resource.endsWith(".js.map") || resource.endsWith(".map")) {
 							contentType = "text/javascript";
-						} else if (resource.endsWith(".jpg")) {
+						} else if (resource.endsWith(".jpg") || resource.endsWith(".JPG")) {
 							contentType = "image/jpg";
-						} else if (resource.endsWith(".jpeg")) {
+						} else if (resource.endsWith(".jpeg") || resource.endsWith(".JPEG")) {
 							contentType = "image/jpeg";
 						} else if (resource.endsWith(".gif")) {
 							contentType = "image/gif";
@@ -257,6 +257,8 @@ let handler = (req, res) => {
 							contentType = "image/x-icon";
 						} else if (resource.endsWith(".svg")) {
 							contentType = "image/svg+xml";
+						} else if (resource.endsWith(".pdf")) {
+							contentType = "application/pdf";
 						} else if (resource.endsWith(".woff")) {
 							contentType = "application/x-font-woff";
 						} else if (resource.endsWith(".ttf")) {
@@ -275,6 +277,7 @@ let handler = (req, res) => {
 								resource.endsWith(".gif") ||
 								resource.endsWith(".ico") ||
 								resource.endsWith(".svg") ||
+								resource.endsWith(".pdf") ||
 								resource.endsWith(".woff") ||
 								resource.endsWith(".ttf") ||
 								resource.endsWith(".png")) {
