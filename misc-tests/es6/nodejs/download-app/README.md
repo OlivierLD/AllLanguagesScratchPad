@@ -23,7 +23,11 @@ $ curl -X POST http://localhost:8080/upload-service -H "file-url: http://donpedr
 After execution, you should see a `duh.jpg` on the server.
 
 # A (NodeJS) Web App to upload a file
-. . .
+Start `node server.js` from the `download-app` directory, and reach <http://localhost:8080/upload.html> from your browser.  
+
+The client part is done in `upload.html`, function `process`, and in `app.js`, function `uploadContent`.  
+The server part in implemented in `server.js`, by the service `POST /upload-service`.  
+Important: See the management of the data going back and forth (file content), they are base64 encoded, you need to be aware all this.
 
 
 ---
