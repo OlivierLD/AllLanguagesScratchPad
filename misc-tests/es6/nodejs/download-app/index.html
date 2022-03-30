@@ -1,10 +1,8 @@
 <!DOCTYPE html>
-
-<!DOCTYPE html>
 <html lang="en_US">
 <head>
     <meta charset="UTF-8">
-    <title>Upload from here</title>
+    <title>Download from here</title>
 	<link rel="icon" type="image/jpg" href="./palm.04.jpg">
     <script type="module" src="app.js"></script>
     <style>
@@ -13,16 +11,21 @@
         }
     </style>
     <script>
+let downloadCallback = (mess) => {
+    let messZone = document.getElementById("mess-zone");
+    messZone.innerText = mess;
+};
+
 let process = () => {
     let url = document.getElementById("doc-url").value;
     let name = document.getElementById("doc-name").value;
 
-    doUpload(url, name);
+    doDownload(url, name, downloadCallback);
 };        
     </script>
 </head>
 <body>
-    <h1>Upload from here</h1>
+    <h1>Download from here</h1>
     <table>
         <tr>
             <td>Document URL</td>
@@ -34,6 +37,9 @@ let process = () => {
         </tr>
     </table>
     <button onclick="process();">Do it.</button>
+    <div id="mess-zone">
+
+    </div>
 </body>
 <script>
     window.onload = () => {

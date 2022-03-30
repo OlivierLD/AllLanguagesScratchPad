@@ -73,17 +73,36 @@ console.log("----------------------------------------------------");
 console.log("  Try http://localhost:8080/index.html");
 
 /**
- * Upload a file from its URL. Used by a REST service
+ * Download a file from its URL. Used by a REST service
  * 
  * @param {string} resourceURL URL of the file to get
  * @param {string} fileToWrite Name/Path of the file to write
  */
- let uploadFile = (resourceURL, fileToWrite) => {
+ let downloadFile = (resourceURL, fileToWrite) => {
     // var fileToDownload = fileToGet; // req.body.fileToDownload;
     let file = fs.createWriteStream(fileToWrite); // "externalImage.jpg");
     let request = http.get(resourceURL, function(response) {
-      response.pipe(file);
+      response.pipe(file)
+	          .on('error', function(err) { if (err !== null) console.log(err) });
     });
+};
+
+let writeBase64DataToFile = (fileName, content) => { 
+
+	// Convert from base64
+	// Remove prefix like data:text/html;base64,
+	const BASE64_REGEXP = new RegExp("^data:([a-z]*)/([a-z]*);base64,", "i");
+	content = content.replace(BASE64_REGEXP, ""); // Remove base64 prefix
+
+	let binBuf = Buffer.from(content, 'base64'); //.toString('ascii');
+	// console.log("Converted content:");
+	// console.log(binBuf);
+
+	console.log(`Writing file: ${content.length} bytes long.`);
+	// console.log(`binBuf is a ${typeof(binBuf)}`);
+    let stream = fs.createWriteStream(fileName);
+	stream.write(binBuf);
+	stream.end();
 };
 
 /**
@@ -107,7 +126,7 @@ let handler = (req, res) => {
 			verbose = (req.url.substring("/verbose=".length) === 'on');
 			res.end(JSON.stringify({verbose: verbose ? 'on' : 'off'}));
 		}
-	} else if (req.url.startsWith("/upload-service")) { 
+	} else if (req.url.startsWith("/download-service")) { 
 		if (req.method === "POST") {
 			// Requires 2 parameters (Headers, "file-url", "file-name")
 			let fileUrl = req.headers['file-url'];
@@ -115,23 +134,69 @@ let handler = (req, res) => {
 
 			console.log(`Will download ${fileName} from ${fileUrl}`);
 			try {
-				uploadFile(fileUrl, fileName);
-				respContent = "Response from " + req.url + ", all good (" + fileName + " created).";
+				downloadFile(fileUrl, fileName);
+				respContent = `Response from ${req.url}, all good (${fileName} created).`;
 				res.writeHead(201, {'Content-Type': 'text/plain'});
 				res.end(respContent);	
+				console.log(`Download completed`);
 			} catch (err) {
 				respContent = "Response from " + req.url + "\n" + JSON.stringify(err);
 				res.writeHead(201, {'Content-Type': 'text/plain'});
 				res.end(respContent);	
+				console.log(`Download errror: ${JSON.stringify(err)}`);
 			}
-
 		} else {
-			respContent = "Unmanaged request. Response from " + req.url;
+			respContent = `Unmanaged request. Response from ${req.method} ${req.url}`;
 			res.writeHead(404, {'Content-Type': 'text/plain'});
 			res.end(respContent);	
 		}
+	} else if (req.url.startsWith("/upload-service")) { 
+		if (req.method === "POST") {
+			// Requires 2 parameters (Headers, "file-url", "file-name")
+			let fileType = req.headers['content-type'];
+			let fileName = req.headers['file-name'];
 
-	} else if (req.url.startsWith("/")) { // Assuming static resource
+			// console.log("Request:");
+			// console.log(req);
+
+			var body = '';
+
+			req.on('data', (data) => {
+				body += data;
+				// Too much POST data, kill the connection!
+				// 1e6 === 1 * Math.pow(10, 6) === 1 * 1000000 ~~~ 1MB
+				if (body.length > 1e6) {
+					req.connection.destroy();
+				}
+			});
+	
+			req.on('end', () => {
+				console.log("...End of data.");
+				// console.log(body);
+				let content = body;
+				console.log(`Content for ${fileName} is ${fileType}, ${content.length} bytes long.`);
+				try {
+					// Do something smart with the payload.
+					writeBase64DataToFile(fileName, content);
+
+					respContent = `Response from ${req.url}, all good (${fileName} created).`;
+					res.writeHead(201, {'Content-Type': 'text/plain'});
+					res.end(respContent);	
+					console.log(`Upload completed`);
+				} catch (err) {
+					respContent = "Response from " + req.url + "\n" + JSON.stringify(err);
+					res.writeHead(201, {'Content-Type': 'text/plain'});
+					res.end(respContent);	
+					console.log(`Upload errror: ${JSON.stringify(err)}`);
+				}
+			});
+
+		} else {
+			respContent = `Unmanaged request. Response from ${req.method} ${req.url}`;
+			res.writeHead(404, {'Content-Type': 'text/plain'});
+			res.end(respContent);	
+		}
+	} else if (req.url.startsWith("/")) { // Assuming static resource(s)
 		if (req.method === "GET") {
 			let resource = req.url.substring("/".length);
 			if (resource.length === 0) {

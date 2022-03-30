@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+
+<!--
+    Good FileReader tutorial at https://o7planning.org/12333/javascript-filereader
+-->>
+<html lang="en_US">
+<head>
+    <meta charset="UTF-8">
+    <title>Upload from here</title>
+	<link rel="icon" type="image/jpg" href="./palm.04.jpg">
+    <script type="module" src="app.js"></script>
+    <style>
+        * {
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        div {
+            margin: 10px;
+        }
+    </style>
+    <script>
+
+let serviceCallback = (mess) => {
+    console.log(`Back from upload: ${mess}`);
+};
+
+let chooseFiles = () => {
+    let id = document.getElementById("upload-files");
+    id.style.display = 'inline-block';
+
+};
+
+let fileProcessor = (files) => {
+    console.log(`Required ${files.length} files`);
+
+    for (let i=0; i<files.length; i++) {
+        let file = files[i];
+        console.log(`Type ${file.type}, Name ${file.name}, Size ${file.size} bit(s).`);
+
+        let fileReader = new FileReader();
+        // Started by fileReader.readAsDataURL
+        fileReader.onload = (progressEvent) => {
+            let content = fileReader.result;  // Base64 content
+            if (file.type.startsWith('image/')) {
+                console.log("This is an image");
+                const image = document.createElement("img");
+                document.getElementById("output").appendChild(image);
+                // Something like: data:image/png;base64,iVBORw...Ym57Ad6m6uHj96js
+                image.src = content;
+            } else {
+                console.log(content);
+            }
+            uploadContent(file.type, content, "new_" + file.name, serviceCallback);
+        }
+        fileReader.readAsDataURL(file);
+        console.log(".");
+    }
+};
+
+let process = (evt) => {
+    evt.stopPropagation();
+    evt.preventDefault();
+
+    let files = evt.target.files;
+
+    fileProcessor(files);
+};     
+
+let postProcess = () => {
+    let fileChooser = document.getElementById("file-chooser");
+    let files = fileChooser.files;
+
+    fileProcessor(files);
+};
+
+    </script>
+</head>
+<body>
+    <h1>Upload from here</h1>
+
+    <div>
+        <button onclick="chooseFiles();">Choose File(s)</button>
+    </div>
+
+    <div id="upload-files" style="display: none;">
+        <div style="border: 1px solid black; border-radius: 10px; padding: 20px;">
+            Choose the files to upload:
+            <br/>
+            <input id="file-chooser" type="file" onchange="process(event)" multiple>
+        </div>
+    </div>
+
+    <div>
+        <button onclick="postProcess();">Post-Process</button>
+    </div>
+
+    <div id="mess-zone">
+
+    </div>
+
+    <div id="output">
+
+    </div>
+</body>
+<script>
+    window.onload = () => {
+        console.log("Loaded!");
+    };
+</script>
+</html>
