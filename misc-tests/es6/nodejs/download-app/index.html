@@ -22,6 +22,12 @@ let process = () => {
 
     doDownload(url, name, downloadCallback);
 };        
+let processV2 = () => {
+    let url = document.getElementById("doc-url").value;
+    let name = document.getElementById("doc-name").value;
+
+    directDownload(url, name, downloadCallback); // May raise a CORS error
+};        
     </script>
 </head>
 <body>
@@ -36,7 +42,8 @@ let process = () => {
             <td><input type="text" id="doc-name" placeholder="Downloaded file ame on the server" size="20"></td>
         </tr>
     </table>
-    <button onclick="process();">Do it.</button>
+    <button onclick="process();">Do it (V1).</button>
+    <button onclick="processV2();" title="May raise a CORS error">Do it (V2).</button>
     <div id="mess-zone">
 
     </div>

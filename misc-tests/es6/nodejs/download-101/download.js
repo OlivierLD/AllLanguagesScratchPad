@@ -1,5 +1,8 @@
 "use strict";
 
+/**
+ * To use from NodeJS
+ */
 
 let http = require('http');
 let fs = require('fs'); // Handle files
@@ -18,9 +21,10 @@ let downloadFile = (resourceURL, fileToWrite) => {
     });
 };
 
-let imgUrl = "http://localhost:8080/misc-tests/images/jconsole.2.png";
+// let imgUrl = "http://localhost:8080/misc-tests/images/jconsole.2.png";
+let imgUrl = "http://donpedro.lediouris.net/journal/trip/P1241389.JPG";
+
 let localFileName = "image.png";
 
 downloadFile(imgUrl, localFileName);
-
 
