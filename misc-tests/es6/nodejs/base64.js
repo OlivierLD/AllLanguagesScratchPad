@@ -1,3 +1,7 @@
+/**
+ * Encode and decode, using Buffer.
+ * Works on NodeJS (maybe not on a Web Page...)
+ */
 const data = 'CodezUp';
 console.log('---ORIGINAL-----', data);
 
