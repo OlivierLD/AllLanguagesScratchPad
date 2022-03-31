@@ -78,13 +78,35 @@ console.log(`  Try http://localhost:${port}/index.html`);
  * @param {string} resourceURL URL of the file to get
  * @param {string} fileToWrite Name/Path of the file to write
  */
- let downloadFile = (resourceURL, fileToWrite) => {
+ let downloadFile = (resourceURL, fileToWrite, callback) => {
     // var fileToDownload = fileToGet; // req.body.fileToDownload;
     let file = fs.createWriteStream(fileToWrite); // "externalImage.jpg");
     let request = http.get(resourceURL, function(response) {
       response.pipe(file)
 	          .on('error', function(err) { if (err !== null) console.log(err) });
+      console.log("After of response.pipe");
+	  if (callback !== undefined) {
+		callback({ "ok": "OK" });
+	  } else {
+		console.log("End OK!");
+	  }
     });
+	request.on('error', (err) => {
+		console.log(`downloadFile, error: ${err}`);
+		if (callback !== undefined) {
+			callback({ "error": err });
+		} else {
+		  console.log('HttpError:' + err.message); 
+		}
+	});
+	request.on('end', (evt) => {
+		console.log(`downloadFile, end: ${evt}`);
+		if (callback !== undefined) {
+			callback({ "ok": "OK" });
+		} else {
+			console.log("End!");
+		}
+	});
 };
 
 let writeBase64DataToFile = (fileName, content) => { 
@@ -134,11 +156,24 @@ let handler = (req, res) => {
 
 			console.log(`Will download ${fileName} from ${fileUrl}`);
 			try {
-				downloadFile(fileUrl, fileName);
-				respContent = `Response from ${req.url}, all good (${fileName} created).`;
-				res.writeHead(201, {'Content-Type': 'text/plain'});
-				res.end(respContent);	
-				console.log(`Download completed`);
+				downloadFile(fileUrl, fileName, (retCode) => {
+					console.log(`Returned: ${JSON.stringify(retCode, null, 2)}`);
+					if (retCode["ok"] !== undefined) {
+						respContent = `Response from ${req.url}, all good (${fileName} created).`;
+						res.writeHead(201, {'Content-Type': 'text/plain'});
+						res.end(respContent);	
+						console.log(`Download completed`);		
+					} else if (retCode["error"] != undefined) {
+						respContent = `Response from ${req.url}, error: ${retCode["error"]}`;
+						res.writeHead(500, {'Content-Type': 'text/plain'});
+						res.end(respContent);	
+						console.log(`Download failed`);
+					}
+				});
+				// respContent = `Response from ${req.url}, all good (${fileName} created).`;
+				// res.writeHead(201, {'Content-Type': 'text/plain'});
+				// res.end(respContent);	
+				console.log(`Download of ${fileUrl} Started...`);
 			} catch (err) {
 				respContent = "Response from " + req.url + "\n" + JSON.stringify(err);
 				res.writeHead(201, {'Content-Type': 'text/plain'});
