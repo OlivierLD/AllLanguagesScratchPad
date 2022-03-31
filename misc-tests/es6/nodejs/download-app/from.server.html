@@ -15,10 +15,17 @@
         }
     </style>
     <script>
+
 let serverCallback = data => {
     console.log(`Got data: ${data}`);
 
-    if (true || file.type.startsWith('image/')) {
+    const TEXT_PREFIX = "data:text/plain;base64,";
+    if (data.startsWith(TEXT_PREFIX)) { // An error ? (This is just a demo, hey?)
+        // document.getElementById("mess-zone").innerHTML = `<a href="${data}" target="_new">See error</a>`;
+        let errBuff = window.atob(data.substring(TEXT_PREFIX.length));
+        // let errBuff = Buffer.from(data, 'base64').toString('ascii');
+        document.getElementById("mess-zone").innerText = errBuff;
+    } else if (true || file.type.startsWith('image/')) {
         console.log("We say it is an image");
         const image = document.createElement("img");
         document.getElementById("output").appendChild(image);
@@ -35,7 +42,7 @@ let process = () => {
 
     loadFileFromServer(path, name, serverCallback);
 
-    console.log('');
+    console.log('.');
 };        
     </script>
 </head>

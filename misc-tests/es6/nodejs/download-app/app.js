@@ -33,7 +33,6 @@ const USE_READ_AS_ARRAY_BUFFER = 2;
 const USE_READ_AS_TEXT = 3;
 
 let readOption = USE_READ_AS_ARRAY_BUFFER;
-let readServerOption = USE_READ_AS_DATA_URL;
 
 function directDownload(resourceURL, fileToWrite, callback) {
     let request = new XMLHttpRequest();
@@ -66,6 +65,8 @@ function directDownload(resourceURL, fileToWrite, callback) {
     request.send();
 };
 
+let readServerOption = USE_READ_AS_DATA_URL;
+
 function loadFileFromServer(pathOnTheServer, fileToWrite, callback) {
     let request = new XMLHttpRequest();
     request.open('GET', `/read-local-file-service?file-name=${pathOnTheServer}`, true);
@@ -81,11 +82,11 @@ function loadFileFromServer(pathOnTheServer, fileToWrite, callback) {
                 console.log("File created");
                 if (callback !== undefined) {
                     callback(e.target.result);
-                }
+                }  // TODO else...
             } else if (readServerOption === USE_READ_AS_DATA_URL) {
                 if (callback !== undefined) {
                     callback(e.target.result);
-                }
+                }  // TODO else...
             }
         };
         if (readServerOption === USE_READ_AS_DATA_URL) {

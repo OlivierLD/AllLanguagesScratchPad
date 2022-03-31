@@ -287,7 +287,6 @@ let handler = (req, res) => {
 						// 	res.writeHead(200, { });
 						// 	res.end(body);
 						// });
-
 						// This catches any errors that happen while creating the readable stream (usually invalid names)
 						readStream.on('error', function(err) {
 							res.writeHead(500, { 'Content-Type': 'text/plain' });
