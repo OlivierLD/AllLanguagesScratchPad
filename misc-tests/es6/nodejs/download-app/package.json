@@ -1,0 +1,18 @@
+{
+	"name": "upload.download.tests",
+	"version": "0.0.1",
+	"description": "Upload and Download Samples",
+	"keywords": [
+		"Stuff",
+		"Upload",
+		"Download",
+		"FileReader",
+		"File"
+	],
+	"dependencies": {
+	},
+	"scripts": {
+		"usage": "echo Usage: npm start -- --port:1234",
+		"start": "node server.js"
+	}
+}
