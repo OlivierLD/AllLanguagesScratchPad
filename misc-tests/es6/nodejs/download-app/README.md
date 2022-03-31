@@ -35,7 +35,7 @@ The IP of your server-machine is like `100.111.136.104`, you have started the no
 $ node server.js --port:1234
 ```
 From a browser pointing on `http://100.111.136.104:1234/upload.html`, you upload a file like `image.jpg`, that will be uploaded on the server, as `new_image.jpg`.  
-Once the poricess is completed, you might be able to reach the new image, from <http://100.111.136.104:1234/new_image.jpg>.
+Once the process is completed, you might be able to reach the new image, from <http://100.111.136.104:1234/new_image.jpg>.
 
 > Make sure the file types you deal with are managed in `server.js`, around lines `230` or so....
 
