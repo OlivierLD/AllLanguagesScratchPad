@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en_US">
+<head>
+    <meta charset="UTF-8">
+    <title>Read file from Server</title>
+	<link rel="icon"  href="palm.04.jpg" type="image/jpg">
+    <script type="module" src="app.js"></script>
+    <style>
+        * {
+            font-family: 'Courier New', Courier, monospace;
+        }
+    </style>
+    <script>
+let serverCallback = data => {
+    console.log(`Got data: ${data}`);
+
+    if (true || file.type.startsWith('image/')) {
+        console.log("We say it is an image");
+        const image = document.createElement("img");
+        document.getElementById("output").appendChild(image);
+        // Something like: data:image/png;base64,iVBORw...Ym57Ad6m6uHj96js
+        image.src = data;
+    } else {
+        console.log(data);
+    }
+};
+
+let process = () => {
+    let path = document.getElementById("doc-url").value;
+    let name = document.getElementById("doc-name").value;
+
+    loadFileFromServer(path, name, serverCallback);
+
+    console.log('');
+};        
+    </script>
+</head>
+<body>
+    <h1>Read file from server</h1>
+    <h2>From a path on the server</h2>
+    <table>
+        <tr>
+            <td>Document Path on Server</td>
+            <td><input type="text" id="doc-url" placeholder="Server path of the document to fetch" size="60"></td>
+        </tr>
+        <tr>
+            <td>File Name</td>
+            <td><input type="text" id="doc-name" placeholder="Downloaded file ame on the server" size="20"></td>
+        </tr>
+    </table>
+    <button onclick="process();">Do it.</button>
+    <div id="mess-zone">
+
+    </div>
+    <div id="output">
+
+    </div>
+</body>
+<script>
+    window.onload = () => {
+        console.log("Loaded!");
+    };
+</script>
+</html>

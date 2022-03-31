@@ -72,6 +72,25 @@ console.log("Your working directory:", workDir);
 console.log("----------------------------------------------------");
 console.log(`  Try http://localhost:${port}/index.html`);
 
+let parseQueryString = fullUrl => {
+	if (fullUrl.indexOf("?") !== -1) {
+		let queryString = fullUrl.substring(fullUrl.indexOf("?") + 1);
+		if (queryString.trim().length > 0) {
+			let prmArray = queryString.split("&");
+			let map = {};
+			prmArray.forEach(prm => {
+				let nameValue = prm.split("=");
+				map[nameValue[0]] = nameValue[1]; // TODO Make sure the array is 2 item big.
+			});
+			return map;
+		} else {
+			return {};
+		}
+	} else {
+		return {};
+	}
+};
+
 /**
  * Download a file from its URL. Used by a REST service
  * 
@@ -104,11 +123,16 @@ console.log(`  Try http://localhost:${port}/index.html`);
 		if (callback !== undefined) {
 			callback({ "ok": "OK" });
 		} else {
-			console.log("End!");
+			console.log("The end!");
 		}
 	});
 };
 
+/**
+ * 
+ * @param {string} fileName 
+ * @param {string} content Base64 encoded string, with prefix
+ */
 let writeBase64DataToFile = (fileName, content) => { 
 
 	// Convert from base64
@@ -126,6 +150,10 @@ let writeBase64DataToFile = (fileName, content) => {
 	stream.write(binBuf);
 	stream.end();
 };
+
+// TODO A raw (Buffer) version of the above
+
+
 
 /**
  * Small Simple and Stupid little web server.
@@ -226,6 +254,59 @@ let handler = (req, res) => {
 				}
 			});
 
+		} else {
+			respContent = `Unmanaged request. Response from ${req.method} ${req.url}`;
+			res.writeHead(404, {'Content-Type': 'text/plain'});
+			res.end(respContent);	
+		}
+	} else if (req.url.startsWith("/read-local-file-service")) { 
+		if (req.method === "GET") {
+			let map = parseQueryString(req.url); // Expect file-name in the QS
+			if (map !== {}) {
+				let fileName = map['file-name'];
+				console.log(`Reading file name: ${fileName}`);
+				if (fileName ) {
+					// Read it.
+					try {
+						console.log("Before...");
+						let readStream = fs.createReadStream(fileName);
+						console.log("... After!");
+						readStream.on('open', function () {
+							// This just pipes the read stream to the response object (which goes to the client)
+							readStream.pipe(res);
+							console.log("on Open");
+						});
+
+						// let body;
+						// readStream.on('data', (data) => {
+						// 	body += data;
+						// });
+			
+						// readStream.on('end', function() {
+						// 	console.log("on End!");
+						// 	res.writeHead(200, { });
+						// 	res.end(body);
+						// });
+
+						// This catches any errors that happen while creating the readable stream (usually invalid names)
+						readStream.on('error', function(err) {
+							res.writeHead(500, { 'Content-Type': 'text/plain' });
+							res.end(JSON.stringify(err));
+						});
+					} catch (err) {
+						res.writeHead(500, { 'Content-Type': 'text/plain' });
+						res.end(err);
+					}
+				} else {
+					respContent = `Expect 'file-name' as Query String parameter.`;
+					res.writeHead(400, {'Content-Type': 'text/plain'});
+					res.end(respContent);	
+				}
+			} else {
+				respContent = `Expect 'file-name' as Query String parameter.`;
+				res.writeHead(400, {'Content-Type': 'text/plain'});
+				res.end(respContent);	
+			}
 		} else {
 			respContent = `Unmanaged request. Response from ${req.method} ${req.url}`;
 			res.writeHead(404, {'Content-Type': 'text/plain'});
@@ -337,6 +418,14 @@ function htmlEntities(str) {
 	return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;')
 			.replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
+
+
+// Temp maoin, for test and dev
+/*
+const url = "http://akeu.coucou:1234/pouet?akeu=coucou&this=that&ceci=12";
+let map = parseQueryString(url);
+console.log(`Prm Map: ${JSON.stringify(map, null, 2)}`);
+*/
 
 /**
  * HTTP server
