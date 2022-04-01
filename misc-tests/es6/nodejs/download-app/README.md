@@ -39,7 +39,7 @@ Once the process is completed, you might be able to reach the new image, from <h
 
 > Make sure the file types you deal with are managed in `server.js`, around lines `230` or so....
 
-# On NodeJS, from a web age, ask the server to get to a resource, with its _OS path_ (_not_ a URL)
+# On NodeJS, from a web page, ask the server to get to a resource, with its _OS path_ (_not_ a URL)
 Start the server (`npm run start`), and from anywhere on the same network, reach <http://the.machine:XXXX/from.server.html>.
 
 Then, in this page, give the path _**on the system where the server runs**_, like `/home/pi/repos/raspberry-coffee/RESTNavServer/launchers/web/icons/sailboat.jpg`, and
