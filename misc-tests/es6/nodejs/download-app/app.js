@@ -108,7 +108,7 @@ function loadFileFromServer(pathOnTheServer, fileToWrite, callback) {
         } else {
             console.error("Error (also see the console):" + JSON.stringify(ev.target, null, 2));
         }
-    }
+    };
     request.send();
 };
   
