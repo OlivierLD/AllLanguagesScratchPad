@@ -96,6 +96,7 @@ let parseQueryString = fullUrl => {
  * 
  * @param {string} resourceURL URL of the file to get
  * @param {string} fileToWrite Name/Path of the file to write
+ * @param {function} callback
  */
  let downloadFile = (resourceURL, fileToWrite, callback) => {
     // var fileToDownload = fileToGet; // req.body.fileToDownload;

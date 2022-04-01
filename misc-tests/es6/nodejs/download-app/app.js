@@ -76,17 +76,22 @@ function loadFileFromServer(pathOnTheServer, fileToWrite, callback) {
     request.onload = () => {
         let reader = new FileReader();
         reader.onload = (e) => {
-            console.log("Data:\n" + e.target.result);
-            if (readServerOption === USE_READ_AS_ARRAY_BUFFER) {
-                let file = new File([e.target.result], fileToWrite); // Works with readAsArrayBuffer
-                console.log("File created");
-                if (callback !== undefined) {
-                    callback(e.target.result);
-                }  // TODO else...
-            } else if (readServerOption === USE_READ_AS_DATA_URL) {
-                if (callback !== undefined) {
-                    callback(e.target.result);
-                }  // TODO else...
+            if (request.status === 200) {
+                console.log("Data:\n" + e.target.result);
+                if (readServerOption === USE_READ_AS_ARRAY_BUFFER) {
+                    let file = new File([e.target.result], fileToWrite); // Works with readAsArrayBuffer
+                    console.log("File created");
+                    if (callback !== undefined) {
+                        callback(e.target.result);
+                    }  // TODO else...
+                } else if (readServerOption === USE_READ_AS_DATA_URL) {
+                    if (callback !== undefined) {
+                        callback(e.target.result);
+                    }  // TODO else...
+                }
+            } else {
+                // Oops!
+                console.log(`Error ${request.status}, ${request.response}`);
             }
         };
         if (readServerOption === USE_READ_AS_DATA_URL) {
