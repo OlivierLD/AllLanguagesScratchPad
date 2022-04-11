@@ -10,5 +10,5 @@ try {
     }
 } catch (e) {
     console.log("node --expose-gc gc.js");
-    process.exit();
+    process.exit(); // Bam!
 }
