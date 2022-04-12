@@ -15,6 +15,7 @@ import java.util.Optional;
 /**
  * An example.
  * Generate the Java code (a Map) equivalent to a yaml document.
+ * Uses snakeyaml 'org.yaml:snakeyaml:1.21'
  */
 public class Yaml2Java {
 
