@@ -1,0 +1,108 @@
+version: 1.0
+name: Acoustic models
+cultures:
+    - culture: en-US
+      botsPlatforms:
+        - botsPlatform: 22.04
+          acousticModel: 215.20210406.17
+        - botsPlatform: 22.02
+          acousticModel: 215.20200610.0
+        - botsPlatform: 21.12
+          acousticModel: 215.20200610.0
+        - botsPlatform: 21.10
+          acousticModel: 215.20200610.0
+        - botsPlatform: 21.08
+          acousticModel: 215.20200610.0
+        - botsPlatform: 21.06
+          acousticModel: 215.20200610.0
+        - botsPlatform: 21.04
+          acousticModel: 215.20200610.0
+        - botsPlatform: 21.02
+          acousticModel: 215.20200610.0
+        - botsPlatform: 20.12
+          acousticModel: 215.20200610.0
+        - botsPlatform: 20.09
+          acousticModel: none
+        - botsPlatform: 20.08
+          acousticModel: none
+        - botsPlatform: 20.06
+          acousticModel: none
+    - culture: en-AU
+      botsPlatforms:
+        - botsPlatform: 22.04
+          acousticModel: 215.20201218.1
+        - botsPlatform: 22.02
+          acousticModel: none
+        - botsPlatform: 21.12
+          acousticModel: none
+        - botsPlatform: 21.10
+          acousticModel: none
+        - botsPlatform: 21.08
+          acousticModel: none
+        - botsPlatform: 21.06
+          acousticModel: none
+        - botsPlatform: 21.04
+          acousticModel: none
+        - botsPlatform: 21.02
+          acousticModel: none
+        - botsPlatform: 20.12
+          acousticModel: none
+        - botsPlatform: 20.09
+          acousticModel: none
+        - botsPlatform: 20.08
+          acousticModel: none
+        - botsPlatform: 20.06
+          acousticModel: none
+    - culture: fr-FR
+      botsPlatforms:
+        - botsPlatform: 22.04
+          acousticModel: 213.20200508.4
+        - botsPlatform: 22.02
+          acousticModel: none
+        - botsPlatform: 21.12
+          acousticModel: none
+        - botsPlatform: 21.10
+          acousticModel: none
+        - botsPlatform: 21.08
+          acousticModel: none
+        - botsPlatform: 21.06
+          acousticModel: none
+        - botsPlatform: 21.04
+          acousticModel: none
+        - botsPlatform: 21.02
+          acousticModel: none
+        - botsPlatform: 20.12
+          acousticModel: none
+        - botsPlatform: 20.09
+          acousticModel: none
+        - botsPlatform: 20.08
+          acousticModel: none
+        - botsPlatform: 20.06
+          acousticModel: none
+    - culture: es-ES
+      botsPlatforms:
+        - botsPlatform: 22.04
+          acousticModel: 213.20200722.0
+        - botsPlatform: 22.02
+          acousticModel: none
+        - botsPlatform: 21.12
+          acousticModel: none
+        - botsPlatform: 21.10
+          acousticModel: none
+        - botsPlatform: 21.08
+          acousticModel: none
+        - botsPlatform: 21.06
+          acousticModel: none
+        - botsPlatform: 21.04
+          acousticModel: none
+        - botsPlatform: 21.02
+          acousticModel: none
+        - botsPlatform: 20.12
+          acousticModel: none
+        - botsPlatform: 20.09
+          acousticModel: none
+        - botsPlatform: 20.08
+          acousticModel: none
+        - botsPlatform: 20.06
+          acousticModel: none
+          
