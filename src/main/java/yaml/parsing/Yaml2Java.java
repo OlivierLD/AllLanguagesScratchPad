@@ -19,7 +19,7 @@ import java.util.Optional;
  */
 public class Yaml2Java {
 
-    private final static String YAML_FILE = "acousticModelsMap.yaml";
+    private final static String YAML_FILE = "acousticModelsMap.yaml"; // in the misc-tests folder
     private final static NumberFormat PLATFORM_FORMAT = new DecimalFormat("00.00");
 
     private static void findInMap(Map<String, Object> map, String cultureStr, String platform) {
