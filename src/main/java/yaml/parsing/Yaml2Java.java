@@ -24,7 +24,7 @@ public class Yaml2Java {
 
     private static void findInMap(Map<String, Object> map, String cultureStr, String platform) {
         Optional<Object> foundCulture = ((List<Object>) map.get("cultures")).stream()
-                .filter(culture -> ((Map<String, Object>) culture).get("culture").equals(cultureStr))
+                .filter(culture -> ((String)((Map<String, Object>) culture).get("culture")).equalsIgnoreCase(cultureStr))
                 .findFirst();
         if (foundCulture.isPresent()) {
             Map<String, Object> foundMap = (Map<String, Object>)foundCulture.get();
@@ -41,6 +41,30 @@ public class Yaml2Java {
         } else {
             System.out.printf("No %s in original map...\n", cultureStr);
         }
+    }
+
+    private static String getSLMVersion(Map<String, Object> map, String cultureStr, String platform) {
+        String slmVersion = null;
+        Optional<Object> foundCulture = ((List<Object>) map.get("cultures")).stream()
+                .filter(culture -> ((String)((Map<String, Object>) culture).get("culture")).equalsIgnoreCase(cultureStr))
+                .findFirst();
+        if (foundCulture.isPresent()) {
+            Map<String, Object> foundMap = (Map<String, Object>)foundCulture.get();
+            List<Object> platFormList = (List<Object>)foundMap.get("botsPlatforms");
+            Optional<Object> botsPlatform = platFormList.stream()
+                    .filter(pf -> PLATFORM_FORMAT.format(Double.parseDouble(String.valueOf(((Map<String, Object>) pf).get("botsPlatform")))).equals(platform))
+                    .findFirst();
+            if (botsPlatform.isPresent()) {
+                Map<String, Object> foundPlatform = (Map<String, Object>)botsPlatform.get();
+//                System.out.println(String.format("For %s/%s, SLM version is %s", cultureStr, platform, foundPlatform.get("acousticModel")));
+                slmVersion = (String)foundPlatform.get("acousticModel");
+//            } else {
+//                System.out.printf("No %s in %s !\n", platform, cultureStr);
+            }
+//        } else {
+//            System.out.printf("No %s in original map...\n", cultureStr);
+        }
+        return slmVersion;
     }
 
     public void generateCode(Map<String, Object> map, PrintStream out) {
@@ -61,6 +85,8 @@ public class Yaml2Java {
                 String model = (String)((Map<String, Object>)botsPlatform).get("acousticModel");
                 out.println(String.format("Map.of(\"botsPlatform\", \"%s\",", platform));
                 out.println(String.format("       \"acousticModel\", \"%s\")%s", model, botsPlatforms.indexOf(botsPlatform) == botsPlatforms.size() - 1 ? "" : ","));
+//                out.println(String.format("       \"acousticModel\", %s)%s",  // Warning: no NULL in an immutable map.
+//                        ("none".equals(model) ? "null" : String.format("\"%s\"", model)), botsPlatforms.indexOf(botsPlatform) == botsPlatforms.size() - 1 ? "" : ","));
             });
             out.println(")  // End of botsPlatforms list");
 
@@ -239,12 +265,18 @@ public class Yaml2Java {
             System.out.printf("%d vs %d\n", origCulturesSize, generatedCultureSize);
 
             // Get the 22.04 SLM version for en-US:
-            final String CULTURE_TO_FIND = "es-ES"; // ""en-US";
-            final String PLATFORM_TO_FIND = "22.04";
+//            final String CULTURE_TO_FIND = "en-US";
+            final String CULTURE_TO_FIND = "en-us";
+//            final String CULTURE_TO_FIND = "es-ES";
+//            final String PLATFORM_TO_FIND = "22.04";
+            final String PLATFORM_TO_FIND = "22.02";
             System.out.println("Original Map:");
             findInMap(map, CULTURE_TO_FIND, PLATFORM_TO_FIND);
             System.out.println("Generated Map:");
             findInMap(acousticModelsMap, CULTURE_TO_FIND, PLATFORM_TO_FIND);
+            //
+            String slmVersion = getSLMVersion(acousticModelsMap, "fr-FR", "22.02");
+            System.out.println("For fr-FR/22.02 -> " + slmVersion);
 
             // Make sure it is immutable
             try {
