@@ -30,7 +30,9 @@ public class Yaml2Java {
             Map<String, Object> foundMap = (Map<String, Object>)foundCulture.get();
             List<Object> platFormList = (List<Object>)foundMap.get("botsPlatforms");
             Optional<Object> botsPlatform = platFormList.stream()
+                    // Original platform: this is a number in the yaml.
                     .filter(pf -> PLATFORM_FORMAT.format(Double.parseDouble(String.valueOf(((Map<String, Object>) pf).get("botsPlatform")))).equals(platform))
+//                    .filter(pf -> ((Map<String, Object>) pf).get("botsPlatform").equals(platform))
                     .findFirst();
             if (botsPlatform.isPresent()) {
                 Map<String, Object> foundPlatform = (Map<String, Object>)botsPlatform.get();
