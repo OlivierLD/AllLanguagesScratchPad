@@ -56,6 +56,8 @@
 
   let drawPhase = (phase, rad) => {
 
+    context.beginPath();
+
     // let canvas = document.getElementById('full-moon-canvas');
     // let context = canvas.getContext('2d');
 
@@ -86,20 +88,20 @@
 
     // context.fillStyle = 'rgba(0, 0, 128, 0.25)'; // or another color, like 'red';
     let color = (255 * ((MAX_RAD_FACTOR - rad) / (MAX_RAD_FACTOR - MIN_RAD_FACTOR))).toFixed(0);
-    console.log(`rad: ${rad}, MAX: ${MAX_RAD_FACTOR}, MIN: ${MIN_RAD_FACTOR}, rgba: ${color}`);
+    // console.log(`rad: ${rad}, MAX: ${MAX_RAD_FACTOR}, MIN: ${MIN_RAD_FACTOR}, rgba: ${color}`);
     context.fillStyle = `rgba(${color}, ${255 - color}, ${color}, 0.5)`;
 
     fillCircle(context, center.x, center.y, radius);
     clearCircle(context, center.x, center.y, rad * radius / 2);
 
-		// context.closePath();
+		context.closePath();
   };
 
   // let clearRadius = 0.0;
 
   let go = (rad) => {
 
-    console.log(`go = ${rad}`);
+    // console.log(`go = ${rad}`);
     drawPhase(123, rad);
 
     if (SHRINK) {
