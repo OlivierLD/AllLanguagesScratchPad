@@ -19,7 +19,7 @@
     /* width: 500px;
     height: 500px; */
     border: 1px solid silver;
-    border-radius: 5px;
+    border-radius: 15px;
     background: url('./full-moon.jpg') no-repeat center center;
   }
 
@@ -65,7 +65,16 @@
     // context.beginPath();
     // context.fillRect(0, 0, canvas.width, canvas.height);
 		// context.clip();
-    context.clearRect(0, 0, canvas.width, canvas.height); // Use less
+
+    // context.clearRect(0, 0, canvas.width, canvas.height); // Useless
+
+    let fullMoonImage = new Image();
+    fullMoonImage.src = "./full-moon.jpg"; 
+
+    let xOffset = (canvas.width - fullMoonImage.width) / 2;
+    let yOffset = (canvas.height - fullMoonImage.height) / 2;
+    // // context.drawImage(fullMoonImage, 0, 0); // , -xOffset, -yOffset);
+    // context.drawImage(fullMoonImage, xOffset, yOffset);
 
     let radius = 210; // Moon radius
     let center = { 
@@ -73,13 +82,12 @@
       y: (canvas.height / 2) - 8   // Adjusted...
     };
 
-
     // context.save();
 
     // context.fillStyle = 'rgba(0, 0, 128, 0.25)'; // or another color, like 'red';
     let color = (255 * ((MAX_RAD_FACTOR - rad) / (MAX_RAD_FACTOR - MIN_RAD_FACTOR))).toFixed(0);
     console.log(`rad: ${rad}, MAX: ${MAX_RAD_FACTOR}, MIN: ${MIN_RAD_FACTOR}, rgba: ${color}`);
-    context.fillStyle = `rgba(${color}, ${255 - color}, ${color}, 0.75)`;
+    context.fillStyle = `rgba(${color}, ${255 - color}, ${color}, 0.5)`;
 
     fillCircle(context, center.x, center.y, radius);
     clearCircle(context, center.x, center.y, rad * radius / 2);
@@ -116,7 +124,7 @@
 
     canvas = document.getElementById('full-moon-canvas');
     context = canvas.getContext('2d');
-    context.save();
+    // context.save();
 
     if (SHRINK) {
       go(MAX_RAD_FACTOR);
