@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>some-tests</name>
+	<name>oliv-scratch-pad</name>
 	<comment>Project some-tests created by Buildship.</comment>
 	<projects>
 	</projects>
@@ -27,7 +27,7 @@
 	</natures>
 	<filteredResources>
 		<filter>
-			<id>1626015244931</id>
+			<id>0</id>
 			<name></name>
 			<type>30</type>
 			<matcher>

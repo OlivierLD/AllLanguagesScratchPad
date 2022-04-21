@@ -1,0 +1,50 @@
+<html>
+    <title>httpfs</title>
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+            * {
+                font-family:'Courier New', Courier, monospace;
+                color: navy;
+            }
+
+            input[type=text] {
+                width: 400px;
+                font-weight: bold;
+                color: navy;
+            }
+            
+            ::placeholder { /* Chrome, Firefox, Opera, Safari 10.1+ */
+                color: rgba(255, 0, 0, 0.25);
+                opacity: 1; /* Firefox */
+            }        
+        </style>
+    </head>
+
+    <body>
+        <% if (path) { %>
+            <h3>Files in <%= path %></h3>
+        <% } else { %>
+            <h3>Enter a directory below</h3>
+        <% } %>
+        
+        <form action="/files" method="get">
+            <input type="text" id="path" name="path" placeholder="Enter full path, eg: /home/opc" value="<%= path %>">
+            <button type="submit" value="search">search</button>
+        </form>
+
+        <% if (err !== "") {%>
+        <p><%= err %></p>
+        <% } %>
+
+        <ul>
+        <% for (let i=0; i<data.length; i++) {%>
+            <% if (data[i].includes(".") > 0) { %>  <!-- Assume file, and not folder -->
+                <li><a href="/download?path=<%= path + '/' + data[i] %>"> <%=  data[i] %> </a></li>
+            <% } else { %>
+                <li><a href="/files?path=<%= path + '/' + data[i] %>"> <%=  data[i] %> </a></li>
+            <% } %>
+        <% } %>
+        </ul>
+    </body>
+</html>
