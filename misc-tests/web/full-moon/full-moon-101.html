@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<!--
+  Work in progress...
+  Draw the moon phase on top of a full moon image
+  
+  See https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Full Moon</title>
+    <style>
+
+  * {
+    font-family: 'Courier New', Courier, monospace;
+  }
+
+  #full-moon-canvas {
+    /* width: 500px;
+    height: 500px; */
+    border: 1px solid silver;
+    border-radius: 15px;
+    background: url('./full-moon.jpg') no-repeat center center;
+  }
+
+    </style>
+</head>
+<body>
+
+  <h1>Draw Moon Phase, WiP...</h1>
+  <h3>On top of a full moon image</h3>
+  <canvas id="full-moon-canvas" height="500" width="500"></canvas>
+
+  <hr/>
+  <i>&copy; OlivSoft &amp; Co, 2022</i>
+
+</body>
+<script>
+
+  let fillCircle = (context, x, y, radius) => {
+      context.beginPath();
+      context.arc(x, y, radius, 0, 2 * Math.PI, false); // Last prm, counter-clockwise
+      context.fill();
+  };
+
+  let clearCircle = (context, x, y, radius) => {
+      context.beginPath();
+      context.arc(x, y, radius, 0, 2 * Math.PI, false); // Last prm, counter-clockwise
+      context.clip(); // turns the above into a clipping region ! ('clip' closes the path, like 'closePath' would)
+      context.clearRect(x - radius - 1, y - radius - 1, radius * 2 + 2, radius * 2 + 2);
+  };
+
+
+  const MIN_RAD_FACTOR = 0.1; // 0.5; // 0 min
+  const MAX_RAD_FACTOR = 1.9; // 1.5; // 2 max
+
+  let drawPhase = (phase, rad) => {
+
+    context.beginPath();
+
+    // let canvas = document.getElementById('full-moon-canvas');
+    // let context = canvas.getContext('2d');
+
+    // context.restore();
+
+    // context.fillStyle = 'rgba(0, 0, 0, 0.250)'; // clear
+    // context.beginPath();
+    // context.fillRect(0, 0, canvas.width, canvas.height);
+		// context.clip();
+
+    // context.clearRect(0, 0, canvas.width, canvas.height); // Useless
+
+    let fullMoonImage = new Image();
+    fullMoonImage.src = "./full-moon.jpg"; 
+
+    let xOffset = (canvas.width - fullMoonImage.width) / 2;
+    let yOffset = (canvas.height - fullMoonImage.height) / 2;
+    // // context.drawImage(fullMoonImage, 0, 0); // , -xOffset, -yOffset);
+    // context.drawImage(fullMoonImage, xOffset, yOffset);
+
+    let radius = 210; // Moon radius
+    let center = { 
+      x: (canvas.width / 2) + 4,   // Adjusted...
+      y: (canvas.height / 2) - 8   // Adjusted...
+    };
+
+    // context.save();
+
+    // context.fillStyle = 'rgba(0, 0, 128, 0.25)'; // or another color, like 'red';
+    let color = (255 * ((MAX_RAD_FACTOR - rad) / (MAX_RAD_FACTOR - MIN_RAD_FACTOR))).toFixed(0);
+    // console.log(`rad: ${rad}, MAX: ${MAX_RAD_FACTOR}, MIN: ${MIN_RAD_FACTOR}, rgba: ${color}`);
+    context.fillStyle = `rgba(${color}, ${255 - color}, ${color}, 0.5)`;
+
+    fillCircle(context, center.x, center.y, radius);
+    clearCircle(context, center.x, center.y, rad * radius / 2);
+
+		context.closePath();
+  };
+
+  // let clearRadius = 0.0;
+
+  let go = (rad) => {
+
+    // console.log(`go = ${rad}`);
+    drawPhase(123, rad);
+
+    if (SHRINK) {
+      if (rad > MIN_RAD_FACTOR) {
+        window.setTimeout(() => go(rad - 0.01), 100);
+      }
+    } else {
+      if (rad < MAX_RAD_FACTOR) {
+        window.setTimeout(() => go(rad + 0.01), 100);
+      }
+    }
+  }
+
+  let canvas; // = document.getElementById('full-moon-canvas');
+  let context; // = canvas.getContext('2d');
+
+  const SHRINK = true;
+
+  window.onload = () => {
+    console.log("Loaded");
+    // drawPhase(123, 1.5);
+
+    canvas = document.getElementById('full-moon-canvas');
+    context = canvas.getContext('2d');
+    // context.save();
+
+    if (SHRINK) {
+      go(MAX_RAD_FACTOR);
+    } else {
+      go(MIN_RAD_FACTOR);
+    }
+  };
+</script>
+</html>
