@@ -65,8 +65,8 @@ let textIdx = 0;
 
 function displaySubtitles() {
 
-    let txt = SUBTITLE_TEXT[textIdx];
-    console.log(`Displaying ${txt}`);
+    let txt = SUBTITLE_TEXT[textIdx].trim();
+    console.log(`Displaying [${txt}]`);
 
     let subDiv = document.getElementById("subtitle-div");
     subDiv.innerText = txt;
@@ -75,29 +75,29 @@ function displaySubtitles() {
     if (textIdx >= SUBTITLE_TEXT.length) {
         textIdx = 0;
     }
-
-    // window.setTimeout(displaySubtitles("subtitle-div", SUBTITLE_TEXT[textIdx]), 1000);
 }
 
-function displayText() {
-
+function startIt() {
     interval = window.setInterval(displaySubtitles, 1000);
     // interval = window.setInterval(() => { console.log("Ping"); }, 1000);
 }
 
 function startStop() {
+    let button = document.getElementById("start-stop");
     if (interval === null || interval === undefined) {
         console.log("Starting");
-        displayText();
+        button.innerText = "Stop"; 
+        startIt();
     } else {
         console.log("Stoping");
+        button.innerText = "Start"; 
         window.clearInterval(interval);
         interval = null;
     }
 }
 
 window.onload = () => {
-    // displayText();
+    // startIt();
 };
 
     </script>
@@ -118,6 +118,6 @@ window.onload = () => {
 
 </div>
 
-<button onclick="startStop()">Start/Stop</button>
+<button id="start-stop" onclick="startStop()">Start</button>
 
 </body>
