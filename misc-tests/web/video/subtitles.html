@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Video Subtitle Test 1</title>
+    <style>
+* {
+    font-family: 'Courier New', Courier, monospace;
+}
+
+.subtitle {
+    color: cyan;
+    background-color: rgba(128, 128, 128, 0.5);
+    text-shadow: 2px 2px 4px black, 0 0 25px white, 0 0 10px orange;
+    position: relative;
+    bottom: 100px;
+    left: 30px;
+    width: 500px;
+}        
+
+.youtube-frame {
+    padding: 10px;
+    margin: 10px;
+}
+    </style>
+    <script>
+
+/*
+   Lorem ipsum dolor sit amet, 
+   curabitur aliquam libero et, 
+   malesuada donec, 
+   fringilla hendrerit vestibulum eget, 
+   convallis felis aliquam sed. 
+   Euismod vero mi, suscipit elit a nulla. 
+   Quisque est porttitor. Pede sit, 
+   praesent arcu in erat nonummy in erat, 
+   aliquam porta platea in,
+   aliquam facilisis justo id aliquam montes, 
+   aenean nulla ac elit. 
+   Voluptatum nec. 
+   Arcu consectetuer ac nunc, 
+   fringilla placerat ullamcorper.
+ */
+
+const SUBTITLE_TEXT = [
+   "Lorem ipsum dolor sit amet,", 
+   "curabitur aliquam libero et, ", 
+   "malesuada donec, ", 
+   "fringilla hendrerit vestibulum eget, ", 
+   "convallis felis aliquam sed. ", 
+   "Euismod vero mi, suscipit elit a nulla. ", 
+   "Quisque est porttitor. Pede sit, ", 
+   "praesent arcu in erat nonummy in erat, ", 
+   "aliquam porta platea in,", 
+   "aliquam facilisis justo id aliquam montes, ", 
+   "aenean nulla ac elit. ", 
+   "Voluptatum nec. ", 
+   "Arcu consectetuer ac nunc, ", 
+   "fringilla placerat ullamcorper."
+];     
+
+let interval;
+let textIdx = 0;
+
+function displaySubtitles() {
+
+    let txt = SUBTITLE_TEXT[textIdx];
+    console.log(`Displaying ${txt}`);
+
+    let subDiv = document.getElementById("subtitle-div");
+    subDiv.innerText = txt;
+
+    textIdx += 1;
+    if (textIdx >= SUBTITLE_TEXT.length) {
+        textIdx = 0;
+    }
+
+    // window.setTimeout(displaySubtitles("subtitle-div", SUBTITLE_TEXT[textIdx]), 1000);
+}
+
+function displayText() {
+
+    interval = window.setInterval(displaySubtitles, 1000);
+    // interval = window.setInterval(() => { console.log("Ping"); }, 1000);
+}
+
+function startStop() {
+    if (interval === null || interval === undefined) {
+        console.log("Starting");
+        displayText();
+    } else {
+        console.log("Stoping");
+        window.clearInterval(interval);
+        interval = null;
+    }
+}
+
+window.onload = () => {
+    // displayText();
+};
+
+    </script>
+</head>
+<body>
+
+<h1>Subtitles Tests</h1>    
+
+<div>
+    <iframe class="youtube-frame"
+            width="560" height="315" 
+            src="https://www.youtube.com/embed/6Dz-3qKJtjk" 
+            title="YouTube video player" 
+            frameborder="0" 
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
+    <div id="subtitle-div" class="subtitle">Subtitles would go here</div>
+
+</div>
+
+<button onclick="startStop()">Start/Stop</button>
+
+</body>
