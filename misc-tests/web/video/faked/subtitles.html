@@ -66,7 +66,7 @@ let textIdx = 0;
 function displaySubtitles() {
 
     let txt = SUBTITLE_TEXT[textIdx].trim();
-    console.log(`Displaying [${txt}]`);
+    console.log(`Displaying [${txt}], index ${textIdx}`);
 
     let subDiv = document.getElementById("subtitle-div");
     subDiv.innerText = txt;
