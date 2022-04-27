@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Video Subtitle - Big Buck Bunny</title>
+    <style>
+* {
+    font-family: 'Courier New', Courier, monospace;
+}
+    </style>
+</head>
+<body>
+
+<!--
+ | Video file from http://www.bigbuckbunny.org
+ -->
+
+<h1>Subtitles Tests - Dynamically set</h1>
+<h4>Use the kebab at the bottom right of the video to display subtitles</h4>
+<div>
+    <video id="video" preload="metadata" controls>
+        <source src="../mov_bbb.mp4" type="video/mp4">
+    </video>
+</div>
+
+
+</body>
+<script>
+    const enSubtitles = [
+        { from:0.000, to:3.000, text:'Ooooooh! A butterfly!' },
+        { from:3.000, to:6.000, text:'It is sooooo cute...' },
+        { from:8.000, to:10.000, text:'Oooops! What was that?' }
+    ];
+    const frSubtitles = [
+        { from:0.000, to:3.000, text:'Ooooooh ! Un papillon !' },
+        { from:3.000, to:6.000, text:'Il est troooooop mignon...' },
+        { from:8.000, to:10.000, text:'Oooops! Qu\'est-ce c\'est que ça ?' }
+    ];
+
+    function addTextTrack(elementId, type, label, lang, textData, show) {
+        let videoEl = document.getElementById(elementId);
+        // See https://www.w3schools.com/tags/av_met_addtexttrack.asp
+        // See https://developer.mozilla.org/en-US/docs/Web/API/TextTrack/addCue
+        let textTrack = videoEl.addTextTrack(type, label, lang);
+        if (show) {
+            textTrack.mode = "showing";
+        }
+        textData.forEach(txt => {
+            textTrack.addCue(new VTTCue(txt.from, txt.to, txt.text));
+        });
+    }
+
+    window.onload = () => {
+        addTextTrack('video', 'subtitles', 'English', 'en', enSubtitles, true);
+        addTextTrack('video', 'subtitles', 'Français', 'fr', frSubtitles);
+    };
+
+</script>
+</html>
