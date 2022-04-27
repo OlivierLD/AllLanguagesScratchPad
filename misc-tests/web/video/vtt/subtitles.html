@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Video Subtitle Test 1</title>
+    <style>
+* {
+    font-family: 'Courier New', Courier, monospace;
+}
+
+.subtitle {
+    color: cyan;
+    background-color: rgba(128, 128, 128, 0.5);
+    font-size: 20px;
+    text-shadow: 2px 2px 4px black, 0 0 25px white, 0 0 10px orange;
+    position: relative;
+    bottom: 100px;
+    left: 30px;
+    width: 530px;
+}        
+
+.youtube-frame {
+    padding: 10px;
+    margin: 10px;
+}
+    </style>
+</head>
+<body>
+
+<h1>Subtitles Tests</h1>
+<h4>Use the kebab at the bottom right of the video to display subtitles</h4>
+<video id="video" preload="metadata" controls>
+    <source src="http://iandevlin.github.io/mdn/video-player-with-captions/video/sintel-short.mp4" type="video/mp4">
+    <source src="http://iandevlin.github.io/mdn/video-player-with-captions/video/sintel-short.webm" type="video/webm">
+    <!--track label="English" kind="subtitles" srclang="en" src="http://iandevlin.github.io/mdn/video-player-with-captions/subtitles/vtt/sintel-en.vtt" default=""-->
+    <track label="English" kind="subtitles" srclang="en" src="sintel-en.vtt" default="">
+    <!--track label="Deutsch" kind="subtitles" srclang="de" src="http://iandevlin.github.io/mdn/video-player-with-captions/subtitles/vtt/sintel-de.vtt"-->
+    <track label="Deutsch" kind="subtitles" srclang="de" src="sintel-de.vtt">
+    <!--track label="Español" kind="subtitles" srclang="es" src="http://iandevlin.github.io/mdn/video-player-with-captions/subtitles/vtt/sintel-es.vtt"-->
+    <track label="Español" kind="subtitles" srclang="es" src="sintel-es.vtt">
+</video>
+</body>
+</html>

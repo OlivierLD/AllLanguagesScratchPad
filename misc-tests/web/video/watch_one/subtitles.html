@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Video Subtitle Test 1</title>
+    <style>
+* {
+    font-family: 'Courier New', Courier, monospace;
+}
+    </style>
+</head>
+<body>
+
+<!--
+ | Uses a mp4, converted from youtube with https://y2mate.tools/en/youtube-mp4
+ -->
+
+<h1>Subtitles Tests</h1>    
+<h4>Use the kebab at the bottom right of the video to display subtitles</h4>
+<div>
+    <video id="video" preload="metadata" controls>
+        <source src="../TCP_Watch_at_work.mp4" type="video/mp4">
+        <track label="English" kind="subtitles" srclang="en" src="watch-en.vtt">
+        <track label="French" kind="subtitles" srclang="fr" src="watch-fr.vtt" default="">
+        <!--iframe class="youtube-frame"
+            width="560" height="315" 
+            src="https://www.youtube.com/embed/6Dz-3qKJtjk" 
+            title="YouTube video player" 
+            frameborder="0" 
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe-->
+
+    </video>
+</div>
+
+
+</body>
+</html>
