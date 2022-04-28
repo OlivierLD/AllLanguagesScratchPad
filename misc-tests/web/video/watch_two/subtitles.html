@@ -53,7 +53,7 @@
     function cuesToVTT(comment, cues) {
         let vttContent = "WEBVTT\n\n";
 
-        vttContent += `$comment}\n\n`;
+        vttContent += `${comment}\n\n`;
 
         if (cues !== null) {
             for (let i=0; i<cues.length; i++) {
