@@ -25,9 +25,100 @@
     </video>
 </div>
 
+<div>
+    <button onclick="generateVTT()">Generate VTT</button> 
+    <button onclick="clearVTT()">Clear</button> 
+    <button onclick="updateTextTracks('en')">Modify EN Texts</button>
+    <button onclick="updateTextTracks('fr')">Modify FR Texts</button>
+
+    <button onclick="replaceFRTextTrack()">Replace FR Texts</button>
+</div>
+<div id="vtt" style="font-family: 'Courier New', Courier, monospace; max-height: 150px; overflow-y: auto; border: 1px solid silver; border-radius: 5px; padding: 5px;">
+</div>
 
 </body>
 <script>
+    let lpad = (str, len, pad) => {
+        let s = str;
+        while (s.length < len) {
+            s = (pad === undefined ? ' ' : pad) + s;
+        }
+        return s;
+    };
+
+    function replaceFRTextTrack() {
+        replaceTextTrack('fr', 'Français - 2', frSubtitles_2);
+    }
+
+    function cuesToVTT(cues) {
+        let vttContent = "WEBVTT\n\n";
+
+        if (cues !== null) {
+            for (let i=0; i<cues.length; i++) {
+                vttContent += `${i}\n`;
+                vttContent += `00:00:${lpad(cues[i].startTime.toFixed(3), 6, '0')} --> ${lpad(cues[i].endTime.toFixed(3), 6, '0')}\n`;
+                vttContent += `${cues[i].text}\n\n`;
+            }
+        } else {
+            vttContent += `\nNo cues!!\n\n`;
+        }
+        return vttContent;
+    }
+
+    function addToDiv(text) {
+        let zone = document.getElementById('vtt');
+        let current = zone.innerText;
+        current += `---------------\n${text}`;
+        zone.innerText = current;
+    }
+
+    function clearVTT() {
+        document.getElementById('vtt').innerText = '';
+    }
+
+    function generateVTT() {
+        let video = document.getElementById('video');
+        let textTracks = video.textTracks;
+
+        if (textTracks) {
+            console.log(`Generating VTT, ${textTracks.length} text-track${textTracks.length > 1 ? 's' : ''}.`);
+            for (let i=0; i<textTracks.length; i++) {
+                let tt = textTracks[i];
+                console.log(`Text Track: kind ${tt.kind}, label ${tt.label}, language ${tt.language}, ${tt.cues ? tt.cues.length : null} cue(s), mode ${tt.mode}.`);
+                let content = cuesToVTT(tt.cues);
+                addToDiv(content);
+            }
+        }
+    }
+
+    function updateTextTracks(lang) {
+        let video = document.getElementById('video');
+        let textTracks = video.textTracks;
+
+        let newPrefix = 'XXX: ';
+        if (lang === 'en') {
+            newPrefix = 'Modified: ';
+        }
+        if (lang === 'fr') {
+            newPrefix = 'Modifié : ';
+        }
+
+        if (textTracks) {
+            for (let i=0; i<textTracks.length; i++) {
+                let tt = textTracks[i];
+                console.log(`Text Track: kind ${tt.kind}, label ${tt.label}, language ${tt.language}, ${tt.cues ? tt.cues.length : null} cue(s).`);
+                if (tt.language === lang) {
+                    let cues = tt.cues;
+                    for (let i=0; i<cues.length; i++) {
+                        cues[i].text = `${newPrefix}${cues[i].text}`;
+                    }
+                    return;
+                }
+            }
+        }
+        console(`${lang} not found...`);
+    }
+
     const enSubtitles = [
         { from:0.000, to:2.000, text:'Default screen, index 0' },
         { from:3.000, to:4.000, text:'Use top button...' },
@@ -40,10 +131,36 @@
         { from:0.000, to:2.000, text:'Écran par défaut, index 0' },
         { from:3.000, to:4.000, text:'Utilisez le bouton du dessus...' },
         { from:4.500, to:7.000, text:'Appuyez encore, écran 3' },
-        { from:7.200, to:10.000, text:'Continuez comme ça' },
-        { from:10.100, to:14.000, text:'Etc, etc!' },
+        { from:7.200, to:10.000, text:'Continuez comme ça...' },
+        { from:10.100, to:14.000, text:'Etc, etc !' },
         { from:14.100, to:35.000, text:'Et ainsi de suite, jusqu\'à la fin' }
     ];
+    const frSubtitles_2 = [
+        { from:0.000, to:2.000, text:'Akeu, Écran par défaut, index 0' },
+        { from:3.000, to:4.000, text:'Coucou, Utilisez le bouton du dessus...' },
+        { from:4.500, to:7.000, text:'Tossion ! Appuyez encore, écran 3' },
+        { from:7.200, to:10.000, text:'Allez, Continuez comme ça...' },
+        { from:10.100, to:14.000, text:'ET encore : Etc, etc !' },
+        { from:14.100, to:35.000, text:'Voilà : Et ainsi de suite, jusqu\'à la fin' }
+    ];
+
+    function replaceTextTrack(lang, label, newTrack) {
+        let video = document.getElementById('video');
+        let textTracks = video.textTracks;
+
+        if (textTracks) {
+            for (let i=0; i<textTracks.length; i++) {
+                let tt = textTracks[i];
+                // console.log(`Found Text Track: kind ${tt.kind}, label ${tt.label}, language ${tt.language}, ${tt.cues ? tt.cues.length : null} cue(s).`);
+                if (tt.language === lang) {
+                    tt.mode = 'disabled'; // Not removed, disabled.
+                    addTextTrack('video', 'subtitles', label, lang, newTrack, true); // Activate (show)
+                    return;
+                }
+            }
+        }
+        console(`${lang} not found...`);
+    }
 
     function addTextTrack(elementId, type, label, lang, textData, show) {
         let videoEl = document.getElementById(elementId);
@@ -51,11 +168,16 @@
         // See https://developer.mozilla.org/en-US/docs/Web/API/TextTrack/addCue
         let textTrack = videoEl.addTextTrack(type, label, lang);
         if (show) {
+            // Disable all others
+            for (let i=0; i<videoEl.textTracks.length; i++) {
+                videoEl.textTracks[i].mode = 'hidden';
+            }
             textTrack.mode = "showing";
         }
         textData.forEach(txt => {
             textTrack.addCue(new VTTCue(txt.from, txt.to, txt.text));
         });
+        console.log(`Track ${type}, ${label}, ${lang} created`);
     }
 
     window.onload = () => {
