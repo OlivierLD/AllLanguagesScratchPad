@@ -92,7 +92,7 @@
                     while (tt.cues.length > 0) {
                         let cues = tt.cues;
                         if (cues && cues.length > 0) {
-                            tt.cues.removeCue(cues[0]);
+                            tt.removeCue(cues[0]);
                         }
                     }
                     return;
@@ -115,7 +115,7 @@
                 if (tt.language === lang) {
                     let cues = tt.cues;
                     if (cues && cues.length > 0) {
-                        tt.cues.removeCue(cues[0]);
+                        tt.removeCue(cues[0]);
                         return;
                     }
                 }
