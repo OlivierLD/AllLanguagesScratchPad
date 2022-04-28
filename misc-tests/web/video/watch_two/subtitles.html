@@ -7,6 +7,17 @@
 * {
     font-family: 'Courier New', Courier, monospace;
 }
+
+div#vtt {
+    font-size: 12px; 
+    font-family: 'Courier New', Courier, monospace; 
+    max-height: 150px; 
+    min-height: 100px; 
+    overflow-y: auto; 
+    border: 1px solid silver; 
+    border-radius: 5px; 
+    padding: 5px;
+}
     </style>
 </head>
 <body>
@@ -35,7 +46,7 @@
     <button onclick="removeFirstCue('fr')">Remove first FR Cue</button>
     <button onclick="removeAllCues('en')">Remove all EN Cues</button>
 </div>
-<div id="vtt" style="font-family: 'Courier New', Courier, monospace; max-height: 150px; min-height: 100px; overflow-y: auto; border: 1px solid silver; border-radius: 5px; padding: 5px;">
+<div id="vtt">
 </div>
 
 </body>
