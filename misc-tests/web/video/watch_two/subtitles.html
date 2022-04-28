@@ -58,7 +58,7 @@
         if (cues !== null) {
             for (let i=0; i<cues.length; i++) {
                 vttContent += `${i}\n`;
-                vttContent += `00:00:${lpad(cues[i].startTime.toFixed(3), 6, '0')} --> ${lpad(cues[i].endTime.toFixed(3), 6, '0')}\n`;
+                vttContent += `00:00:${lpad(cues[i].startTime.toFixed(3), 6, '0')} --> 00:00:${lpad(cues[i].endTime.toFixed(3), 6, '0')}\n`;
                 vttContent += `${cues[i].text}\n\n`;
             }
         } else {
