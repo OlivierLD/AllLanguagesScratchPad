@@ -32,6 +32,7 @@
     <button onclick="updateTextTracks('fr')">Modify FR Texts</button>
 
     <button onclick="replaceFRTextTrack()">Replace FR Texts</button>
+    <button onclick="removeFirstCue('fr')">Remove first FR Cue</button>
 </div>
 <div id="vtt" style="font-family: 'Courier New', Courier, monospace; max-height: 150px; overflow-y: auto; border: 1px solid silver; border-radius: 5px; padding: 5px;">
 </div>
@@ -76,6 +77,28 @@
 
     function clearVTT() {
         document.getElementById('vtt').innerText = '';
+    }
+
+    function removeFirstCue(lang) {
+        let video = document.getElementById('video');
+        let textTracks = video.textTracks;
+
+        if (textTracks) {
+            for (let i=0; i<textTracks.length; i++) {
+                let tt = textTracks[i];
+                console.log(`Text Track: kind ${tt.kind}, label ${tt.label}, language ${tt.language}, ${tt.cues ? tt.cues.length : null} cue(s).`);
+                if (tt.language === lang) {
+                    let cues = tt.cues;
+                    if (cues && cues.length > 0) {
+                        tt.cues.removeCue(cues[0]);
+                        return;
+                    }
+                }
+            }
+            console.log(`No cue to remove found for ${lang}`);
+        } else {
+            console.log(`No text track found`);
+        }
     }
 
     function generateVTT() {
