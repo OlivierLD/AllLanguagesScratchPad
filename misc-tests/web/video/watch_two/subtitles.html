@@ -87,7 +87,7 @@
         if (textTracks) {
             for (let i=0; i<textTracks.length; i++) {
                 let tt = textTracks[i];
-                console.log(`Text Track: kind ${tt.kind}, label ${tt.label}, language ${tt.language}, ${tt.cues ? tt.cues.length : null} cue(s).`);
+                console.log(`Text Track: kind ${tt.kind}, label ${tt.label}, language ${tt.language}, ${tt.cues ? tt.cues.length : 'no'} cue(s).`);
                 if (tt.language === lang) {
                     while (tt.cues.length > 0) {
                         let cues = tt.cues;
@@ -111,7 +111,7 @@
         if (textTracks) {
             for (let i=0; i<textTracks.length; i++) {
                 let tt = textTracks[i];
-                console.log(`Text Track: kind ${tt.kind}, label ${tt.label}, language ${tt.language}, ${tt.cues ? tt.cues.length : null} cue(s).`);
+                console.log(`Text Track: kind ${tt.kind}, label ${tt.label}, language ${tt.language}, ${tt.cues ? tt.cues.length : 'no'} cue(s).`);
                 if (tt.language === lang) {
                     let cues = tt.cues;
                     if (cues && cues.length > 0) {
@@ -134,7 +134,7 @@
             console.log(`Generating VTT, ${textTracks.length} text-track${textTracks.length > 1 ? 's' : ''}.`);
             for (let i=0; i<textTracks.length; i++) {
                 let tt = textTracks[i];
-                let mess = `Text Track: kind ${tt.kind}, label ${tt.label}, language ${tt.language}, ${tt.cues ? tt.cues.length : null} cue(s), mode ${tt.mode}.`;
+                let mess = `Text Track: kind ${tt.kind}, label ${tt.label}, language ${tt.language}, ${tt.cues ? tt.cues.length : 'no'} cue(s), mode ${tt.mode}.`;
                 console.log(mess);
                 let content = cuesToVTT(mess, tt.cues);
                 addToDiv(content);
@@ -157,7 +157,7 @@
         if (textTracks) {
             for (let i=0; i<textTracks.length; i++) {
                 let tt = textTracks[i];
-                console.log(`Text Track: kind ${tt.kind}, label ${tt.label}, language ${tt.language}, ${tt.cues ? tt.cues.length : null} cue(s).`);
+                console.log(`Text Track: kind ${tt.kind}, label ${tt.label}, language ${tt.language}, ${tt.cues ? tt.cues.length : 'no'} cue(s).`);
                 if (tt.language === lang) {
                     let cues = tt.cues;
                     for (let i=0; i<cues.length; i++) {
