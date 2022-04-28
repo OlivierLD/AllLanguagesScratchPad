@@ -50,8 +50,10 @@
         replaceTextTrack('fr', 'Français - 2', frSubtitles_2);
     }
 
-    function cuesToVTT(cues) {
+    function cuesToVTT(comment, cues) {
         let vttContent = "WEBVTT\n\n";
+
+        vttContent += `$comment}\n\n`;
 
         if (cues !== null) {
             for (let i=0; i<cues.length; i++) {
@@ -84,8 +86,9 @@
             console.log(`Generating VTT, ${textTracks.length} text-track${textTracks.length > 1 ? 's' : ''}.`);
             for (let i=0; i<textTracks.length; i++) {
                 let tt = textTracks[i];
-                console.log(`Text Track: kind ${tt.kind}, label ${tt.label}, language ${tt.language}, ${tt.cues ? tt.cues.length : null} cue(s), mode ${tt.mode}.`);
-                let content = cuesToVTT(tt.cues);
+                let mess = `Text Track: kind ${tt.kind}, label ${tt.label}, language ${tt.language}, ${tt.cues ? tt.cues.length : null} cue(s), mode ${tt.mode}.`;
+                console.log(mess);
+                let content = cuesToVTT(mess, tt.cues);
                 addToDiv(content);
             }
         }
