@@ -1,0 +1,16 @@
+{
+	"name": "video.tests",
+	"version": "0.0.1",
+	"description": "Video.JS and other fun stuff",
+	"keywords": [
+		"Video",
+		"YouTube"
+	],
+	"dependencies": {
+		"video.js": "^7.18.1",
+        "videojs-youtube": "^2.6.1"
+	},
+	"scripts": {
+		"start": "node server.js"
+	}
+}

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Video Subtitle Test - Video.JS and YouTube</title>
+	<link rel="icon"  href="../video.png" type="image/png">
+    <link type="text/css" rel="stylesheet" href="../node_modules/video.js/dist/video-js.min.css" />
+    <style>
+        * {
+            font-family: 'Courier New', Courier, monospace;
+        }
+    </style>
+</head>
+
+<!--
+    YouTube page at https://www.youtube.com/watch?v=6Dz-3qKJtjk
+    Was https://www.youtube.com/watch?v=xjS6SftYQaQ
+-->
+
+<body>
+    <h1>Video.JS playing YouTube</h1>
+    <p>
+        Requires:
+        <ul>
+            <li>npm install video.js</li>
+            <li>npm install videojs-youtube</li>
+        </ul>
+    </p>
+
+    <video
+        id="vid1"
+        class="video-js vjs-default-skin"
+        controls
+        autoplay
+        width="640" height="auto"
+        data-setup='{ "techOrder": ["youtube"], "sources": [{ "type": "video/youtube", "src": "https://www.youtube.com/watch?v=6Dz-3qKJtjk"}] }'>
+    </video>
+
+    <script src="../node_modules/video.js/dist/video.min.js"></script>
+    <script src="../node_modules/videojs-youtube/dist/Youtube.min.js"></script>
+
+    <script>
+
+        const enSubtitles = [
+            { from:0.000, to:2.000, text:'Default screen, index 0' },
+            { from:3.000, to:4.000, text:'Use top button...' },
+            { from:4.500, to:7.000, text:'Press it again, screen 3' },
+            { from:7.200, to:10.000, text:'Keep going this way' },
+            { from:10.100, to:14.000, text:'Etc, etc!' },
+            { from:14.100, to:35.000, text:'And so on, until the end' }
+        ];
+    
+        function addTextTrack(elementId, type, label, lang, textData, show) {
+            let videoEl;
+            try {
+                videoEl = document.getElementById(elementId).player;
+            } catch (err) {
+                console.error(`Oops: ${JSON.stringify(err)}`);
+            }
+            if (videoEl) {
+                // See https://www.w3schools.com/tags/av_met_addtexttrack.asp
+                // See https://developer.mozilla.org/en-US/docs/Web/API/TextTrack/addCue
+                let textTrack = videoEl.addTextTrack(type, label, lang);
+                if (show) {
+                    // Disable all others
+                    for (let i=0; i<videoEl.textTracks.length; i++) {
+                        videoEl.textTracks[i].mode = 'hidden';
+                    }
+                    textTrack.mode = "showing";
+                }
+                textData.forEach(txt => {
+                    textTrack.addCue(new VTTCue(txt.from, txt.to, txt.text));
+                });
+                console.log(`Track ${type}, ${label}, ${lang} created`);
+            }
+        }
+    
+        window.onload = () => {
+            addTextTrack('vid1', 'subtitles', 'English', 'en', enSubtitles, true);
+        };
+    
+    </script>
+    
+
+</body>
+</html>

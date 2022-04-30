@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<!--
+ | From https://codepen.io/Hujjat/pen/OJpwBNO
+ |      https://www.youtube.com/watch?v=ntaNl6kaoHk
+ | Free videos at https://www.pexels.com/videos/
+ +-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon"  href="../video.png" type="image/png">
+    <title>Customise HTML5 video player</title>
+    <link href="https://vjs.zencdn.net/7.11.4/video-js.css" rel="stylesheet" />
+    <link href="https://unpkg.com/@videojs/themes@1/dist/city/index.css" rel="stylesheet">
+    <style>
+.video-js {
+  width: 800px;
+  height: 450px;
+}
+
+.vjs-custom-theme {
+  .vjs-control-bar{
+    background-color: transparent !important;
+  }
+  .vjs-big-play-button {
+    opacity: 0 !important;
+  }
+  .vjs-volume-control {
+    align-items: center !important;
+  }
+
+  .vjs-play-progress:before {
+    top: -4px !important;
+  }
+  .vjs-fullscreen-control {
+    .vjs-icon-placeholder {
+      &:before {
+        line-height: 30px;
+      }
+    }
+  }
+  button {
+    &:hover {
+      color: #fff;
+    }
+  }
+  .vjs-progress-control .vjs-progress-holder {
+    margin: 0 10px;
+    background: rgba(255, 255, 255, 0.25);
+    height: 1px;
+  }
+  .vjs-progress-control {
+    &:hover {
+      .vjs-play-progress:before {
+        top: -7px !important;
+      }
+    }
+  }
+
+  .vjs-control-bar {
+    height: 54px;
+    background: none;
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    visibility: visible;
+    opacity: 1;
+    -webkit-transition: visibility 0.1s, opacity 0.1s;
+    -o-transition: visibility 0.1s, opacity 0.1s;
+    transition: visibility 0.1s, opacity 0.1s;
+  }
+  .vjs-volume-panel {
+    -webkit-box-ordinal-group: 5;
+    -ms-flex-order: 4;
+    order: 4;
+    display: flex;
+    align-items: center;
+  }
+
+  .vjs-fullscreen-control {
+    -webkit-box-ordinal-group: 5;
+    -ms-flex-order: 5;
+    order: 5;
+  }
+  .vjs-picture-in-picture-control,
+  .vjs-remaining-time {
+    display: none;
+  }
+  .vjs-play-control {
+    width: 5em !important;
+  }
+  .vjs-play-control .vjs-icon-placeholder::before {
+    font-size: 13px;
+    letter-spacing: 0.16px;
+    content: "Play" !important;
+    font-family: sans-serif;
+    line-height: 30px;
+  }
+
+  .vjs-play-control.vjs-playing .vjs-icon-placeholder::before {
+    content: "Pause" !important;
+    font-family: sans-serif;
+  }
+}
+    </style>
+</head>
+<body>
+
+<h2 style="font-family: 'Courier New', Courier, monospace;">Autoplay, Muted, Loop</h2>
+
+<video class="video-js vjs-custom-theme "
+       data-setup="{}"
+       __autoplay
+       muted
+       loop
+       controls
+       poster="//vjs.zencdn.net/v/oceans.png">
+    <!--source src="https://vod-progressive.akamaized.net/exp=1623247811~acl=%2Fvimeo-prod-skyfire-std-us%2F01%2F49%2F14%2F350245163%2F1417344174.mp4~hmac=55e0a61abc8aa9ee28408c89dbd4a6acf026e7497e852208c8d252d1bb4b9885/vimeo-prod-skyfire-std-us/01/49/14/350245163/1417344174.mp4?download=1&filename=Pexels+Videos+2711134.mp4" type="video/mp4" /-->
+    <!--source src="https://player.vimeo.com/external/299108946.sd.mp4?s=aaf063c80e9825e1e20f13b27058a47cbd64c86a&profile_id=165&oauth2_token_id=57447761" type="video/mp4" /-->
+    <source src="https://vod-progressive.akamaized.net/exp=1651313497~acl=%2Fvimeo-prod-skyfire-std-us%2F01%2F4821%2F11%2F299108946%2F1141237876.mp4~hmac=8ed20d43b2d10aa06657dbede8de7b1f164db52e2cb502eec1dac665a4710b89/vimeo-prod-skyfire-std-us/01/4821/11/299108946/1141237876.mp4?filename=Pexels+Videos+1570919.mp4" type="video/mp4">
+    <source src="../TCP_Watch_at_work.mp4" type="video/mp4">
+</video>
+
+<script src="https://vjs.zencdn.net/7.11.4/video.min.js"></script>
+
+</body>
+</html>
