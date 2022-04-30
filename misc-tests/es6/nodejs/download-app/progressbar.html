@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en_US">
+<head>
+    <meta charset="UTF-8">
+    <title>Download from here</title>
+	<link rel="icon"  href="palm.04.jpg" type="image/jpg">
+    <style>
+        * {
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        div {
+            margin: 0px;
+        }
+
+        .pb-container {
+            /* width: 90%; */
+            min-height: 30px;
+            border: 1px solid gray;
+            border-radius: 5px;
+            padding: 0px;
+            color: navy;
+            overflow-x: hidden;
+        }
+    </style>
+    <script>
+
+        let i = 0;
+
+        let simulate = (x) => {
+            i = x;
+            window.setTimeout(() => {
+                setPb(i);
+                i += 1;
+                if (i < 100) {
+                    simulate(i);
+                }
+            }, 100);
+        };
+
+        let setPb = (percent) => {
+            console.log(`Setting progress to ${percent}`);
+            document.getElementById('pb').style.width = `${percent}%`;
+            document.getElementById('pb').innerText = `Current Value: ${percent}%`;
+        };
+
+    </script>
+</head>
+<body>
+
+    <h1>Progress Bar</h1>
+
+    <p>
+        <div class="pb-container">
+            <div id="pb" style="width: 1%; padding: 10px; background: lightgreen; white-space: nowrap;">Current Value: 1%</div>
+        </div>
+    </p>
+    <button onclick="simulate(0);">Simulate</button>
+
+</body>
+</html>

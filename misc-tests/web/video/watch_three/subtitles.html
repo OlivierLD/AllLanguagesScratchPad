@@ -9,6 +9,18 @@
         * {
             font-family: 'Courier New', Courier, monospace;
         }
+        .vjs-text-track-display {
+            font-size: 1.2em;
+        }
+        
+        .vjs-text-track-cue {
+            color: cyan;
+        }
+
+        .vjs-text-track-cue-en {
+            background-color:forestgreen;
+        }
+
     </style>
 </head>
 
@@ -18,7 +30,7 @@
 -->
 
 <body>
-    <h1>Video.JS playing YouTube</h1>
+    <h1>Video.JS playing YouTube, using dynamic cues</h1>
     <p>
         Requires:
         <ul>
@@ -27,13 +39,21 @@
         </ul>
     </p>
 
+    <!-- 
+        TODO Style the subtitles...
+        Try different CSS classes.
+        - none
+        - class="video-js vjs-default-skin"
+        - class="video-js"
+        - etc...
+    -->
     <video
         id="vid1"
-        class="video-js vjs-default-skin"
+        class="video-js vjs-default-skin vjs-text-track-cue vjs-text-track-cue-en"
         controls
         autoplay
         width="640" height="auto"
-        data-setup='{ "techOrder": ["youtube"], "sources": [{ "type": "video/youtube", "src": "https://www.youtube.com/watch?v=6Dz-3qKJtjk"}] }'>
+        data-setup='{ "techOrder": ["youtube"], "sources": [{ "type": "video/youtube", "src": "https://www.youtube.com/watch?v=6Dz-3qKJtjk" }] }'>
     </video>
 
     <script src="../node_modules/video.js/dist/video.min.js"></script>
