@@ -14,4 +14,18 @@ To checkout:
 - For YouTube
   - <https://github.com/videojs/videojs-youtube>
   - <https://www.npmjs.com/package/videojs-youtube>
-  - 
+
+
+# Play YouTube clips
+You need to install a couple of NodeJS modules.  
+From the `video` folder, run 
+```
+$ npm install
+```
+Then, you can
+```
+$ npm start
+```
+And reach [http://localhost:8080/watch_three/subtitles.html](http://localhost:8080/watch_three/subtitles.html) from your browser.  
+It also implements subtitles on the YouTube video.
+

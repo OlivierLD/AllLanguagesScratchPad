@@ -53,7 +53,7 @@
         function addTextTrack(elementId, type, label, lang, textData, show) {
             let videoEl;
             try {
-                videoEl = document.getElementById(elementId).player;
+                videoEl = document.getElementById(elementId).player; // Yes, use the player.
             } catch (err) {
                 console.error(`Oops: ${JSON.stringify(err)}`);
             }
