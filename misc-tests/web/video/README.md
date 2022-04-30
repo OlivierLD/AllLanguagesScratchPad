@@ -17,7 +17,7 @@ To checkout:
 
 
 # Play YouTube clips
-You need to install a couple of NodeJS modules.  
+You need to install a couple of NodeJS modules. One for `video.js`, and another one for a YouTube plugin.
 From the `video` folder, run 
 ```
 $ npm install
