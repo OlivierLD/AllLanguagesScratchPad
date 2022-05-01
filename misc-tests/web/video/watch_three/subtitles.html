@@ -3,22 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <title>Video Subtitle Test - Video.JS and YouTube</title>
-	<link rel="icon"  href="../video.png" type="image/png">
+	<link rel="icon"  href="../video.png" type="image/png" />
     <link type="text/css" rel="stylesheet" href="../node_modules/video.js/dist/video-js.min.css" />
     <style>
         * {
             font-family: 'Courier New', Courier, monospace;
         }
-        .vjs-text-track-display {
-            font-size: 1.2em;
-        }
-        
-        .vjs-text-track-cue {
-            color: cyan;
-        }
 
-        .vjs-text-track-cue-en {
-            background-color:forestgreen;
+        .green-controls {
+            color: lime;
+        }
+        /* Override Subtitles' style. !important takes precedence 
+           if there is a style overriding the same property. */
+        .video-js .vjs-text-track-cue > div {
+            font-size: 1.5rem !important;
+            font-style: italic;
+            color: cyan !important;
+            background-color: rgba(0, 0, 0, 0.25) !important;
+            border: 1px solid red;
+            padding-left: 10px;
+            padding-right: 10px;
+            border-radius: 5px;
         }
 
     </style>
@@ -26,11 +31,13 @@
 
 <!--
     YouTube page at https://www.youtube.com/watch?v=6Dz-3qKJtjk
-    Was https://www.youtube.com/watch?v=xjS6SftYQaQ
+
+    The cues (subtitles' sentences) are added in the window.onload part.
 -->
 
 <body>
     <h1>Video.JS playing YouTube, using dynamic cues</h1>
+    <h4>With some tentative styling...</h4>
     <p>
         Requires:
         <ul>
@@ -40,16 +47,20 @@
     </p>
 
     <!-- 
-        TODO Style the subtitles...
+        Style the subtitles... See the class above, .video-js .vjs-text-track-cue > div 
+        Also see https://videojs.com/guides/skins/
+        The reference css is in node_modules/video.js/dist/video-js.css
+
         Try different CSS classes.
         - none
         - class="video-js vjs-default-skin"
         - class="video-js"
+        - class="video-js vjs-16-9 vjs-controls-enabled vjs-workinghover vjs-v7 vjs-theme-sea vjs_video_2029-dimensions vjs-has-started vjs-paused vjs-user-inactive"
         - etc...
     -->
     <video
         id="vid1"
-        class="video-js vjs-default-skin vjs-text-track-cue vjs-text-track-cue-en"
+        class="video-js vjs-default-skin green-controls"
         controls
         autoplay
         width="640" height="auto"
@@ -62,7 +73,7 @@
     <script>
 
         const enSubtitles = [
-            { from:0.000, to:2.000, text:'Default screen, index 0' },
+            { from:0.100, to:2.000, text:'Default screen, index 0' },
             { from:3.000, to:4.000, text:'Use top button...' },
             { from:4.500, to:7.000, text:'Press it again, screen 3' },
             { from:7.200, to:10.000, text:'Keep going this way' },
@@ -96,6 +107,7 @@
         }
     
         window.onload = () => {
+            // window.VIDEOJS_NO_DYNAMIC_STYLE = true;
             // Add subtitles to the clip
             addTextTrack('vid1', 'subtitles', 'English', 'en', enSubtitles, true);
         };
