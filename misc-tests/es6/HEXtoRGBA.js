@@ -1,10 +1,9 @@
-
 "use strict";
 
 const VERBOSE = false;
 
 /**
- * Translates an hexa color code into rgba or hexa
+ * Translates an hexa color code into rgba or hexa, with opacity (a).
  * 
  * @param {string} hex The Hex string to translate. Starts with '#', then 3 or 4 two-digit hex numbers, like #ff0088 od #ff008880
  * @param {number} opacity in [0..1], opacity to apply, default 1.0.
