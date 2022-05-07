@@ -9,7 +9,7 @@ const VERBOSE = false;
  * @param {string} hex The Hex string to translate. Starts with '#', then 3 or 4 two-digit hex numbers, like #ff0088 od #ff008880
  * @param {number} opacity in [0..1], opacity to apply, default 1.0.
  * @param {boolean} toHex Translate to 'rgba(...)' (default) of new hexa number (if set to true).
- * @returns 
+ * @returns {string} the expected encoded color
  */
 let hexToRgba = (hex, opacity=1.0, toHex=false) => {
 
@@ -48,14 +48,28 @@ let hexToRgba = (hex, opacity=1.0, toHex=false) => {
         let newRGBAStr = '';
         if (hexArray.length === 6) {
             if (toHex) {
-                newRGBAStr = `#${ lpad(((newHex >> 16) & 255).toString(16), 2, '0')}${lpad(((newHex >> 8) & 255).toString(16), 2, '0')}${lpad((newHex & 255).toString(16), 2, '0')}${lpad(parseInt((255 * opacity).toFixed(0)).toString(16), 2, '0')}`;
+                newRGBAStr = `#${
+                    lpad(((newHex >> 16) & 255).toString(16), 2, '0')
+                }${
+                    lpad(((newHex >> 8) & 255).toString(16), 2, '0')
+                }${
+                    lpad((newHex & 255).toString(16), 2, '0')
+                }${
+                    lpad(parseInt((255 * opacity).toFixed(0)).toString(16), 2, '0')}`;
             } else {
                 newRGBAStr = `rgba(${(newHex >> 16) & 255}, ${(newHex >> 8) & 255}, ${newHex & 255}, ${opacity})`;
             }
         } else if (hexArray.length === 8) {
             // Will override opacity
             if (toHex) {
-                newRGBAStr = `#${ lpad(((newHex >> 24) & 255).toString(16), 2, '0')}${lpad(((newHex >> 16) & 255).toString(16), 2, '0')}${lpad(((newHex >> 8) & 255).toString(16), 2, '0')}${lpad(parseInt((255 * opacity).toFixed(0)).toString(16), 2, '0')}`;
+                newRGBAStr = `#${ 
+                    lpad(((newHex >> 24) & 255).toString(16), 2, '0')
+                }${
+                    lpad(((newHex >> 16) & 255).toString(16), 2, '0')
+                }${
+                    lpad(((newHex >> 8) & 255).toString(16), 2, '0')
+                }${
+                    lpad(parseInt((255 * opacity).toFixed(0)).toString(16), 2, '0')}`;
             } else {
                 newRGBAStr = `rgba(${(newHex >> 24) & 255}, ${(newHex >> 16) & 255}, ${(newHex >> 8) & 255}, ${opacity})`;
             }
@@ -69,19 +83,27 @@ let hexToRgba = (hex, opacity=1.0, toHex=false) => {
 // Tests
 let hexValue = '#fbafff';
 let rgba = hexToRgba(hexValue, 0.6);
-console.log(`${hexValue} => RGBA: ${rgba}`);
+console.log(`${hexValue}, transparency 0.6 => RGBA: ${rgba}`);
+
+hexValue = '#fbafff01';
+rgba = hexToRgba(hexValue);
+console.log(`${hexValue}, default transparency => RGBA: ${rgba}`);
+
+hexValue = '#FF00FF';
+rgba = hexToRgba(hexValue);
+console.log(`${hexValue}, uppercase, default transparency => RGBA: ${rgba}`);
 
 hexValue = '#fbafff01';
 rgba = hexToRgba(hexValue, 0.6);
-console.log(`${hexValue} => RGBA: ${rgba}`);
+console.log(`${hexValue}, overriding transparency => RGBA: ${rgba}`);
 
 hexValue = '#fbafff';
 rgba = hexToRgba(hexValue, 0.05, true);
-console.log(`${hexValue} => RGBA: ${rgba}`);
+console.log(`${hexValue}, transparency 0.05, to rgba => RGBA: ${rgba}`);
 
 hexValue = '#fbafff01';
 rgba = hexToRgba(hexValue, 0.1, true);
-console.log(`${hexValue} => RGBA: ${rgba}`);
+console.log(`${hexValue}, transparency 0.1, to rgba => RGBA: ${rgba}`);
 
 try {
     hexValue = '#abc';
