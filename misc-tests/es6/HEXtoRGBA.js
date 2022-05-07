@@ -3,6 +3,14 @@
 
 const VERBOSE = false;
 
+/**
+ * Translates an hexa color code into rgba or hexa
+ * 
+ * @param {string} hex The Hex string to translate. Starts with '#', then 3 or 4 two-digit hex numbers, like #ff0088 od #ff008880
+ * @param {number} opacity in [0..1], opacity to apply, default 1.0.
+ * @param {boolean} toHex Translate to 'rgba(...)' (default) of new hexa number (if set to true).
+ * @returns 
+ */
 let hexToRgba = (hex, opacity=1.0, toHex=false) => {
 
     let lpad = (str, len, pad) => {
@@ -17,27 +25,21 @@ let hexToRgba = (hex, opacity=1.0, toHex=false) => {
         console.log(` Processing ${hex}`);
     }
     let hexArray;
-    let regExp3 = new RegExp('^#([A-Fa-f0-9]{3}){1,2}$');
-    let regExp4 = new RegExp('^#([A-Fa-f0-9]{4}){1,2}$');
+    let regExp3 = new RegExp('^#([A-Fa-f0-9]{2}){3}$');
+    let regExp4 = new RegExp('^#([A-Fa-f0-9]{2}){4}$');
 
-    // if (/^#([A-Fa-f0-9]{3}){1,2}$/.test(hex)) { // 3 numbers, RGB
     if (regExp3.test(hex)) { // 3 numbers, RGB
-        hexArray = hex.substring(1).split('');
-    // } else if (/^#([A-Fa-f0-9]{4}){1,2}$/.test(hex)) {  // 4 numbers, RGBA
+        if (VERBOSE) {
+            console.log("-> Matching 3");
+        }
+        hexArray = hex.substring(1).split(''); // Drop first '#'
     } else if (regExp4.test(hex)) {  // 4 numbers, RGBA
-        hexArray = hex.substring(1).split('');
+        if (VERBOSE) {
+            console.log("-> Matching 4");
+        }
+        hexArray = hex.substring(1).split(''); // Drop first '#'
     }
     if (hexArray) {
-        if (hexArray.length === 3) {
-            if (VERBOSE) {
-                console.log("Reshaping, len=3");
-            }
-            hexArray = [
-                hexArray[0], hexArray[0], 
-                hexArray[1], hexArray[1], 
-                hexArray[2], hexArray[2]
-            ];
-        }
         // console.log("Found:" + hexArray);
         let newHex = '0x' + hexArray.join('');
         if (VERBOSE) {
@@ -80,4 +82,21 @@ console.log(`${hexValue} => RGBA: ${rgba}`);
 hexValue = '#fbafff01';
 rgba = hexToRgba(hexValue, 0.1, true);
 console.log(`${hexValue} => RGBA: ${rgba}`);
+
+try {
+    hexValue = '#abc';
+    rgba = hexToRgba(hexValue, 0.05, true);
+    console.log(`${hexValue} => RGBA: ${rgba}`);
+} catch (err) {
+    console.error(`Cought ${err}`);
+}
+
+try {
+    hexValue = '#abca';
+    rgba = hexToRgba(hexValue, 0.05, true);
+    console.log(`${hexValue} => RGBA: ${rgba}`);
+} catch (err) {
+    console.error(`Cought ${err}`);
+}
+
 
