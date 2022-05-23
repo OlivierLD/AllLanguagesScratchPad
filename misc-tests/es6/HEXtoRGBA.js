@@ -1,6 +1,6 @@
 "use strict";
 
-const VERBOSE = false;
+const VERBOSE = true;
 
 /**
  * Translates an hexa color code into rgba or hexa, with opacity (a).
@@ -42,7 +42,7 @@ let hexToRgba = (hex, opacity=1.0, toHex=false) => {
         // console.log("Found:" + hexArray);
         let newHex = '0x' + hexArray.join('');
         if (VERBOSE) {
-            console.log("Generated: " + newHex);
+            console.log("Generated: " + newHex + ", len:" + hexArray.length);
         }
         let newRGBAStr = '';
         if (hexArray.length === 6) {

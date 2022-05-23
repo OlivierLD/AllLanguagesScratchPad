@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SweetAlert-2</title>
+	<link rel="icon" type="image/jpg" href="../palm.04.jpg">
+    <script src="./node_modules/sweetalert2/dist/sweetalert2.min.js"></script>
+    <link rel="stylesheet" href="./node_modules/sweetalert2/dist/sweetalert2.min.css"></head>
+    <style>
+        * {
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        button {
+            padding: 5px 10px 5px 10px;
+            margin: 10px;
+            border-radius: 20px;
+        }
+    </style>
+    <script>
+        let tellMe = () => {
+            Swal.fire('Any fool can use a computer');
+        };
+
+        let progressBar_01 = () => {
+            let timerInterval;
+            Swal.fire({
+                title: 'Auto close alert!',
+                html: 'I will close in <b></b> milliseconds.',
+                timer: 2000,
+                timerProgressBar: true,
+                didOpen: () => {
+                    Swal.showLoading();
+                    const b = Swal.getHtmlContainer().querySelector('b');
+                    timerInterval = setInterval(() => {
+                        b.textContent = Swal.getTimerLeft();
+                    }, 100);
+                },
+                willClose: () => {
+                    clearInterval(timerInterval);
+                }
+            }).then((result) => {
+                /* Read more about handling dismissals below */
+                if (result.dismiss === Swal.DismissReason.timer) {
+                    console.log('I was closed by the timer');
+                }
+            });
+        };
+
+        let origValue = 10;
+
+        let keepDecreasing = () => {
+            origValue -= 1;
+            console.log(`Decreasing... (${origValue})`);
+            if (origValue > 0) {
+                window.setTimeout(keepDecreasing, 1000);
+            }
+        };
+
+        let progressBar_02 = () => {
+            let timerInterval;
+            Swal.fire({
+                title: 'Auto close alert!',
+                html: 'We have <b></b> item(s) left.',
+                // timer: 2000,
+                timerProgressBar: true,
+                didOpen: () => {
+                    Swal.showLoading();
+                    const b = Swal.getHtmlContainer().querySelector('b');
+                    // Programmatically: Swal.close();
+                    timerInterval = setInterval(() => {
+                        // b.textContent = Swal.getTimerLeft();
+                        b.textContent = `Now ${origValue}`;
+                        if (origValue === 0) {
+                            Swal.close();
+                        }
+                    }, 100);
+                },
+                willClose: () => {
+                    clearInterval(timerInterval);
+                }
+            }).then((result) => {
+                /* Read more about handling dismissals below */
+                if (result.dismiss === Swal.DismissReason.timer) {
+                    console.log('I was closed by the timer');
+                } else {
+                    console.info("Got closed!");
+                }
+            });
+        };
+
+        let clickTwo = () => {
+            origValue = parseInt(document.getElementById('how-many').value);
+            keepDecreasing(); 
+            progressBar_02();
+        };
+    </script>
+<body>
+    <table>
+        <tr>
+            <td><button onclick="tellMe();">Basic</button></td>
+        </tr>
+        <tr>
+            <td><button onclick="progressBar_01();">Progress - One</button></td>
+        </tr>
+        <tr>
+            <td><button onclick="clickTwo();">Progress - Two</button></td>
+            <td>How many: <input type="number" min="1" step="1" id="how-many" value="10" ></td>
+        </tr>
+    </table>
+    <hr/>
+</body>
+<script>
+    window.onload = () => {
+        console.info("Loaded");
+    };
+</script>
+</html>

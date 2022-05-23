@@ -1,0 +1,15 @@
+{
+	"name": "sweet.alert.tests",
+	"version": "0.0.1",
+	"description": "SweetAlert Samples",
+	"keywords": [
+		"Sweet Alert 2"
+	],
+	"dependencies": {
+		"sweetalert2": "^11.0.11"
+	},
+	"scripts": {
+		"usage": "echo Usage: npm start -- --port:1234",
+		"start": "node server.js"
+	}
+}
