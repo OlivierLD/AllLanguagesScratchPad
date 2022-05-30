@@ -67,12 +67,11 @@
                 didOpen: () => {
                     Swal.showLoading();
                     const b = Swal.getHtmlContainer().querySelector('b');
-                    // Programmatically: Swal.close();
                     timerInterval = setInterval(() => {
                         // b.textContent = Swal.getTimerLeft();
                         b.textContent = `Now ${origValue}`;
                         if (origValue === 0) {
-                            Swal.close();
+                            Swal.close();  // Close the dialog
                         }
                     }, 100);
                 },
@@ -84,7 +83,7 @@
                 if (result.dismiss === Swal.DismissReason.timer) {
                     console.log('I was closed by the timer');
                 } else {
-                    console.info("Got closed!");
+                    console.info("Got closed! (" + JSON.stringify(result) + ", " + JSON.stringify(Swal.DismissReason) + ")");
                 }
             });
         };
@@ -105,7 +104,7 @@
         </tr>
         <tr>
             <td><button onclick="clickTwo();">Progress - Two</button></td>
-            <td>How many: <input type="number" min="1" step="1" id="how-many" value="10" ></td>
+            <td>How many: <input type="number" min="1" step="1" id="how-many" value="10" style="text-align: right;"></td>
         </tr>
     </table>
     <hr/>
