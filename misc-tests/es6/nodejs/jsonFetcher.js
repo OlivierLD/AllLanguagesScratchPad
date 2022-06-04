@@ -2,7 +2,10 @@
 
 let http = require('http');
 
-http.get('http://localhost:8000/', (res) => {
+// Note: to run the code below, start a server from another terminal:
+// node rest.server.js
+// rest.server.js is one level above.
+http.get('http://localhost:8080/rest/oplist', (res) => {
   const { statusCode } = res;
   const contentType = res.headers['content-type'];
 
