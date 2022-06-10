@@ -85,6 +85,60 @@ Now you can run
 ```
 $ ./matrix
 ```
-
+### ghci (like a REPL)
+```
+$ ghci cellularautomaton.hs 
+GHCi, version 8.10.7: https://www.haskell.org/ghc/  :? for help
+Loaded package environment from /Users/olediour/.ghc/x86_64-darwin-8.10.7/environments/default
+[1 of 1] Compiling Main             ( cellularautomaton.hs, interpreted )
+Ok, one module loaded.
+*Main> main
+                                X                                
+                               X X                               
+                              X   X                              
+                             X X X X                             
+                            X       X                            
+                           X X     X X                           
+                          X   X   X   X                          
+                         X X X X X X X X                         
+                        X               X                        
+                       X X             X X                       
+                      X   X           X   X                      
+                     X X X X         X X X X                     
+                    X       X       X       X                    
+                   X X     X X     X X     X X                   
+                  X   X   X   X   X   X   X   X                  
+                 X X X X X X X X X X X X X X X X                 
+                X                               X                
+               X X                             X X               
+              X   X                           X   X              
+             X X X X                         X X X X             
+            X       X                       X       X            
+           X X     X X                     X X     X X           
+          X   X   X   X                   X   X   X   X          
+         X X X X X X X X                 X X X X X X X X         
+        X               X               X               X        
+       X X             X X             X X             X X       
+      X   X           X   X           X   X           X   X      
+     X X X X         X X X X         X X X X         X X X X     
+    X       X       X       X       X       X       X       X    
+   X X     X X     X X     X X     X X     X X     X X     X X   
+  X   X   X   X   X   X   X   X   X   X   X   X   X   X   X   X  
+ X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X 
+*Main> 
+*Main> :load matrix
+[1 of 1] Compiling Main             ( matrix.hs, interpreted )
+Ok, one module loaded.
+*Main> main
+┌             ┐
+│  1  2  3  4 │
+│  5  6  7  8 │
+│  9 10 11 12 │
+└             ┘
+. . .
+*Main>  :quit
+Leaving GHCi.
+$
+```
 
 ---
