@@ -1,3 +1,7 @@
+/**
+ * See this <https://bobbyhadz.com/blog/javascript-unexpected-reserved-word-await>
+ */
+
 // Bad
 for (let i = 1; i < 10; i++) {
 	setTimeout(function () {
@@ -31,9 +35,9 @@ async function demo() {
 demo();
 
 // Wait for a condition to be fulfilled
-function sleep(ms) {
-	return new Promise(resolve => setTimeout(resolve, ms));
-}
+// function sleep(ms) {
+// 	return new Promise(resolve => setTimeout(resolve, ms));
+// }
 
 let bool = false;
 

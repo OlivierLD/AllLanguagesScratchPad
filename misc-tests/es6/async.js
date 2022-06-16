@@ -1,10 +1,17 @@
 "use strict";
 
 const x = 1000;
+
+async function print(x) {
+  console.log(`  - Value is now ${x}`);
+  return;
+};
+
 async function firstFunction(){
   for (let i=0; i<x; i++) {
     // do something here...
     // setTimeout(() => console.log(`i is now ${i}`), 500);
+    await print(i);
   }
   console.log("Done with first function");
   return;

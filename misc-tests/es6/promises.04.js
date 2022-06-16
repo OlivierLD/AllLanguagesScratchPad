@@ -5,7 +5,7 @@ async function f() {
 }
 
 console.log('Invoking async, and then...');
-f().then(console.log);
+f().then(console.log("Bim"));
 
 
 // async, and await
