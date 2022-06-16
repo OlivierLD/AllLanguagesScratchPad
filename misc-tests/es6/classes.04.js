@@ -6,10 +6,10 @@ class Polygon {
 
 		console.log("New.Target:", new.target);
 
-		console.log("Target/constructor:", (new.target === Polygon), (new.target === this));
+		console.log(`Target/constructor: new.target === Polygon : ${(new.target === Polygon)}, new.target === this : ${(new.target === this)}`);
 
 		// Emulate abstract class
-		var abstract = false;
+		let abstract = false;
 		if (new.target === Polygon && abstract) {
 			throw new Error("Cannot instantiate that.");
 		}

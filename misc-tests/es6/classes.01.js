@@ -5,7 +5,7 @@ class Polygon {
 	};
 
 	static blah() {
-		console.log("Interesting...");
+		console.log("(static) Interesting...");
 	};
 
 	test() {
@@ -14,7 +14,7 @@ class Polygon {
 	};
 };
 
-var polygon = new Polygon(10, 20);
+let polygon = new Polygon(10, 20);
 polygon.test();
 
 Polygon.blah();
