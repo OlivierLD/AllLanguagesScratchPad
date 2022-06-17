@@ -161,7 +161,7 @@
                contentType = "application/x-font-woff";
              } else if (resource.endsWith(".ttf") || resource.endsWith(".mp3") || resource.endsWith(".mp4")) {
                contentType = "application/octet-stream";
-             } else if (resource.endsWith(".svg")) {
+             } else if (resource.endsWith(".vtt")) {
                contentType = "text/vtt";
              } else {
                console.log("+-------------------------------------------")
