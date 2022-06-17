@@ -1,5 +1,6 @@
 /**
  * This is a small and tiny Web server. Mostly serves static pages and files.
+ * Very basic, but goiod enough.
  */
  "use strict";
 
@@ -127,8 +128,7 @@
        }
        console.log((exist === true ? "Loading static " : ">> Warning: not found << ") + req.url + " (" + resource + ")");
  
-       fs.readFile(workDir + '/' + resource,
-           (err, data) => {
+       fs.readFile(workDir + '/' + resource, (err, data) => {
              if (err) {
                res.writeHead(400);
                return res.end('Error loading ' + resource);
@@ -161,6 +161,8 @@
                contentType = "application/x-font-woff";
              } else if (resource.endsWith(".ttf") || resource.endsWith(".mp3") || resource.endsWith(".mp4")) {
                contentType = "application/octet-stream";
+             } else if (resource.endsWith(".svg")) {
+               contentType = "text/vtt";
              } else {
                console.log("+-------------------------------------------")
                console.log(`| Un-managed content type for ${resource}, defaulted to ${contentType}`);
