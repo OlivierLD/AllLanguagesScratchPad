@@ -29,6 +29,8 @@ $ npm start
 And reach [http://localhost:8080/watch_three/subtitles.html](http://localhost:8080/watch_three/subtitles.html) from your browser.  
 It also implements subtitles on the YouTube video.
 
+Also see the [table of content](http://localhost:8080/index.html)
+
 > _Note_: The implementation/example above (`watch_three/subtitles.html`) does not require any server-side programming.  
 > Look in the code of the page, it only refers to `video.js` (through it minimized version `video.min.js`) and `Youtube.js` (through its minimized 
 > version `Youtube.min.js`) from the client-side (the web page).  

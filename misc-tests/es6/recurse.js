@@ -1,4 +1,6 @@
-var model = [
+"use strict";
+
+const model = [
 	{
 		stuff: 'Whatever',
 		items: [{
@@ -37,4 +39,5 @@ drillDown = function(items) {
 	return depth;
 };
 
+console.log("Model:", JSON.stringify(model, null, 2));
 console.log('Max depth:', getMaxDepth(model));
