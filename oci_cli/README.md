@@ -10,7 +10,7 @@
 Here is the path I took to install and run the `OCI_CLI`
 
 ### Install the OCI_CLI on your laptop
-From the [Quickstart Page](https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm#Quickstart), choose the installer
+From the [Quickstart Page](https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm#Quickstart), choose the installation instructions
 that fits the OS of your laptop.  
 From a Mac, I did a:
 ```
@@ -28,7 +28,7 @@ containing the instance(s) you want to target, along with the related credential
 I found many documents about that, many of them were obsolete, some were wrong, others contradicting each other,
 here is a path that worked for me.
 
-Once the installation above finished successfully, make sure you've started VPN if needed, and from a terminal, run the following:
+Once the installation above finished successfully (make sure you've started VPN if needed), from a terminal, run `oci session authenticate`:
 ```
 $ oci session authenticate
 Enter a region by index or name(e.g.
@@ -42,7 +42,7 @@ Enter a region by index or name(e.g.
 36: us-gov-ashburn-1, 37: us-gov-chicago-1, 38: us-gov-phoenix-1, 39: us-langley-1, 40: us-luke-1,
 41: us-phoenix-1, 42: us-sanjose-1):
 ```
-When prompted like above, I entered `35`.
+When prompted like above, I entered `35`, for `us-ashburn-1`.
 ```
 . . .
 us-phoenix-1, 42: us-sanjose-1): 35
