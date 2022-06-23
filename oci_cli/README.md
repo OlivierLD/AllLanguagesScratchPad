@@ -3,6 +3,7 @@
 ---
 
 - [CLI Concepts](https://docs.oracle.com/en-us/iaas/Content/API/Concepts/cliconcepts.htm)
+  - The page above has child-pages worth taking a look at.
 - [Install Quickstart](https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm#Quickstart)
 
 ## Get started
@@ -11,7 +12,7 @@ Here is the path I took to install and run the `OCI_CLI`
 ### Install the OCI_CLI on your laptop
 From the [Quickstart Page](https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm#Quickstart), choose the installer
 that fits the OS of your laptop.  
-I did a:
+From a Mac, I did a:
 ```
 $ brew update && brew install oci-cli
 $ oci --version
@@ -235,6 +236,11 @@ Do you want to re-authenticate your CLI session profile? [Y/n]: y
 ```
 And you will go through the authenticate steps just like before.
 
+> See this [good doc](https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/clitoken.htm) on Token Based Authentication. 
+
 In case of wierd messages, you might want to check out the notes at <https://github.com/OlivierLD/oci-java-sdk/blob/master/oliv-notes.md#bulk-notes-oci--co>...
+
+### Next
+- [Using tyhe CLI](https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliusing.htm)
 
 ---
