@@ -241,6 +241,6 @@ And you will go through the authenticate steps just like before.
 In case of wierd messages, you might want to check out the notes at <https://github.com/OlivierLD/oci-java-sdk/blob/master/oliv-notes.md#bulk-notes-oci--co>...
 
 ### Next
-- [Using tyhe CLI](https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliusing.htm)
+- [Using the CLI](https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliusing.htm)
 
 ---
