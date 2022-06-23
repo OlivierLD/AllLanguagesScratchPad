@@ -1,5 +1,5 @@
 # Some findings and comments about OCI_CLI
-> OCI_CLI stands for Oracle Cloud Infrastructure Command Line Interface
+> OCI_CLI stands for **O**racle **C**loud **I**nfrastructure **C**ommand **L**ine **I**nterface
 ---
 
 - [CLI Concepts](https://docs.oracle.com/en-us/iaas/Content/API/Concepts/cliconcepts.htm)
@@ -28,7 +28,8 @@ containing the instance(s) you want to target, along with the related credential
 I found many documents about that, many of them were obsolete, some were wrong, others contradicting each other,
 here is a path that worked for me.
 
-Once the installation above finished successfully (make sure you've started VPN if needed), from a terminal, run `oci session authenticate`:
+Once the installation above finished successfully, from a terminal, run `oci session authenticate`.  
+(make sure you've started VPN if needed) :
 ```
 $ oci session authenticate
 Enter a region by index or name(e.g.
