@@ -250,7 +250,7 @@ In case of wierd messages, you might want to check out the notes at <https://git
 ### Next
 - [Obtain Tenancy Details](https://docs.oracle.com/en-us/iaas/autonomous-database-shared/doc/autonomous-database-support-ocid.html?Highlight=tenancy%20ocid)
 - [Using the CLI](https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliusing.htm)
-
+- [CLI Command Reference](https://docs.cloud.oracle.com/en-us/iaas/tools/oci-cli/3.10.3/oci_cli_docs/index.html), the full list, the one to bookmark!
 
 Get tenancy OCID:
 In the OCI Console, User-Profile > Tenancy: `devdigital`, then click 'Show' or 'Copy' on the page
@@ -876,7 +876,7 @@ $ oci iam compartment list -c $T_OCID --config-file ~/.oci/config --profile oliv
 $
 ```
 
-Sample (bash) script:
+Sample (bash) script (`os`: Object Storage, `iam`: Identity and Access Management):
 ```bash
 #!/bin/bash
 oci os ns get --config-file ~/.oci/config --profile oliv-profile --auth security_token | jq
@@ -910,4 +910,76 @@ User list
 ```
 $  oci iam user list --config-file ~/.oci/config --profile oliv-profile --auth security_token --all | jq ' .data[] | { name } | join("")'
 ```
+Various queries:
+```
+$ oci iam policy list --compartment-id $T_OCID --config-file ~/.oci/config --profile oliv-profile --auth security_token
+$ oci os bucket list -c $T_OCID --namespace devdigital --config-file ~/.oci/config --profile oliv-profile --auth security_token
+$ oci os bucket list --config-file ~/.oci/config --profile oliv-profile --auth security_token -c $T_OCID
+$ oci os bucket list -c $T_OCID --profile oliv-profile --namespace devdigital --auth security_token
+```
+Formatted bucket (Object Storage) list:
+```
+$ oci os bucket list -c $T_OCID --namespace devdigital --config-file ~/.oci/config --profile oliv-profile --auth security_token | jq '.data[] | { name, namespace } | join(", bucket in ") '
+"oliv-bucket-20201222-0748, bucket in devdigital"
+```
+Bucket content:
+```
+BUCKET_NAME=oliv-bucket-20201222-0748
+$ oci os object list -ns devdigital -bn ${BUCKET_NAME} --config-file ~/.oci/config --profile oliv-profile --auth security_token
+{
+  "data": [
+    {
+      "archival-state": null,
+      "etag": "971a7b3f-323a-47a4-ba2e-44ae66f68099",
+      "md5": "1B2M2Y8AsgTpgAmY7PhCfg==",
+      "name": "SampleApplication-01/",
+      "size": 0,
+      "storage-tier": "Standard",
+      "time-created": "2020-12-23T15:35:01.661000+00:00",
+      "time-modified": "2020-12-23T15:35:01.668000+00:00"
+    }
+  ],
+  "prefixes": []
+}
+```
+Notice the size ;)
+
+A non-empty bucket:
+```
+$ oci os bucket list -c ocid1.compartment.oc1..aaaaaaaaupxe3ojlce5hhpnjlnramxotkiruaiyukvshroz5rphqv3a4byua --namespace devdigital --config-file ~/.oci/config --profile oliv-profile --auth security_token | jq '.data[] | { name, namespace } | join(", bucket in ") '
+```
+
+```
+$ oci os object list -ns devdigital -bn olediour-bucket-20201215-1103 --config-file ~/.oci/config --profile oliv-profile --auth security_token
+{
+  "data": [
+    {
+      "archival-state": null,
+      "etag": "cb3c40d7-85c9-44c6-ad1b-8179c1ec459c",
+      "md5": "1B2M2Y8AsgTpgAmY7PhCfg==",
+      "name": "SampleApplication/",
+      "size": 0,
+      "storage-tier": "Standard",
+      "time-created": "2020-12-15T19:06:42.678000+00:00",
+      "time-modified": "2020-12-15T19:06:42.685000+00:00"
+    },
+    {
+      "archival-state": null,
+      "etag": "f774bfaa-a61b-4b8c-835b-6427048689b2",
+      "md5": "Xj8DsSKYJzFeYbnghJ7u1w==",
+      "name": "SampleApplication/img_gas.receipt.jpg",
+      "size": 286834,
+      "storage-tier": "Standard",
+      "time-created": "2020-12-15T19:08:14.237000+00:00",
+      "time-modified": "2020-12-15T19:08:14.505000+00:00"
+    }
+  ],
+  "prefixes": []
+}
+```
+If you have access to the `development` namespace (aka compartment):
+```
+$ oci os object list -ns development -bn olivierlediouris-docai-test-bucket --config-file ~/.oci/config --profile oliv-profile --auth security_token
+```
+
 ---
