@@ -982,4 +982,17 @@ If you have access to the `development` namespace (aka compartment):
 $ oci os object list -ns development -bn olivierlediouris-docai-test-bucket --config-file ~/.oci/config --profile oliv-profile --auth security_token
 ```
 
+Download data from ObjectStorage. 
+- Tenancy `devdigital`
+- Bucket `olediour-bucket-20201215-1103`
+- Object `SampleApplication/img_gas.receipt.jpg`
+- Downloaded as `img.jpg`
+```
+$ oci os object get -ns devdigital -bn olediour-bucket-20201215-1103 --name SampleApplication/img_gas.receipt.jpg --file img.jpg --config-file ~/.oci/config --profile oliv-profile --auth security_token
+Downloading object  [####################################]  100%
+$ ll img.jpg 
+43400261 568 -rw-r--r--  1 olediour  staff  286834 Jun 29 09:25 img.jpg
+$
+```
+
 ---
