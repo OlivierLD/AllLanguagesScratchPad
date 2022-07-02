@@ -95,7 +95,7 @@ You will find in there the definition of the profile(s) already created.
 As mentioned above, you can now run OCI_CLI commands.  
 Let's run a `region list` command, as suggested.  
 Notice the `oci aim`, the command, the reference to the `--config-file`, the reference to the `--profile`, etc.
-```
+<pre style="font-family: 'courier new'; max-height: 200px; overflow-y: auto;">
 $ oci iam region list --config-file /Users/olediour/.oci/config --profile oliv-profile --auth security_token
 {
   "data": [
@@ -234,7 +234,8 @@ $ oci iam region list --config-file /Users/olediour/.oci/config --profile oliv-p
   ]
 }
 $
-```
+</pre>
+
 ### Good to know
 After a while, your session will expire. `oci_cli` will prompt you re-authenticate:
 ```
@@ -262,7 +263,7 @@ Finding OCID of a compartment: <https://docs.oracle.com/en-us/iaas/Content/GSG/T
 $ export C_OCID=ocid1.tenancy.oc1..aaaaaaaa46rfbmuj2cciouoyz6sbmsbxkzjb3ibkfvhd5vttptgcpjruskda
 ```
 Then, to get the compartment list:
-```
+<pre style="font-family: 'courier new'; max-height: 200px; overflow-y: auto;">
 $ oci iam compartment list -c $T_OCID --config-file ~/.oci/config --profile oliv-profile --auth security_token
 {
   "data": [
@@ -874,7 +875,7 @@ $ oci iam compartment list -c $T_OCID --config-file ~/.oci/config --profile oliv
   ]
 }
 $
-```
+</pre>
 
 Sample (bash) script (`os`: Object Storage, `iam`: Identity and Access Management):
 ```bash
