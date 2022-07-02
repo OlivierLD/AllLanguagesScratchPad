@@ -1,7 +1,9 @@
 # Some findings and comments about OCI_CLI
-###  (aka OCI_CLI for dummies)
+###  (aka OCI_CLI for dummies, OCI_CLI happy path, ...)
 > OCI_CLI stands for **O**racle **C**loud **I**nfrastructure **C**ommand **L**ine **I**nterface
 ---
+
+You can get a free OCI account, see [here](https://www.oracle.com/cloud/free/).  
 
 - [CLI Concepts](https://docs.oracle.com/en-us/iaas/Content/API/Concepts/cliconcepts.htm)
   - The page above has child-pages worth taking a look at.
@@ -76,11 +78,11 @@ prompted for a profile name. See below. I used `oliv-profile`, this name will be
 ```
     Completed browser authentication process!
 Enter the name of the profile you would like to create: oliv-profile
-Config written to: /Users/olediour/.oci/config
+Config written to: ~/.oci/config
 
     Try out your newly created session credentials with the following example command:
 
-    oci iam region list --config-file /Users/olediour/.oci/config --profile oliv-profile --auth security_token
+    oci iam region list --config-file ~/.oci/config --profile oliv-profile --auth security_token
 
 $
 ```
@@ -96,7 +98,7 @@ As mentioned above, you can now run OCI_CLI commands.
 Let's run a `region list` command, as suggested.  
 Notice the `oci aim`, the command, the reference to the `--config-file`, the reference to the `--profile`, etc.
 ```{r, max.height='200px'}
-$ oci iam region list --config-file /Users/olediour/.oci/config --profile oliv-profile --auth security_token
+$ oci iam region list --config-file ~/.oci/config --profile oliv-profile --auth security_token
 {
   "data": [
     {
