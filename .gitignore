@@ -19,4 +19,6 @@ gradle-app.setting
 **/*.class
 **/tmp/**
 
+**/bin/
+
 **/.DS_Store

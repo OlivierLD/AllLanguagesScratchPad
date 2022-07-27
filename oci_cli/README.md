@@ -13,8 +13,8 @@ You can get a free OCI account, see [here](https://www.oracle.com/cloud/free/).
 Here is the path I took to install and run the `OCI_CLI`
 
 ### Install the OCI_CLI on your laptop
-From the [Quickstart Page](https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm#Quickstart), choose the installation instructions
-that fits the OS of your laptop.  
+From the [Quickstart Page](https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm#Quickstart), _**choose the installation instructions
+that fits the OS of your laptop**_.  
 From a Mac, I did a:
 ```
 $ brew update && brew install oci-cli
