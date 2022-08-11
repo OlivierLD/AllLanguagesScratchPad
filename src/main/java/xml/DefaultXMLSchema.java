@@ -20,9 +20,9 @@ import java.util.List;
  */
 public class DefaultXMLSchema {
 
-    public class XmlErrorHandler implements ErrorHandler {
+    public static class XmlErrorHandler implements ErrorHandler {
 
-        private List<SAXParseException> exceptions;
+        private final List<SAXParseException> exceptions;
 
         public XmlErrorHandler() {
             this.exceptions = new ArrayList<>();

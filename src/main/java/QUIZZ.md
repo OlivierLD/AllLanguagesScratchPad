@@ -8,7 +8,7 @@
 - Run it
   - `java -cp classes oliv.fibonacci.One`
 - Time it
-  - `time java -cpclasses oliv.fibonacci.One`
+  - `time java -cp classes oliv.fibonacci.One`
 - About the method with signature `private static long fibonacci(int n)`
   - What do you think? Comment.
 - About the code:
@@ -34,7 +34,7 @@
 - See `oliv.fibonacci.Two.java`
   - `time java -cp classes oliv.fibonacci.Two 100`
   
-## Bonus: Distribute the binaries
+## _Bonus_: Distribute the binaries
   - Compile the code
   - Jar it
     - With a manifest
