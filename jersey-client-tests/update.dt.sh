@@ -2,8 +2,7 @@
 #
 # Require jq
 JQ_PRESENT=$(which jq)
-if [[ "${JQ_PRESENT}" == "" ]]
-then
+if [[ "${JQ_PRESENT}" == "" ]]; then
   echo "+----------------------------------------+"
   echo "| The script requires jq to be available |"
   echo "| Use 'brew install jq' to install it    |"
@@ -19,16 +18,14 @@ TTL=3600
 #
 OPTION=two
 #
-if [[ "${OPTION}" == "one" ]]
-then
+if [[ "${OPTION}" == "one" ]]; then
      PROCESS_APP_NAME=OlivTestApp
      VERSION=1.0
      # WHERE=active
      WHERE=latest
      DECISION_SERVICE_NAME=AmountCheck
      DECISION_TABLE=BigEnough
-elif [[ "${OPTION}" == "two" ]]
-then
+elif [[ "${OPTION}" == "two" ]]; then
      PROCESS_APP_NAME=NL2Rules
      VERSION=1.0
      # WHERE=active
