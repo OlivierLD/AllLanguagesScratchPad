@@ -14,7 +14,7 @@ gradle-app.setting
 # gradle/wrapper/gradle-wrapper.properties
 
 **/source-classes-mapping.txt
-**/build/
+**/build/**
 **/*.jar
 **/*.class
 **/tmp/**
