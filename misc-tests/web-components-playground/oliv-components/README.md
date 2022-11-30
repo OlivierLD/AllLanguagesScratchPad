@@ -10,7 +10,7 @@ Requires `nodejs` to be available on your system.
 To see the components at work, after cloning the repo, start the `node` server _**from the `web-components-playground` directory**_, and load `index.html` in a browser:
 
 ```bash
- $> node server.js
+ $> node server.index.js
 ```
 Then load [http://localhost:8080/oliv-components/index.html](http://localhost:8080/oliv-components/index.html) in a WebComponents-enabled web browser.
 

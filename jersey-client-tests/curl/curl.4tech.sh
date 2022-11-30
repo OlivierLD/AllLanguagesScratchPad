@@ -17,8 +17,7 @@ BOTS_TENANT_ID=odaserviceinstance00
 #
 echo -en "BOT_ID is ${BOT_ID}, is that all right ? > "
 read -r RESP
-if [[ ! ${RESP} =~ ^(yes|y|Y)$ ]]
-then
+if [[ ! ${RESP} =~ ^(yes|y|Y)$ ]]; then
   echo -en "Enter new BOT_ID > "
   read -r BOT_ID
   echo -e "Moving on with ${BOT_ID} [Hit Return]"
@@ -49,8 +48,7 @@ COST_ENTITY_ID=$(jq '.id' out.txt)
 echo -e "CostEntityID is ${COST_ENTITY_ID}"
 #
 COST_ENTITY_ID=$(echo "${COST_ENTITY_ID}" | tr -d '"')
-if [[ "${COST_ENTITY_ID}" == "null" ]]
-then
+if [[ "${COST_ENTITY_ID}" == "null" ]]; then
   echo -e "Oops..."
   cat out.txt | jq
   echo -e "Hit [return]"

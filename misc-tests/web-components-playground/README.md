@@ -10,7 +10,7 @@
 
 I use nodeJS to run the pages:
  ```bash
- $ node server.js
+ $ node server.index.js
 ```
 
 Then load the pages in a browser, using for example [http://localhost:8080/component.01/index.html](http://localhost:8080/component.01/index.html).

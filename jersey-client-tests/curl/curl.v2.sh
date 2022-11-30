@@ -21,8 +21,7 @@ BOTS_TENANT_ID=odaserviceinstance00
 #
 echo -en "BOT_ID is ${BOT_ID}, is that all right ? > "
 read -r RESP
-if [[ ! ${RESP} =~ ^(yes|y|Y)$ ]]
-then
+if [[ ! ${RESP} =~ ^(yes|y|Y)$ ]]; then
   echo -en "Enter new BOT_ID > "
   read -r BOT_ID
   echo -e "Moving on with ${BOT_ID} [Hit Return]"
@@ -79,8 +78,6 @@ RACE_PRESENTATION_MAPPING_ID=$(echo "${RACE_PRESENTATION_MAPPING_ID}" | tr -d '"
 echo -e "------------------------------"
 echo -e "RACE is ${RACE_ENTITY_ID}"
 echo -e "------------------------------"
-
-
 #
 # Add synonyms for entities
 #
@@ -1379,8 +1376,7 @@ read -r RESP
 echo -en "Create BackendEntityMapping for 'race' ? [Hit Return] > "
 RESP=y
 #
-if [[ ${RESP} =~ ^(yes|y|Y)$ ]]
-then
+if [[ ${RESP} =~ ^(yes|y|Y)$ ]]; then
   #
   # Create BackendEntityMapping for table 'race'
   # name contains the Entity Name!! Was RACE_MAPPING

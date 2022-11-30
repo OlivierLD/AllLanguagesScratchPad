@@ -23,8 +23,7 @@ BOTS_TENANT_ID=odaserviceinstance00
 #
 echo -en "BOT_ID is ${BOT_ID}, is that all right ? > "
 read -r RESP
-if [[ ! ${RESP} =~ ^(yes|y|Y)$ ]]
-then
+if [[ ! ${RESP} =~ ^(yes|y|Y)$ ]]; then
   echo -en "Enter new BOT_ID > "
   read -r BOT_ID
   echo -e "Moving on with ${BOT_ID} [Hit Return]"
