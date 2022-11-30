@@ -1,4 +1,0 @@
-rest/cli/CLI.java
- rest.cli.CLI
-regexp/Patterns.java
- regexp.Patterns
