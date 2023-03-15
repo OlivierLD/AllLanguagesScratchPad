@@ -9,11 +9,11 @@ version '1.0'
 repositories {
     mavenLocal()
     mavenCentral()
-    maven { url "https://raw.githubusercontent.com/OlivierLD/ROB/repository" }
+    maven { url "https://raw.githubusercontent.com/OlivierLD/ROB/repository" }   // Maven on GIT
 }
 
 dependencies {
-    implementation 'raspberry.on.board:common-utils:1.0'  // Maven on GIT
+    implementation 'raspberry.on.board:common-utils:1.0'  // in the Maven on GIT
     testImplementation group: 'junit', name: 'junit', version: '4.13'
 }
 
