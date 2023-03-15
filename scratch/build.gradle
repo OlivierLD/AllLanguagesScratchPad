@@ -1,0 +1,22 @@
+plugins {
+    id 'java'
+    id 'com.github.johnrengelman.shadow'
+}
+
+group 'oliv-scratch'
+version '1.0'
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+    maven { url "https://raw.githubusercontent.com/OlivierLD/ROB/repository" }
+}
+
+dependencies {
+    implementation 'raspberry.on.board:common-utils:1.0'  // Maven on GIT
+    testImplementation group: 'junit', name: 'junit', version: '4.13'
+}
+
+shadowJar {
+    zip64 true
+}
