@@ -13,8 +13,9 @@ repositories {
 }
 
 dependencies {
-    implementation 'raspberry.on.board:common-utils:1.0'  // in the Maven on GIT
-    implementation 'astro.computer:AstroComputer:1.0'     // in the Maven on GIT
+    implementation 'raspberry.on.board:common-utils:1.0'      // in the Maven on GIT
+    implementation 'astro.computer:AstroComputer:1.0'         // in the Maven on GIT
+    implementation 'raspberry.on.board:NMEA-multiplexer:1.0'  // in the Maven on GIT
 
     testImplementation group: 'junit', name: 'junit', version: '4.13'
 }
