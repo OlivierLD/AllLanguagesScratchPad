@@ -11,5 +11,7 @@ $ java -cp build/libs/scratch-1.0-all.jar celestial.almanac.JavaSample --now
 ```
 $ ../gradlew clean build shadowJar
 $ ./mux.sh --interactive-config
+$ # or also
+$ ./mux.sh nmea.mux.dyn.consumer.yaml
 ```
 

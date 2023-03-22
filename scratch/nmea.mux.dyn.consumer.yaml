@@ -1,0 +1,9 @@
+name: "Dynamic Consumer"
+context:
+  with.http.server: false
+  init.cache: false
+channels:
+  - class: nmea.consumers.dynamic.TXTExample
+    verbose: false
+forwarders:
+  - type: console
