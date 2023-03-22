@@ -1,5 +1,7 @@
 ## JSON to SRT
 
+SRT (Speech Recognition Tool ?) goes with [Gecko](https://github.com/gong-io/gecko).
+
 ### Java flavor
 Build it first
 ```text
