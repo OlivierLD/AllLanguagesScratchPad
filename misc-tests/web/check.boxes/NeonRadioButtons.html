@@ -106,6 +106,8 @@ canvas {
 </body>
 <script type="text/javascript">
 
+const NB_PARTICULES = 100;
+
 const canvas = document.getElementById("particles");
 const ctx = canvas.getContext("2d");
 canvas.width = window.innerWidth;
@@ -160,7 +162,7 @@ function handleParticles() {
 }
 
 function createParticles() {
-	while (particlesArray.length < 200) { // Was 'if'
+	while (particlesArray.length < NB_PARTICULES) { // Was 'if'
 		particlesArray.push(new Particle());
 	}
 }
@@ -169,7 +171,8 @@ function animateParticles() {
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
 	handleParticles();
 	createParticles();
-	requestAnimationFrame(animateParticles);
+	// The key! See https://css-tricks.com/using-requestanimationframe/
+	window.requestAnimationFrame(animateParticles);
 }
 
 animateParticles();

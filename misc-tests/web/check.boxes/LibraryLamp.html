@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Library Lamp</title>
+    <!-- From https://codepen.io/avstorm/pen/wvEYjoP -->
+    <style type="text/css">
+body {
+  font-family: Arial, sans-serif;
+  min-height: 100vh;
+  /* display: flex; */
+  justify-content: center;
+  align-items: center;
+  background: #26282D;
+}
+
+h1 {
+    display: inline-block;
+    color: silver;
+	text-shadow: 4px 4px 8px black, 0 0 25px white, 0 0 10px cyan;
+}
+
+
+* {
+  box-sizing: border-box;
+}
+
+#lib {
+  position: fixed;
+  visibility: hidden;
+}
+
+.lib {
+  padding: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transform: scale(2);
+}
+.lib svg {
+  display: block;
+}
+.lib svg path {
+  transition: all 0.3s ease;
+}
+.lib svg path.onoff {
+  opacity: 0.8;
+}
+.lib svg path.shine {
+  opacity: 0;
+}
+.lib svg path.lamp {
+  opacity: 0;
+}
+.lib:hover {
+  background: rgba(0, 0, 0, 0.12);
+}
+
+#lib:checked + .lib svg path:not(.shine, .lamp) {
+  stroke: #C1B971;
+}
+#lib:checked + .lib svg path.onoff {
+  animation: updown 0.4s linear forwards;
+}
+#lib:checked + .lib svg path.shine {
+  opacity: 1;
+}
+#lib:checked + .lib svg path.lamp {
+  opacity: 1;
+}
+
+@keyframes updown {
+  0% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(1px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+    </style>
+</head>
+<body>
+
+<h1>A little library lamp used as a checkbox</h1>
+
+<input type="checkbox" id="lib">
+<label for="lib" class="lib">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M8 20H12M16 20H12M12 20V11" stroke="#ACA6A9" stroke-width="2" stroke-linecap="round"/>
+        <path d="M17 11V16" stroke="#ACA6A9" stroke-width="1.5" stroke-linecap="round" class="onoff"/>
+        <path d="M15 4H9C6.23858 4 4 6.23858 4 9V9.5C4 10.3284 4.67157 11 5.5 11H18.5C19.3284 11 20 10.3284 20 9.5V9C20 6.23858 17.7614 4 15 4Z" stroke="#ACA6A9" stroke-width="2"/>
+        <path d="M3 21L5 12H19L21 21H3Z" fill="url(#paint0_linear_976_2597)" class="shine"/>
+        <path d="M9 3C5.68629 3 3 5.68629 3 9V9.5C3 10.8807 4.11929 12 5.5 12H18.5C19.8807 12 21 10.8807 21 9.5V9C21 5.68629 18.3137 3 15 3H9Z" fill="url(#paint1_radial_976_2597)" class="lamp"/>
+        <defs>
+            <linearGradient id="paint0_linear_976_2597" x1="12" y1="12" x2="12" y2="21" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#CAFFC7" stop-opacity="0.65"/>
+                <stop offset="1" stop-color="#3B3E43" stop-opacity="0"/>
+            </linearGradient>
+            <radialGradient id="paint1_radial_976_2597" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(12 5.8125) rotate(90) scale(6.1875 12.375)">
+                <stop stop-color="#8CF385"/>
+                <stop offset="1" stop-color="#397239"/>
+            </radialGradient>
+        </defs>
+    </svg>
+
+</label>
+
+</body>
+</html>

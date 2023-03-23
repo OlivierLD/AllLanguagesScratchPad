@@ -68,8 +68,9 @@ dependencies {
 //    implementation("com.oracle:ojdbc14:10.2.0.2.0")
 
     // implementation("com.oracle.oci.sdk:oci-java-sdk-aispeech:2.5.2-preview1-20210924.224729-32")
-    implementation("com.oracle.oci.sdk:oci-java-sdk-aispeech:2.5.2-preview1-20210915.160715-1")
-//    implementation("com.oracle.oci.sdk:oci-java-sdk-aispeech:2.5.2-preview1-SNAPSHOT")
+    // implementation("com.oracle.oci.sdk:oci-java-sdk-aispeech:2.5.2-preview1-20210915.160715-1")
+    // implementation("com.oracle.oci.sdk:oci-java-sdk-aispeech:2.5.2-preview1-SNAPSHOT")
+    implementation 'com.oracle.oci.sdk:oci-java-sdk-aispeech:2.27.0'
 
 //    implementation ("org.glassfish.tyrus:tyrus-client:1.1")
     implementation ("org.glassfish.tyrus:tyrus-client:2.0.1")

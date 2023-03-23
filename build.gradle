@@ -40,8 +40,8 @@ dependencies {
     // https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.11.2'
     // ScalaJS
-    implementation 'org.scala-index.js:scalajs-dom_sjs1_2.13:1.1.0'
-    implementation 'org.scala-index.js:scalajs-library_2.13:1.2.0'
+    // implementation 'org.scala-index.js:scalajs-dom_sjs1_2.13:1.1.0'
+    // implementation 'org.scala-index.js:scalajs-library_2.13:1.2.0'
     // EvilPlot
 //    compile 'com.cibo:evilplot-repl_2.12:0.7.0'
 //    compile 'com.cibo:evilplot-repl_2.13:0.8.0'
@@ -80,6 +80,7 @@ repositories {
     maven { url "https://mvnrepository.com/artifact" }
     maven { url "https://oss.sonatype.org/content/groups/public" } // PI4J ?
     maven { url "https://raw.githubusercontent.com/OlivierLD/raspberry-coffee/repository" }
+    maven { url "https://raw.githubusercontent.com/OlivierLD/ROB/repository" }
 }
 
 task SQLiteTest(type: JavaExec, dependsOn: classes, description: 'Runs a SQLite sample') {
