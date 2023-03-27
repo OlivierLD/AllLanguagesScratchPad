@@ -1,5 +1,8 @@
 package oliv.interrupts;
 
+import java.util.Date;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 public class CtrlCGood {
     /**
      * How to do it correctly
@@ -7,13 +10,15 @@ public class CtrlCGood {
     public static void main(String...args) {
 
         final Thread itsMe = Thread.currentThread();
+        AtomicBoolean keepWorking = new AtomicBoolean(true);
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             System.out.println("\nOops! Trapped exit signal...");
             synchronized (itsMe) {
-                itsMe.notify();
+                // itsMe.notify();
+                keepWorking.set(false);
                 try {
-                    itsMe.wait(); // Give time to finish...
+                    itsMe.wait(); // Give the main thread time to finish...
                     System.out.println("... Gone");
                 } catch (InterruptedException ie) {
                     ie.printStackTrace();
@@ -23,9 +28,13 @@ public class CtrlCGood {
         System.out.println("Starting... Ctrl-C to stop.");
         try {
             synchronized (itsMe) {
-                itsMe.wait();
+                // itsMe.wait();
+                while (keepWorking.get()) {
+                    System.out.printf("Still at work, at %s...\n", new Date());
+                    itsMe.wait(1_000L);
+                }
             }
-            System.out.println("Ok, ok! I'm leaving!");
+            System.out.println("Ok, ok! I'm leaving! (doing some cleanup first, 5s...)");
             // This stuff takes time
             Thread.sleep(5_000L);
             System.out.println("Done cleaning my stuff!");
@@ -36,5 +45,6 @@ public class CtrlCGood {
         synchronized(itsMe) {
             itsMe.notify(); // Unlock the shutdown hook.
         }
+        System.out.println("Everyone's done now.");
     }
 }

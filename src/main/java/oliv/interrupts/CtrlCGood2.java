@@ -23,7 +23,7 @@ public class CtrlCGood2 {
         System.out.println("Starting... Ctrl-C to stop.");
         try {
             synchronized (itsMe) {
-                itsMe.wait();
+                itsMe.wait(); // This is the "work" this class is doing.
             }
             System.out.println("Ok, ok! I'm leaving!");
             // This stuff takes time
