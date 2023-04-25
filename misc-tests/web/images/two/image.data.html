@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<!--
+ ! Inspired by https://observablehq.com/@ehouais/how-to-get-image-data-from-an-url-or-a-file
+ ! and https://daily-dev-tips.com/posts/vanilla-javascript-canvas-images-to-black-and-white/#:~:text=JavaScript%20to%20convert%20image%20to%20black%20and%20white,white%20%3D%20383%20%2D%20765
+ !
+ ! Local images.
+ +-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ImageData</title>
+    <style type="text/css">
+* {
+    font-family: 'Courier New', Courier, monospace;
+}        
+    </style>
+</head>
+<body style="background-color: aqua;">
+    <h1>Messing around with images</h1>
+    <small>Look into the console, if you're curious...</small>
+    <p>
+        Turning a black and white fax into red and transparent, all in the client side.
+    </p>
+    <p>
+        The original:<br/>
+        <img src="../one.fax.gif"/>
+    </p>
+    <p>
+        Reworked:<br/>
+        <canvas id="reworked"></canvas>
+    </p>
+    
+</body>
+<script type="text/javascript">
+
+const IMAGE_URL = "../one.fax.gif";
+                  // "https://tgftp.nws.noaa.gov/fax/PYAA12.gif"
+
+// Because window.createImageBitmap is not supported on Safari... TODO Is that necessary ?
+createImageBitmap = window.createImageBitmap ||
+  ((blob) =>
+    new Promise((resolve) => {
+      let img = document.createElement("img");
+      img.addEventListener("load", () => resolve(this));
+      img.src = URL.createObjectURL(blob);
+    }));
+
+getImageData = async function(blob) {
+  const bitmap = await createImageBitmap(blob);
+  const [width, height] = [bitmap.width, bitmap.height];
+
+  // an intermediate "buffer" 2D context is necessary
+  let canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  var ctx = canvas.getContext("2d");
+  // const ctx = DOM.context2d(width, height, 1);
+  ctx.drawImage(bitmap, 0, 0);
+
+  return ctx.getImageData(0, 0, width, height);
+};
+
+window.onload = () => {
+
+    let reworkedCanvas = document.getElementById('reworked');
+    let reworkedCtx = reworkedCanvas.getContext("2d");
+
+    fetch(IMAGE_URL).then(response => {
+        return response.blob();
+    }).then(blob => {
+        console.log("Blob loaded.");
+        let imageBlob = blob;
+        console.log(`Size: ${blob.size}, Type: ${blob.type}`);
+        // Processing image data
+        getImageData(blob).then(imageData => {
+            console.log(`ImageData, at last! ${imageData.data.length} elements.`);
+            // debugger;
+            let imgLen = imageData.data.length;
+            
+            for (let i=0; i<imgLen; i+=4) { // rgba
+                let r = imageData.data[i];
+                let g = imageData.data[i + 1];
+                let b = imageData.data[i + 2];
+                let a = imageData.data[i + 3];
+                if (r === 0 && g === 0 && b === 0) { // it's black, make it red
+                    imageData.data[i] = 255;
+                    imageData.data[i+1] = 0;
+                    imageData.data[i+2] = 0;
+                } else if (r === 255 && g === 255 && b === 255) { // it's white, make it transparent
+                    imageData.data[i + 3] = 0;
+                } else { // Un-expected here...
+                    console.log(`i=${i}, rgba(${r}, ${g}, ${b}, ${a})`);
+                }
+            }
+            reworkedCanvas.width = imageData.width;
+            reworkedCanvas.height = imageData.height;
+            reworkedCtx.putImageData(imageData, 0, 0);
+        });
+
+        // console.log("Wow!");
+        console.log("Asynchronous Bam.");
+    });
+    console.log("Asynchronous Bim.");
+
+};
+
+</script>
+</html>

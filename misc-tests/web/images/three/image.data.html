@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<!--
+ ! Inspired by https://observablehq.com/@ehouais/how-to-get-image-data-from-an-url-or-a-file
+ ! and https://daily-dev-tips.com/posts/vanilla-javascript-canvas-images-to-black-and-white/#:~:text=JavaScript%20to%20convert%20image%20to%20black%20and%20white,white%20%3D%20383%20%2D%20765
+ !
+ ! Remote image.
+ ! https://inspirnathan.com/posts/105-fix-tainted-canvas-from-cross-origin-error/
+ !
+ ! The server the image comes from MUST be configured with the Access-Control-Allow-Origin ...
+ +-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ImageData</title>
+    <style type="text/css">
+* {
+    font-family: 'Courier New', Courier, monospace;
+}        
+    </style>
+</head>
+<body style="background-color: aqua;">
+    <h1>Messing around with images</h1>
+    <small>Look into the console, if you're curious...</small>
+    <p>
+        Turning a black and white fax into red and transparent, all in the client side.
+    </p>
+    <p>
+        The original:<br/>
+        <img id="original" src="https://tgftp.nws.noaa.gov/fax/PYAA12.gif"/>
+    </p>
+    <p>
+        Reworked:<br/>
+        <canvas id="reworked"></canvas>
+    </p>
+    
+</body>
+<script type="text/javascript">
+
+const IMAGE_URL = // "https://tgftp.nws.noaa.gov/fax/PYAA12.gif";
+                  "https://images.pexels.com/photos/12043242/pexels-photo-12043242.jpeg";
+
+// Because window.createImageBitmap is not supported on Safari... TODO Is that necessary ?
+createImageBitmap = window.createImageBitmap ||
+  ((blob) =>
+    new Promise((resolve) => {
+      let img = document.createElement("img");
+      img.addEventListener("load", () => resolve(this));
+      img.src = URL.createObjectURL(blob);
+    }));
+
+getImageData = async function(blob) {
+  const bitmap = await createImageBitmap(blob);
+  const [width, height] = [bitmap.width, bitmap.height];
+
+  // an intermediate "buffer" 2D context is necessary
+  let canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  var ctx = canvas.getContext("2d");
+  // const ctx = DOM.context2d(width, height, 1);
+  ctx.drawImage(bitmap, 0, 0);
+
+  return ctx.getImageData(0, 0, width, height);
+};
+
+window.onload = () => {
+
+    let reworkedCanvas = document.getElementById('reworked');
+    let reworkedCtx = reworkedCanvas.getContext("2d");
+
+    let originalImage = document.getElementById('original');
+    // originalImage.crossOrigin = "Anonymous";
+
+    // const canvas = document.getElementById('canvas');
+
+    let canvas = document.createElement("canvas");
+    const ctx = canvas.getContext('2d');
+
+    const image = new Image();
+    image.src = // IMAGE_URL;
+                "../one.fax.gif";
+    image.crossOrigin = "Anonymous";
+
+    image.onload = () => {
+        ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+        // removeRed();
+        const imageData = ctx.getImageData(0, 0, image.width, image.height);
+        console.log(`ImageData, at last! ${imageData.data.length} elements.`);
+        let imgLen = imageData.data.length;
+        
+        for (let i=0; i<imgLen; i+=4) { // rgba
+            let r = imageData.data[i];
+            let g = imageData.data[i + 1];
+            let b = imageData.data[i + 2];
+            let a = imageData.data[i + 3];
+            if (r === 0 && g === 0 && b === 0) { // it's black, make it red
+                imageData.data[i] = 255;
+                imageData.data[i+1] = 0;
+                imageData.data[i+2] = 0;
+            } else if (r === 255 && g === 255 && b === 255) { // it's white, make it transparent
+                imageData.data[i + 3] = 0;
+            } else { // Un-expected here...
+                console.log(`i=${i}, rgba(${r}, ${g}, ${b}, ${a})`);
+            }
+        }
+        reworkedCanvas.width = image.width;
+        reworkedCanvas.height = image.height;
+        reworkedCtx.putImageData(imageData, 0, 0);
+    };
+
+    if (false) {
+        // canvas.width = originalImage.width;
+        // canvas.height = originalImage.height;
+        // ctx.drawImage(originalImage, 0, 0 );
+        const imageData = ctx.getImageData(0, 0, image.width, image.height);
+
+        // Code comes here
+        debugger;
+        console.log(`ImageData, at last! ${imageData.data.length} elements.`);
+        let imgLen = imageData.data.length;
+        
+        for (let i=0; i<imgLen; i+=4) { // rgba
+            let r = imageData.data[i];
+            let g = imageData.data[i + 1];
+            let b = imageData.data[i + 2];
+            let a = imageData.data[i + 3];
+            if (r === 0 && g === 0 && b === 0) { // it's black, make it red
+                imageData.data[i] = 255;
+                imageData.data[i+1] = 0;
+                imageData.data[i+2] = 0;
+            } else if (r === 255 && g === 255 && b === 255) { // it's white, make it transparent
+                imageData.data[i + 3] = 0;
+            } else { // Un-expected here...
+                console.log(`i=${i}, rgba(${r}, ${g}, ${b}, ${a})`);
+            }
+        }
+        reworkedCanvas.width = imageData.width;
+        reworkedCanvas.height = imageData.height;
+        reworkedCtx.putImageData(imageData, 0, 0);
+    }
+};
+
+</script>
+</html>
