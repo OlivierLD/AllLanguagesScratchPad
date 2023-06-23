@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Sin Cos</title>
+    <style type="text/css">
+:root {
+  --size: 4vmin;
+  --max-size: 400px;
+}
+
+body {
+  height: 100dvh;
+  overflow: hidden;
+  margin: 0;
+  background: linear-gradient(
+    135deg,
+    #111, #000
+  );
+  color: #eee;
+  font-family: "Operator Mono", menlo, monaco, monospace;
+}
+
+.control {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: var(--size);
+  height: var(--size);
+  filter:
+    blur(10px)
+    contrast(30)
+    brightness(5)
+    saturate(70%)
+    sepia(70%)
+    saturate(300%);
+}
+
+.container div {
+  --deg: calc(var(--i) * (360deg / var(--amount)));
+  position: absolute;
+  left: calc(
+    var(--size) +
+    var(--size) * cos(var(--deg))
+  );
+  top: calc(
+    var(--size) +
+    var(--size) * sin(var(--deg))
+  );
+  background: hsl(var(--deg), 70%, 55%);
+  width: 0.3vmin;
+  height: min(calc(var(--size) * 3), var(--max-size));
+  transform-origin: top center;
+  transform: rotate(var(--deg));
+  animation:
+    color 10s calc(var(--i) * -100ms) linear infinite,
+    height 5s calc(var(--i) * -40ms) linear infinite;
+}
+
+@keyframes color {
+  33% {
+    background: hsl(calc(var(--deg) * -10), 70%, 55%);
+  }
+  66% {
+    background: hsl(calc(var(--deg) * 10), 70%, 55%);
+  }
+}
+
+@keyframes height {
+ 90% {
+    height: calc(var(--size) * 10);
+  }
+}
+    </style>
+</head>
+<body>
+
+<div class="control">
+    <label for="amount">number of elements:</label>
+    <input id="amount" type="range" min="1" max="1000" value="250" />
+</div>
+<div class="container"></div>
+
+
+</body>
+
+<script type="text/javascript">
+
+window.onload = () => {
+
+    const DOM = window.document.documentElement
+    const query = document.querySelector.bind(document)
+
+    const setCSSProperty = (key, value, el = DOM) => {
+      el.style.setProperty(key, value)
+    }
+
+    const input = query('#amount')
+    const container = query('.container')
+
+    const render = (amount) => {
+      setCSSProperty('--amount', amount)
+      const divs = Array.from(Array(amount), (_, i) => `
+        <div style="--i: ${i}"></div>
+      `).join('')
+      container.innerHTML = divs
+    }
+
+    input.addEventListener('input', () => {
+      render(+input.value)
+    })
+
+    render(+input.value)
+
+};
+    </script>
+
+</html>

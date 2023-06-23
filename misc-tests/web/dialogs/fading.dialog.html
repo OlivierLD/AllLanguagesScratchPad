@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Fading</title>
+    <!--style type="text/css">
+dialog {
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.5s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+dialog[open] {
+  opacity: 1;
+  pointer-events: inherit;
+}
+
+/* dialog::backdrop {
+  background-color: rgba(0,0,255, 0.2);
+} */
+    </style-->
+    <style>
+dialog[open] {
+    -webkit-animation: myFadeIn 5.0s ease normal;
+}
+
+@-webkit-keyframes myFadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+}
+    </style>
+</head>
+<body>
+<button onclick="dialog.showModal()">show dialog</button>
+<dialog id="dialog">
+    <p>hi i'm a dialog!</p>
+    <form method="dialog">
+        <button>Close</button>
+    </form>
+</dialog>
+</body>
+</html>
