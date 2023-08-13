@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Responsive Test One</title>
+    <style type="text/css">
+/*body {
+  	font-size: 20px;
+}
+*/
+
+@media screen and (max-width: 400px) {
+  body {
+    color: navy;
+  	font-size: 50px;
+  }
+}
+@media screen and (min-width: 401px) {
+  body {
+    color: red;
+  	font-size: 20px;
+  }
+}
+    </style>
+</head>
+<body onresize="doOnResize();">
+Lorem ipsum dolor sit amet, nulla tincidunt eu, ut amet cum, dictum urna, lacus elit vitae rhoncus iaculis, etiam eu urna varius faucibus scelerisque at. Elementum congue eros ultrices massa et. At placerat sed. Leo velit, ante arcu risus sociosqu at a, nulla sit, malesuada pellentesque vulputate odio malesuada metus eos. Vestibulum nec porta, ligula nascetur egestas, fermentum litora mattis urna, ligula tortor eros arcu id vestibulum, elementum diam aliquam. Faucibus eu commodo at, magna congue sapien velit, commodo quis neque dolor quis. Porta libero, sit massa mauris nisl nullam pede dui, sed consectetuer ac duis diam. Ut sollicitudin at rutrum, at porttitor consectetuer, vestibulum enim, libero pellentesque leo volutpat nullam lacus.
+<br/>
+Ac cum congue libero sem. A semper condimentum, aliquam eget nulla porttitor leo massa ante, augue lacinia feugiat tellus cursus, adipiscing risus tempor eleifend. Sollicitudin proin, eget leo pede luctus, elit est lacus leo, amet congue accumsan maecenas ultrices. Risus elit tellus vulputate vivamus, inceptos ac suspendisse fermentum rutrum montes eligendi, nunc proin velit, lectus lacus sodales nunc quam leo, vel placerat nulla sem. Nunc interdum, viverra integer est, porta lacus praesent urna class. Mauris et velit ullamcorper fusce est, ut quisque tellus elementum ut dignissim. Harum orci, quis a libero volutpat tellus non mattis, lacus fermentum, bibendum cum vel ut a dignissim eros, erat a aliquid sit est. In a, fermentum proin, nunc consectetuer vulputate turpis dictum ut dolor, semper consequat a id. Vestibulum sit pellentesque non, libero libero sed, ac elit pretium quis vitae corporis, condimentum quam integer mauris eros dolore at. Mauris cras lectus ut, ultrices nascetur ac gravida pede eget aliquam, pellentesque vitae bibendum mauris nunc, turpis leo wisi ligula sem id.
+</body>
+<script type="text/javascript">
+  let doOnResize = () => {
+    let w = document.documentElement.clientWidth;
+    let h = document.documentElement.clientHeight;
+    console.log(`on resize w:${w}, h:${h}`);
+  };
+
+  window.onload = () => {
+    console.log(`AppCodeName: ${navigator.appCodeName}\nAppName: ${navigator.appName}\nAppVersion: ${navigator.appVersion}\nCookiesEnabled: ${navigator.cookieEnabled}\nPlatform: ${navigator.platform}\nUserAgent: ${navigator.userAgent}`);
+    doOnResize();
+  };
+</script>
+</html>
