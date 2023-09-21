@@ -1,0 +1,67 @@
+plugins {
+    id 'java'
+    id 'idea'
+    id 'maven-publish'
+    id 'com.github.johnrengelman.shadow'
+    id "application"
+}
+
+group = 'oliv.scratch.pad'
+version = '1.0'
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+    maven { url "https://oss.sonatype.org/content/groups/public" }
+    maven { url "https://www.datanucleus.org/downloads/maven2" }
+}
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+dependencies {
+    implementation 'com.sun.mail:javax.mail:1.6.2'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.14.0'
+    implementation 'net.thisptr:jackson-jq:1.0.0-preview.20220705'  // jackson-jq
+    testImplementation "junit:junit:$junit_version"
+}
+
+// See https://docs.gradle.org/current/userguide/publishing_maven.html
+//     https://docs.gradle.org/current/dsl/org.gradle.api.publish.maven.MavenPublication.html
+publishing {
+    publications {
+        maven(MavenPublication) {  // Required by publishToMavenLocal
+            groupId = 'oliv.scratch.pad'   // use $project.group
+            artifactId = 'workbench'       // use $project.name
+            version = '1.0'                // use $project.version
+
+            from components.java
+            pom {
+                name = "workbench"
+                description = "Workbench, notepad, scratchpad, etc."
+                url = "http://github.com/OlivierLD/AllLanguagesScratchPad"
+                licenses {
+                    license {
+                        name = "The Apache License, Version 2.0"
+                        url = "http://www.apache.org/licenses/LICENSE-2.0.txt"
+                    }
+                }
+                developers {
+                    developer {
+                        id = "OlivierLD"
+                        name = "Olivier Le Diouris"
+                        email = "olivier.lediouris@gmail.com"
+                    }
+                }
+            }
+        }
+    }
+}
+
+mainClassName = "utils.CSVtoJSON"
+
+shadowJar {
+    zip64 true
+    // to create an executable jar-file. Requires mainClassName.
+    mergeServiceFiles()
+}

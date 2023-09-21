@@ -1,6 +1,6 @@
 /**
  * This is a small and tiny Web server. Mostly serves static pages and files.
- * Very basic, but goiod enough.
+ * Very basic, but good enough.
  */
  "use strict";
 

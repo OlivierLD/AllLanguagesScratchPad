@@ -10,32 +10,40 @@
 	
 </head>
 
+<script type="text/javascript">
+
+let clack = (origin) => {
+	console.log(`Click on ${origin.innerText}`);
+}
+
+</script>
+
 <body>
 <div id="wrapper">
 
 <nav id="nav">
 	<ul id="navigation">
-		<li><a href="#">Home</a></li>
+		<li><a href="#" onclick="clack(this);">Home</a></li>
 		<li><a href="#">Services &raquo;</a>
 			<ul>
-				<li><a href="#">Service 1</a></li>
-				<li><a href="#">Service 2</a></li>
+				<li><a href="#" onclick="clack(this);">Service 1</a></li>
+				<li><a href="#" onclick="clack(this);">Service 2</a></li>
 				<li><a href="#">Service 3 &raquo;</a>
 					<ul>
-						<li><a href="#">SubMenu 1</a></li>
-						<li><a href="#">SubMenu 2</a></li>
-						<li><a href="#">SubMenu 3</a></li>
-						<li><a href="#">SubMenu 4</a></li>
+						<li><a href="#" onclick="clack(this);">SubMenu 1</a></li>
+						<li><a href="#" onclick="clack(this);">SubMenu 2</a></li>
+						<li><a href="#" onclick="clack(this);">SubMenu 3</a></li>
+						<li><a href="#" onclick="clack(this);">SubMenu 4</a></li>
 					</ul>					
 				</li>					
-				<li><a href="#">Service 4</a></li>
+				<li><a href="#" onclick="clack(this);">Service 4</a></li>
 			</ul>
 		</li>
-	<li><a href="#" >Help</a></li>
+	<li><a href="#"  onclick="clack(this);">Help</a></li>
 	</ul>
 </nav>
 
-</div><!--end wrapper-->
+</div><!-- end menu wrapper -->
 	
 </body>
 </html>
