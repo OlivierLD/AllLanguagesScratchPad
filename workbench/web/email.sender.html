@@ -58,7 +58,7 @@ a.list-link:hover {
 </body>
 <script type="text/javascript">
 
-    const EMAIL_SUBJECT = "News%20letter%20#4";
+    const EMAIL_SUBJECT = "Passe-Coque%20AG%202023"; // "Subject%20here"; // "News%20letter%20#4";
 
     let displayNewList = (list, batchNum) => {
         let container = document.getElementById('email-lists');
@@ -70,7 +70,8 @@ a.list-link:hover {
         let link = document.createElement("a");
         link.className = "list-link";
         link.href = `mailto:?bcc=${list}&subject=${EMAIL_SUBJECT}`;
-        link.innerText = `Send email batch #${batchNum}`;
+        // console.log(`Aha!`);
+        link.innerText = `Send email batch #${batchNum} (${list.split(",").length} recipients)`;
 
 		// newList.appendChild(content);
 		newList.appendChild(link);
@@ -79,7 +80,7 @@ a.list-link:hover {
 
     window.onload = () => {
 
-        fetch("../members.json")   // Requires a server. A protocol like file:// would trigger a CORS error
+        fetch("../members.json")   // Requires a server (like nodeJS, see server.js). A protocol like file:// would trigger a CORS error
         //  fetch("../members.for.tests.json") 
             .then(response => {
                 console.log(`Data Response: ${response.status} - ${response.statusText}`);

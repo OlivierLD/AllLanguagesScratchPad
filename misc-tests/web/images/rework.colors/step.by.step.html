@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Rework an image</title>
+    <style type="text/css">
+* {
+    font-family: 'Courier New';
+}
+
+body {
+    background-color: white;
+    color: navy;
+    font-family: "Helvetica Neue", Verdana, Arial, Helvetica, sans-serif;
+    /* background-image: linear-gradient(to bottom right, #4d4d4d, black); */
+    background: radial-gradient(at top, DarkGrey -8%, white 55%);
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+}
+
+.one {
+    mix-blend-mode: multiply;
+}
+
+.two {
+    /* filter: saturate(500%) contrast(800%) brightness(500%) hue-rotate(180deg); */
+    /* filter: invert(21%) sepia(100%) saturate(7414%) hue-rotate(359deg) brightness(94%) contrast(117%); */
+    filter: invert(21%) saturate(7414%) hue-rotate(359deg) brightness(94%) contrast(117%);
+    /* filter: invert(21%) saturate(7414%) hue-rotate(359deg) brightness(94%) contrast(117%); */
+    /* filter: saturate(3); */
+    /* filter: brightness(0.9) invert(.7) sepia(.5) hue-rotate(100deg) saturate(200%); */
+    /* filter: invert(35%) sepia(95%) saturate(7026%) hue-rotate(356deg) brightness(89%) contrast(129%); */
+}
+
+.three {
+    filter: invert(21%) sepia(100%) saturate(7414%) hue-rotate(359deg) brightness(94%) contrast(117%);
+}
+
+    </style>
+</head>
+<body>
+    <h1>White image background made transparent, Step by step. WiP.</h1>
+    <table>
+        <tr>
+            <td>
+                Original<br/>
+                <img src="./rooster.jpeg" width="600px;">
+            </td>
+            <td>
+                Made transparent<br/>
+                <img src="./rooster.jpeg" width="600px;" class="one">
+            </td>
+        </tr>
+        <tr>
+            <td>
+                Transparent &amp; Sepia, Changing black to something else<br/>
+                <img src="./rooster.jpeg" width="600px;" class="one three">
+            </td>
+            <td>
+                Transparent &amp; Changing black to something else, no sepia<br/>
+                <img src="./rooster.jpeg" width="600px;" class="one two">
+            </td>
+        </tr>
+        <tr>
+            <td>
+                NO Transparent &amp; Changing black to something else (with sepia, no mix-blend-mode)<br/>
+                <img src="./rooster.jpeg" width="600px;" class="three">
+            </td>
+            <td>
+                Transparent &amp; Changing black to something else (sepia, mix-blend-mode)<br/>
+                <img src="./rooster.jpeg" width="600px;" class="one three">
+            </td>
+        </tr>
+    </table>
+</body>
+<script type="text/javascript">
+
+</script>
+</html>

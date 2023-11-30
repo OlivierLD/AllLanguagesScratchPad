@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<!--
+ | Good resource to look at: https://stackoverflow.com/questions/68410550/add-color-filter-to-black-and-white-image-with-js
+ +-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Rework an image</title>
+</head>
+<body>
+
+</body>
+<script type="text/javascript">
+
+let color = 'rgba(255, 0, 0, 1.0)';
+
+let image = new Image();
+
+const FAX_500MB = 'https://tgftp.nws.noaa.gov/fax/PPAA10.gif';
+const SAMPLE_01 = 'https://i.stack.imgur.com/XFpL3.png';
+
+image.src = SAMPLE_01; // FAX_500MB;
+image.onload = () => {
+    let canvas = document.createElement('canvas');
+    let w = canvas.width = image.width;
+    let h = canvas.height = image.height;
+    let ctx = canvas.getContext('2d');
+    ctx.fillStyle = color;
+
+    ctx.drawImage(image,0,0);
+
+    ctx.globalCompositeOperation = 'source-in';
+
+    ctx.fillRect(0,0,w,h);
+
+    document.body.append(canvas);
+}
+
+</script>
+</html>

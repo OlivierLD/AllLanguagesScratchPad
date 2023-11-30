@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<!--
+ | Good resource to look at: https://stackoverflow.com/questions/61976660/convert-image-to-black-transparent-paintable-javascript-css
+ +-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Rework an image</title>
+    <style type="text/css">
+img {
+    /* filter: grayscale(100%) brightness(350%) contrast(10000%); */
+    mix-blend-mode: multiply;
+    /* background: green; */
+    /* opacity: 0.5; */
+    /* filter: hue-rotate(180deg); */
+    /* filter: saturate(500%) contrast(800%) brightness(500%) hue-rotate(120deg); */
+}
+    </style>
+</head>
+<body style="background: rgba(255, 0, 0, 0.5);">
+    <h1>White image background made transparent</h1>
+    <br/>
+    <img src="https://tgftp.nws.noaa.gov/fax/PPAA10.gif">
+</body>
+<script type="text/javascript">
+
+</script>
+</html>

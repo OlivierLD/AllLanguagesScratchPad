@@ -42,7 +42,8 @@ public class CSVtoJSON {
         }
     }
     // private final static String CSV_FILE = "../temp/passe-coque.adherents.csv";
-    private final static String CSV_FILE = "../temp/passe-coque-adhesions-FINAL.csv";
+    // private final static String CSV_FILE = "../temp/passe-coque-adhesions-FINAL.csv";
+    private final static String CSV_FILE = "./temp/members.AGE.2023.csv";
     public static void main(String... args) {
         System.out.printf("Running from %s\n", System.getProperty("user.dir"));
         File csv = new File(CSV_FILE);
@@ -60,13 +61,24 @@ public class CSVtoJSON {
                 line = br.readLine();
                 if (line != null) {
                     String[] members = line.split("\t");
-                    if (members.length >= 5) {
-                        System.out.printf("Read: %s, %s, %s\n", members[0], members[1], members[5]);
-                        Payload payload = new Payload();
-                        payload.firstName = members[1];
-                        payload.lastName = members[0];
-                        payload.email = members[5];
-                        jsonList.add(payload);
+                    if (false) {
+                        if (members.length >= 5) {
+                            System.out.printf("Read: %s, %s, %s\n", members[0], members[1], members[5]);
+                            Payload payload = new Payload();
+                            payload.firstName = members[1];
+                            payload.lastName = members[0];
+                            payload.email = members[5];
+                            jsonList.add(payload);
+                        }
+                    } else {
+                        if (members.length >= 3) {
+                            System.out.printf("Read: %s, %s, %s\n", members[0], members[1], members[2]);
+                            Payload payload = new Payload();
+                            payload.firstName = members[1];
+                            payload.lastName = members[0];
+                            payload.email = members[2];
+                            jsonList.add(payload);
+                        }
                     }
                 }
             }
