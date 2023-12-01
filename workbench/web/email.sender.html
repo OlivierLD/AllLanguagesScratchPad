@@ -47,7 +47,7 @@ a.list-link:hover {
   </div>
   <!-- TODO An entry for the subject ? -->
   <div class="mail-box">
-    <a id="email-link" class="list-link" href="mailto:?bcc=olivier@lediouris.net,olivier.lediouris@gmail.com&subject=BCC%20test">Send email</a> (all at once).
+    <a id="email-link" class="list-link" href="mailto:?bcc=olivier@lediouris.net,olivier.lediouris@gmail.com&subject=BCC%20test">Send email</a> (all at once, <span id="nb-total"></span>).
   </div>
 
   <div id="email-lists">
@@ -124,7 +124,8 @@ a.list-link:hover {
                     // console.log(`bcc=${bccString}`);
                     let emailLink = document.getElementById('email-link');
                     // subject and bcc only, no to, no cc.
-                    emailLink.href = `mailto:?bcc=${bccString}&subject=News%20letter%20#4`;
+                    emailLink.href = `mailto:?bcc=${bccString}&subject=News%20letter%20#4`; // TODO Change the topic?
+                    document.getElementById('nb-total').innerText = `${bccString.split(",").length} recipients`;
                 });
             },
             (error, errmess) => {

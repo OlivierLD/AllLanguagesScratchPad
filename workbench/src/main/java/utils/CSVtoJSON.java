@@ -61,7 +61,7 @@ public class CSVtoJSON {
                 line = br.readLine();
                 if (line != null) {
                     String[] members = line.split("\t");
-                    if (false) {
+                    if (true) {
                         if (members.length >= 5) {
                             System.out.printf("Read: %s, %s, %s\n", members[0], members[1], members[5]);
                             Payload payload = new Payload();
@@ -70,7 +70,7 @@ public class CSVtoJSON {
                             payload.email = members[5];
                             jsonList.add(payload);
                         }
-                    } else {
+                    } else { // AG 2023
                         if (members.length >= 3) {
                             System.out.printf("Read: %s, %s, %s\n", members[0], members[1], members[2]);
                             Payload payload = new Payload();
