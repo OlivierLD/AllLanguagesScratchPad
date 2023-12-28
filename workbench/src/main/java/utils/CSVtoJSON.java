@@ -43,7 +43,8 @@ public class CSVtoJSON {
     }
     // private final static String CSV_FILE = "../temp/passe-coque.adherents.csv";
     // private final static String CSV_FILE = "../temp/passe-coque-adhesions-FINAL.csv";
-    private final static String CSV_FILE = "./temp/members.AGE.2023.csv";
+//    private final static String CSV_FILE = "./temp/members.AGE.2023.csv";
+    private final static String CSV_FILE = "./temp/liste adherents et donateurs Versioin 2.csv";
     public static void main(String... args) {
         System.out.printf("Running from %s\n", System.getProperty("user.dir"));
         File csv = new File(CSV_FILE);
