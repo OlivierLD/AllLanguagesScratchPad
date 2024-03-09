@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<!--
+    Email sender.
+    bcc element will be composed dynamically.
+ +-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/jpg" href="./palm.04.jpg">
+    <title>Send emails</title>
+    <style type="text/css">
+
+* {
+    font-family: 'Courier New', Courier, monospace;
+}        
+
+body {
+    background-color: silver;
+    font-size: 2em;
+}
+
+.mail-box {
+    padding: 20px; 
+    margin: 10px;
+    border: 1px solid blue; 
+    border-radius: 5px;
+    box-shadow: 2px 2px 4px grey, 0 0 25px white, 0 0 7px cyan;
+}
+.list-link {
+    color: white;
+    /* font-size: 20px;*/
+    text-shadow: 2px 2px 4px black, 0 0 25px white, 0 0 10px orange;
+    text-decoration: none;
+}
+a.list-link:hover {
+    color: cyan;
+    font-weight: bold;
+    cursor: pointer;
+    text-shadow: 4px 4px 8px black, 0 0 25px white, 0 0 10px cyan;
+}
+    </style>
+</head>
+<body>
+  <h1 class="list-link">JSON list to mySQL insert stmt</h1>  
+
+  <div id="stmt-list" style="max-height: 300px; overflow-y: scroll;">
+  </div>
+
+  <hr/>
+  <small><i>OlivSoft never stops</i></small>  
+</body>
+<script type="text/javascript">
+
+    let fillOutStmt = (stmtArray) => {
+        let innerHTML = "<pre>";
+        stmtArray.forEach(line => { 
+            innerHTML += (line + "\n");
+        });
+        innerHTML += "</pre>";
+        document.getElementById("stmt-list").innerHTML = innerHTML;
+    };
+
+    let lpad = (str, len, pad) => {
+        let s = str;
+        while (s.length < len) {
+            s = (pad === undefined ? ' ' : pad) + s;
+        }
+
+        return s;
+    };
+
+    let toTimeStamp = (wacko) => {
+        // Receive like '8-janv.-22'
+        // Returns like '2019-07-21 00:00:01'
+        let ts = null;
+        let stepOne = wacko.replace('.', '');
+        let data = stepOne.split('-');
+        if (data.length !== 3) {
+            console.log(`Wierd Date ${wacko}`);
+        } else {
+            let year = parseInt(data[2]);
+            if (year < 2000) {
+                year += 2000;
+            }
+            let day = data[0];
+            let month = 0;
+            // months are 'janv', 'févr', 'mars', 'avr', 'mai', 'juin', 'juil', 'août', 'sept', 'oct', 'nov', 'dec'
+            switch (data[1]) {
+                case 'janv':
+                    month = 1;
+                    break;
+                case 'févr':
+                    month = 2;
+                    break;
+                case 'mars':
+                    month = 3;
+                    break;
+                case 'avr':
+                    month = 4;
+                    break;
+                case 'mai':
+                    month = 5;
+                    break;
+                case 'juin':
+                    month = 6;
+                    break;
+                case 'juil':
+                    month = 7;
+                    break;
+                case 'août':
+                    month = 8;
+                    break;
+                case 'sept':
+                    month = 9;
+                    break;
+                case 'oct':
+                    month = 10;
+                    break;
+                case 'nov':
+                    month = 11;
+                    break;
+                case 'dec':
+                    month = 12;
+                    break;
+                default:
+                    console.log(`UN-managed month [${data[1]}]`);
+                    break;
+            }
+            ts = `${year}-${lpad(month.toFixed(0), 2, '0')}-${lpad(day, 2, '0')} 00:00:00`; // '2024-04-09 00:00:00';
+        }
+        return ts;
+    }
+
+    window.onload = () => {
+
+        fetch("../members.json")   // Requires a server (like nodeJS, see server.js). A protocol like file:// would trigger a CORS error
+        //  fetch("../members.for.tests.json") 
+            .then(response => {
+                console.log(`Data Response: ${response.status} - ${response.statusText}`);
+                // response.arrayBuffer().then(doc => {
+                response.json().then(doc => {  // TODO see other methods than json() ?
+                    let members = doc;
+                    console.log(`Data loaded, ${doc.length} members`);
+                    let idx = 0;
+                    let stmtArray = [];
+                    members.forEach(element => {
+                        if (element.email.trim().length > 0) {
+                            // email with blank or '<' or '>'
+                            if (element.email.includes(" ") || element.email.includes(">") || element.email.includes("<") || element.email.includes("mailto")) {
+                                console.log(`Suspicious email for ${JSON.stringify(element, null, 2)}`);
+                            }
+                            // Create insert SQL stmt
+                            let tarif = element.tarif.trim().length > 0 ? `'${element.tarif.trim().replace("'", "\\'")}'` : 'NULL';
+                            let telephone = element.telephone.trim().length > 0 ? `'${element.telephone.trim()}'` : 'NULL';
+                            let amount = 'NULL';
+                            if (element.amount.trim().length > 0) {
+                              amount = parseInt(`${element.amount.replace('€', '').trim().replace(/\s/g, "")}`);
+                              if (isNaN(amount)) {
+                                amount = 'NULL';
+                              }
+                            }
+                            let firstEnrolled = element.firstEnrolment.trim().length > 0 ? `'${toTimeStamp(element.firstEnrolment.trim())}'` : 'NULL';
+
+                            let sqlStmt = "INSERT INTO PASSE_COQUE_MEMBERS (EMAIL, LAST_NAME, FIRST_NAME, TARIF, AMOUNT, TELEPHONE, FIRST_ENROLLED) " +
+                                          `VALUES( '${element.email.trim()}', '${element.lastName.replace("'", "\\'").trim()}', '${element.firstName.replace("'", "\\'").trim()}', ${tarif}, ${amount}, ${telephone}, ${firstEnrolled});`;
+                            stmtArray.push(sqlStmt);
+                            // TODO Secondary table
+                            if (element.year2021.trim().length > 0) {
+                                let stmt2021 = `INSERT INTO MEMBER_FEES (EMAIL, YEAR) VALUES ('${element.email.trim()}', 2021);`;
+                                stmtArray.push(stmt2021);
+                            }
+                            if (element.year2022.trim().length > 0) {
+                                let stmt2022 = `INSERT INTO MEMBER_FEES (EMAIL, YEAR) VALUES ('${element.email.trim()}', 2022);`;
+                                stmtArray.push(stmt2022);
+                            }
+                            if (element.year2023.trim().length > 0) {
+                                let stmt2023 = `INSERT INTO MEMBER_FEES (EMAIL, YEAR) VALUES ('${element.email.trim()}', 2023);`;
+                                stmtArray.push(stmt2023);
+                            }
+                            if (element.year2024.trim().length > 0) {
+                                let stmt2024 = `INSERT INTO MEMBER_FEES (EMAIL, YEAR) VALUES ('${element.email.trim()}', 2024);`;
+                                stmtArray.push(stmt2024);
+                            }
+
+                            idx++;
+                            if (false) {
+                                console.log(`${idx} : ${element.email}`);
+                            }
+                        } else {
+                            console.log(`No email for ${element.firstName} ${element.lastName}`);
+                        }
+                    });
+                    // Now fill the textarea
+                    fillOutStmt(stmtArray);
+                });
+            },
+            (error, errmess) => {
+                console.log("Ooch");
+                let message;
+                if (errmess) {
+                    let mess = JSON.parse(errmess);
+                    if (mess.message) {
+                        message = mess.message;
+                    }
+                }
+                console.debug("Failed to get data..." + (error ? JSON.stringify(error, null, 2) : ' - ') + ', ' + (message ? message : ' - '));
+            });
+
+    }
+    
+</script>
+</html>
