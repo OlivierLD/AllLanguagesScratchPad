@@ -26,15 +26,16 @@
         <img src="../one.fax.gif"/>
     </p>
     <p>
-        Reworked:<br/>
-        <canvas id="reworked"></canvas>
+        Reworked (and rotated):<br/>
+        <canvas id="reworked" style="rotate: 90deg;"></canvas>
     </p>
     
 </body>
 <script type="text/javascript">
 
+// To Fix: CORS issues with outside URLs...
 const IMAGE_URL = "../one.fax.gif";
-                  // "https://tgftp.nws.noaa.gov/fax/PYAA12.gif"
+                  // "https://tgftp.nws.noaa.gov/fax/PYAA12.gif"; // CORS Problems here
 
 // Because window.createImageBitmap is not supported on Safari... TODO Is that necessary ?
 createImageBitmap = window.createImageBitmap ||
@@ -65,7 +66,7 @@ window.onload = () => {
     let reworkedCanvas = document.getElementById('reworked');
     let reworkedCtx = reworkedCanvas.getContext("2d");
 
-    fetch(IMAGE_URL).then(response => {
+    fetch(IMAGE_URL /*, { mode: 'no-cors'} */).then(response => {
         return response.blob();
     }).then(blob => {
         console.log("Blob loaded.");
@@ -101,7 +102,6 @@ window.onload = () => {
         console.log("Asynchronous Bam.");
     });
     console.log("Asynchronous Bim.");
-
 };
 
 </script>
