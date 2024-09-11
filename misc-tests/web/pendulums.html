@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style type="text/css">
+@import url('https://fonts.googleapis.com/css2?family=Monoton&display=swap');
+:root {
+    --background-color: black;
+    --reflect: below 15rem linear-gradient(transparent 70%, white);
+    --reflectB: below 10.5rem linear-gradient(white, transparent 100%);
+    --calcDelay:
+}
+@property --pen {
+    syntax: "<angle>";
+    inherits: false;
+    initial-value: 0deg;
+}
+@property --pen2 {
+    syntax: "<angle>";
+    inherits: false;
+    initial-value: 0deg;
+}
+body {
+    padding: 0;
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    overflow: hidden;
+    background: var(--background-color);
+}
+.scene {
+    position: relative;
+    z-index: -1;
+    max-width: 40rem;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    transform-style: preserve-3d;
+    perspective: 80rem;
+    perspective-origin: center 28rem;
+    h1 {
+        position: absolute;
+        left: 50%;
+        transform: translate(-50%, -5rem);
+        bottom: 0;
+        font-size: 7rem;
+        color: white;
+        mix-blend-mode: darken;
+        font-family: "Monoton", sans-serif;
+    }
+}
+.right,
+.left {
+    transform-style: preserve-3d;
+    perspective: 40rem;
+    i {
+        position: absolute;
+        display: block;
+        width: .5rem;
+        height: 32rem;
+        background: #FAC8C8;
+        //-webkit-box-reflect: var(--reflect);
+        &:before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translate(-50%, 50%);
+            border-radius: 50%;
+            width: 3.5rem;
+            aspect-ratio: 1;
+            background: var(--background-color);
+            border: .4rem solid #FAC8C8;
+            //-webkit-box-reflect: var(--reflectB);
+        }
+    }
+}
+.left  {
+    perspective-origin: 31rem 25rem;
+    i {
+        transform: translateZ(calc((var(--i) - 1) * -3rem))
+        translateX(calc((var(--i) - 1) * -4rem)) rotate(var(--pen));
+        transform-origin: top;
+        animation: pendulum 2s ease-in-out infinite alternate;
+        animation-delay: calc(exp(var(--i) / 40) * 1s);
+    }
+}
+.right  {
+    perspective-origin: -31rem 25rem;
+    i {
+        transform: translateZ(calc((var(--i) - 1) * -3rem))
+        translateX(calc((var(--i) - 1) * 4rem)) rotate(var(--pen2));
+        transform-origin: top;
+        animation: pendulum2 2s ease-in-out infinite alternate;
+        animation-delay: calc(exp(var(--i) / 40) * 1s);
+    }
+}
+
+@keyframes pendulum {
+    from {
+        --pen: -40deg;
+    }
+    to {
+        --pen: 40deg;
+    }
+}
+
+@keyframes pendulum2 {
+    from {
+        --pen2: 40deg;
+    }
+    to {
+        --pen2: -40deg;
+    }
+}
+    </style>
+    <style>
+.dummy {
+    font-family: 'Courier New', Courier, monospace;
+}
+.outlined {
+    /* text-stroke: 2px orange; */ /* Might not be supported */
+    font-size: 3em;
+    font-family: 'Courier New', Courier, monospace;
+    color: silver;
+    margin-left: -400px;
+    -webkit-text-fill-color: white; /* Will override color (regardless of order) */
+    -webkit-text-stroke: 3px cyan;
+}
+    </style>
+
+</head>
+<body>
+
+<div class="scene">
+  <h1>PENDULUM</h1>
+  <div class="right">
+    <i style="--i: 1;"></i>
+    <i style="--i: 2;"></i>
+    <i style="--i: 3;"></i>
+    <i style="--i: 4;"></i>
+    <i style="--i: 5;"></i>
+    <i style="--i: 6;"></i>
+    <i style="--i: 7;"></i>
+    <i style="--i: 8;"></i>
+    <i style="--i: 9;"></i>
+    <i style="--i: 10;"></i>
+    <i style="--i: 11;"></i>
+    <i style="--i: 12;"></i>
+    <i style="--i: 13;"></i>
+    <i style="--i: 14;"></i>
+    <i style="--i: 15;"></i>
+    <i style="--i: 16;"></i>
+    <i style="--i: 17;"></i>
+    <i style="--i: 18;"></i>
+    <i style="--i: 19;"></i>
+    <i style="--i: 20;"></i>
+    <i style="--i: 21;"></i>
+    <i style="--i: 22;"></i>
+    <i style="--i: 23;"></i>
+    <i style="--i: 24;"></i>
+    <i style="--i: 25;"></i>
+    <i style="--i: 26;"></i>
+    <i style="--i: 27;"></i>
+    <i style="--i: 28;"></i>
+    <i style="--i: 29;"></i>
+    <i style="--i: 30;"></i>
+    <i style="--i: 31;"></i>
+    <i style="--i: 32;"></i>
+    <i style="--i: 33;"></i>
+    <i style="--i: 34;"></i>
+    <i style="--i: 35;"></i>
+    <i style="--i: 36;"></i>
+    <i style="--i: 37;"></i>
+    <i style="--i: 38;"></i>
+    <i style="--i: 39;"></i>
+    <i style="--i: 40;"></i>
+  </div>
+  <div class="left">
+    <i style="--i: 1;"></i>
+    <i style="--i: 2;"></i>
+    <i style="--i: 3;"></i>
+    <i style="--i: 4;"></i>
+    <i style="--i: 5;"></i>
+    <i style="--i: 6;"></i>
+    <i style="--i: 7;"></i>
+    <i style="--i: 8;"></i>
+    <i style="--i: 9;"></i>
+    <i style="--i: 10;"></i>
+    <i style="--i: 11;"></i>
+    <i style="--i: 12;"></i>
+    <i style="--i: 13;"></i>
+    <i style="--i: 14;"></i>
+    <i style="--i: 15;"></i>
+    <i style="--i: 16;"></i>
+    <i style="--i: 17;"></i>
+    <i style="--i: 18;"></i>
+    <i style="--i: 19;"></i>
+    <i style="--i: 20;"></i>
+    <i style="--i: 21;"></i>
+    <i style="--i: 22;"></i>
+    <i style="--i: 23;"></i>
+    <i style="--i: 24;"></i>
+    <i style="--i: 25;"></i>
+    <i style="--i: 26;"></i>
+    <i style="--i: 27;"></i>
+    <i style="--i: 28;"></i>
+    <i style="--i: 29;"></i>
+    <i style="--i: 30;"></i>
+    <i style="--i: 31;"></i>
+    <i style="--i: 32;"></i>
+    <i style="--i: 33;"></i>
+    <i style="--i: 34;"></i>
+    <i style="--i: 35;"></i>
+    <i style="--i: 36;"></i>
+    <i style="--i: 37;"></i>
+    <i style="--i: 38;"></i>
+    <i style="--i: 39;"></i>
+    <i style="--i: 40;"></i>
+  </div>
+</div>
+
+<div class="outlined">
+  <h1>Text on Top</h1>
+  <p>
+    The "scene" CSS class put the pendulum in the background.
+  </p>
+</div>
+
+</body>
+</html>
