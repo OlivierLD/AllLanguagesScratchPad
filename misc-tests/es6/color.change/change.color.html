@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<!--
+  Found in https://w3schools.invisionzone.com/topic/56845-change-specific-color-in-a-image/
+ -->
+<head>
+  <script type="text/javascript">
+
+      //Global variables
+      var picWidth = 400; // 200; // width of the canvas
+      var picHeight = 533; // 222; // height of the canvas
+      var picLength = picWidth * picHeight; // number of chunks
+      var myImage = new Image(); // Create a new blank image.
+
+      // Load the image and display it.
+      function displayImage() {
+
+        // Get the canvas element.
+        canvas = document.getElementById("myCanvas");
+
+        // Make sure you got it.
+        if (canvas.getContext) {
+          // Specify 2d canvas type.
+          ctx = canvas.getContext("2d");
+          // When the image is loaded, draw it.
+          myImage.onload = function() {
+            // Load the image into the context.
+            ctx.drawImage(myImage, 0, 0);
+            // Get and modify the image data.
+            getColorData();
+            // Put the modified image back on the canvas.
+            putColorData();
+          }
+
+          // Define the source of the image.
+          // This file must be on your machine in the same folder as this web page.
+          // myImage.src = "maletshirtred.png";
+          myImage.src = "front.blanket.02.jpeg";
+        }
+      }
+
+      function getColorData() {
+
+        myImage = ctx.getImageData(0, 0, 400, 533);
+
+        // Loop through data.
+        for (var i = 0; i < picLength * 4; i += 4) {
+
+          if (i<1000) {
+            console.log(`original    rgba for i=${i} : ${myImage.data[i]} ${myImage.data[i+1]} ${myImage.data[i+2]} ${myImage.data[i+3]}`);
+          }
+          // rgba
+          // First bytes are red bytes.
+          // Remove all red.
+          myImage.data[i] = 0; // 2;
+
+          // Second bytes are green bytes.
+          // Third bytes are blue bytes.
+          // Fourth bytes are alpha bytes
+          if (i<1000) {
+            console.log(`transformed rgba for i=${i} : ${myImage.data[i]} ${myImage.data[i+1]} ${myImage.data[i+2]} ${myImage.data[i+3]}`);
+          }
+        }
+      }
+
+      function putColorData() {
+        ctx.putImageData(myImage, 0, 0);
+      }
+
+
+    </script>
+</head>
+
+<body onLoad="displayImage()">
+
+  <!--img id="myPhoto" src="maletshirtred.png"><br-->
+  <div style="display: grid; grid-template-columns: auto auto;">
+    <img id="myPhoto" src="front.blanket.02.jpeg"> <!--br-->
+    <canvas id="myCanvas" width="400" height="533"></canvas>
+  </div>
+
+</body>
+
+</html>

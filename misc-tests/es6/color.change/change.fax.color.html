@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<!--
+  Inspired from https://w3schools.invisionzone.com/topic/56845-change-specific-color-in-a-image/
+ -->
+<head>
+  <script type="text/javascript">
+
+      //Global variables
+      var picWidth = 1446; // 200; // width of the canvas
+      var picHeight = 1728; // 222; // height of the canvas
+      var picLength = picWidth * picHeight; // number of chunks
+      var myImage = new Image(); // Create a new blank image.
+
+      // Load the image and display it.
+      function displayImage() {
+
+        // Get the canvas element.
+        canvas = document.getElementById("myCanvas");
+
+        // Make sure you got it.
+        if (canvas.getContext) {
+          // Specify 2d canvas type.
+          ctx = canvas.getContext("2d");
+          // When the image is loaded, draw it.
+          myImage.onload = function() {
+            // Load the image into the context.
+            ctx.drawImage(myImage, 0, 0);
+            // Get and modify the image data.
+            getColorData();
+            // Put the modified image back on the canvas.
+            putColorData();
+          }
+
+          // Define the source of the image.
+          // This file must be on your machine in the same folder as this web page.
+          // myImage.src = "maletshirtred.png";
+          myImage.src = "one.fax.gif";
+        }
+      }
+
+      function getColorData() {
+
+        myImage = ctx.getImageData(0, 0, 1446, 1728);
+
+        // Loop through data.
+        for (var i = 0; i < picLength * 4; i += 4) {
+
+          if (i<1000) {
+            console.log(`original    rgba for i=${i} : ${myImage.data[i]} ${myImage.data[i+1]} ${myImage.data[i+2]} ${myImage.data[i+3]}`);
+          }
+          // rgba
+          // First bytes are red bytes.
+          // Second bytes are green bytes.
+          // Third bytes are blue bytes.
+          // Fourth bytes are alpha bytes
+
+          if (false) {
+            // Turn white into red (255, 255, 255, 255) becomes (255, 0, 0, 255)
+            if (myImage.data[i] === 255 && myImage.data[i+1] === 255 && myImage.data[i+2] === 255) {
+              myImage.data[i + 1] = 0;
+              myImage.data[i + 2] = 0;
+            }
+          } else {
+            // Turn black into red (0, 0, 0, 255) becomes (255, 0, 0, 255)
+            if (myImage.data[i] === 0 && myImage.data[i+1] === 0 && myImage.data[i+2] === 0) {
+              myImage.data[i] = 255;
+            }
+            if (true) {
+              // Turn white into transparent (255, 255, 255, 255) becomes (255, 255, 255, 0)
+              if (myImage.data[i] === 255 && myImage.data[i+1] === 255 && myImage.data[i+2] === 255) {
+                myImage.data[i + 3] = 0;
+              }
+            }
+          }
+
+          if (i<1000) {
+            console.log(`transformed rgba for i=${i} : ${myImage.data[i]} ${myImage.data[i+1]} ${myImage.data[i+2]} ${myImage.data[i+3]}`);
+          }
+        }
+      }
+
+      function putColorData() {
+        ctx.putImageData(myImage, 0, 0);
+      }
+
+
+    </script>
+</head>
+
+<body onLoad="displayImage()" style="background: lime;">
+
+  <!--img id="myPhoto" src="maletshirtred.png"><br-->
+  <div style="display: grid; grid-template-columns: auto auto; padding: 20px;">
+    <img id="myPhoto" src="one.fax.gif"> <!--br-->
+    <canvas id="myCanvas" width="1446" height="1728"></canvas>
+  </div>
+
+</body>
+
+</html>
