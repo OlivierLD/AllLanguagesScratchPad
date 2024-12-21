@@ -2,11 +2,12 @@
 <html lang="en">
 <!--
   Inspired from https://w3schools.invisionzone.com/topic/56845-change-specific-color-in-a-image/
+  Fir Images, see https://www.w3schools.com/tags/ref_canvas.asp
  -->
 <head>
   <script type="text/javascript">
 
-      //Global variables
+      // Global variables
       var picWidth = 1446; // 200; // width of the canvas
       var picHeight = 1728; // 222; // height of the canvas
       var picLength = picWidth * picHeight; // number of chunks
@@ -25,7 +26,7 @@
           // When the image is loaded, draw it.
           myImage.onload = function() {
             // Load the image into the context.
-            ctx.drawImage(myImage, 0, 0);
+            ctx.drawImage(myImage, 20, 30); // 0, 0);
             // Get and modify the image data.
             getColorData();
             // Put the modified image back on the canvas.
@@ -46,7 +47,7 @@
         // Loop through data.
         for (var i = 0; i < picLength * 4; i += 4) {
 
-          if (i<1000) {
+          if (false && i<1000) {
             console.log(`original    rgba for i=${i} : ${myImage.data[i]} ${myImage.data[i+1]} ${myImage.data[i+2]} ${myImage.data[i+3]}`);
           }
           // rgba
@@ -74,21 +75,22 @@
             }
           }
 
-          if (i<1000) {
+          if (false && i<1000) {
             console.log(`transformed rgba for i=${i} : ${myImage.data[i]} ${myImage.data[i+1]} ${myImage.data[i+2]} ${myImage.data[i+3]}`);
           }
         }
       }
 
       function putColorData() {
-        ctx.putImageData(myImage, 0, 0);
+        // context.drawImage(fullMoonImage, xOffset, yOffset);
+        ctx.putImageData(myImage, 20, 30); // 0, 0);
       }
 
 
     </script>
 </head>
 
-<body onLoad="displayImage()" style="background: lime;">
+<body onLoad="displayImage()" style="/*background: lime;*/ background-image: linear-gradient(to right, rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.3));">
 
   <!--img id="myPhoto" src="maletshirtred.png"><br-->
   <div style="display: grid; grid-template-columns: auto auto; padding: 20px;">

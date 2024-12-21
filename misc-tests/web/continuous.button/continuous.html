@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<!-- From https://www.sololearn.com/fr/compiler-playground/WUVrS54WbnSg/ -->
+<head>
+    <meta charset="UTF-8">
+    <title>Continuous Push Button</title>
+    <style type="text/css">
+/* Created by Krish */
+/* Move functionality by Mike Perkowski */
+
+/* Revised version by David Carroll */
+body {
+    margin:0;
+    padding:0;
+}
+#par{
+    width:300px;
+    height:300px;
+    position:relative ;
+
+}
+#box{
+    position:absolute ;
+    height:100px;
+    width:100px;
+    background:#444;
+    transition:border-radius 1.5s,
+               top .3s,
+               left .3s,
+               background 1s;
+    border-radius:2px;
+}
+#control button{
+    background-color: #eee;
+    border:none;
+    border-radius:50%;
+    font-size:25px;
+    height:60px;
+    width:60px;
+    outline:none;
+    position:absolute;
+}
+button::focus{
+    outline:none;
+}
+#control{
+    position:fixed;
+    bottom:55px;
+    left:2px;
+    height:180px;
+    width:180px;
+    border-radius:50%;
+}
+#control::before{
+    content:"";
+    position:absolute ;
+    top:40px;
+    left:40px;
+    height:100px;
+    width:100px;
+    background:#bbb;
+    border-radius:22px;
+}
+#left{
+    left:0;
+    top:50%;
+    transform:translateY(-50%);
+}
+#right{
+    right:0;
+    top:50%;
+    transform:translateY(-50%);
+}
+#up{
+
+    position:absolute ;
+    top:0;
+    left:50%;
+    transform:translateX(-50%) rotate(90deg);
+}
+#down{
+
+    bottom:0;
+    left:50%;
+    transform:translateX(-50%) rotate(90deg);
+}
+
+/* shapes */
+#shapes{
+    position:fixed;
+    bottom:55px;
+    right:10px;
+}
+#shapes button{
+    border:none;
+    border-radius:50%;
+    height:60px;
+    width:60px;
+    outline:none;
+}
+#square{
+    border-radius:2px!important;
+}
+#topcir{
+    border-radius:50% 50% 2px 2px!important;
+}
+#bottcir{
+    border-radius:2px 2px 50% 50%!important;
+}
+
+/* color   */
+
+#color{
+    position:fixed;
+    bottom:0;
+    left:0;
+    height:50px;
+    width:100%;
+    margin:0;
+    overflow:hidden;
+    background:pink;
+}
+#color div{
+    height:100%;
+    width:20%;
+    outline:none;
+    border:none;
+    margin:0;
+    padding:0px;
+    float:left;
+}
+#c1{
+    background:#101357;
+}
+#c2{
+    background:#BF4AA8;
+}
+#c3{
+    background:#4F5F76;
+}
+#c4{
+    background:#8bf0ba;
+}
+#c5{
+    background:#F7C331;
+}
+    </style>
+</head>
+<body>
+<section id="par">
+    <div id="box"></div>
+</section>
+<div id="control">
+    <button id="up">&lt;</button>
+    <button id="left">&lt;</button>
+    <button id="down">&gt;</button>
+    <button id="right">&gt;</button>
+</div>
+<div id="shapes">
+    <button id="square"></button>
+    <button id="circle"></button><br><br>
+    <button id="topcir"></button>
+    <button id="bottcir"></button>
+</div>
+<div id="color">
+    <div id="c1"></div>
+    <div id="c2"></div>
+    <div id="c3"></div>
+    <div id="c4"></div>
+    <div id="c5"></div>
+</div>
+</body>
+<script type="text/javascript">
+
+// Created by Krish
+// Move functionality by Mike Perkowski
+/*
+  Revised by David Carroll
+   - Simplified HTML
+   - Revised / Refined JS
+*/
+
+window.onload = () => { init();
+}
+
+const init = () => {
+  const target = byId("box");
+
+  const pos = { top: 0, left: 0 };
+
+  const moveId =[];
+
+  //Add move button events
+  ["up", "down", "right", "left"]
+    .forEach(item =>
+      addMoveEvent(item, target, pos, moveId));
+
+  //Add style button events
+  [
+    ["background", "c1", "#101357"],
+    ["background", "c2", "#BF4AA8"],
+    ["background", "c3", "#4F5F76"],
+    ["background", "c4", "#8bf0ba"],
+    ["background", "c5", "#F7C331"],
+    ["borderRadius", "square", "2px"],
+    ["borderRadius", "circle", "50%"],
+    ["borderRadius", "topcir", "50% 50% 2px 2px"],
+    ["borderRadius", "bottcir", "2px 2px 50% 50%"]
+  ].forEach(item =>
+    byId(item[1])
+      .addEventListener("click",
+        () => target.style[item[0]] = item[2]));
+}
+
+const addMoveEvent = (dir, target, pos, moveId) => {
+  const move = () => {
+    const inc =
+      dir.match(/(up|left)/) ? -1 : 1;
+
+    const propName =
+      dir.match(/(up|down)/) ? "top" : "left";
+
+    const update = () => {
+      pos[propName] = pos[propName] + inc;
+      target.style[propName] =
+        (pos[propName] * 2) + '%'
+    }
+
+    return e => {
+      e.preventDefault();
+      moveId[dir] = setInterval(update, 100)
+    }
+  }
+
+  const ctrl = byId(dir);
+
+  [
+    ["mousedown",
+      move(dir, target, pos, moveId)],
+    ["touchstart",
+      move(dir, target, pos, moveId)],
+    ["mouseup",
+      () => clearInterval(moveId[dir])],
+    ["touchend",
+      () => clearInterval(moveId[dir])],
+  ].forEach(args =>
+      ctrl.addEventListener(...args));
+
+}
+
+const doc  = document;
+const $    = doc.querySelector.bind(doc);
+const $$   = doc.querySelectorAll.bind(doc);
+const byId = doc.getElementById.bind(doc);
+
+</script>
+</html>
