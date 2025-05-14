@@ -1,12 +1,91 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry kind="src" output="bin/main" path="src/main/java">
+	<classpathentry kind="src" output="build/resources/test" path="src/test/resources">
 		<attributes>
-			<attribute name="gradle_scope" value="main"/>
-			<attribute name="gradle_used_by_scope" value="main,test"/>
+			<attribute name="test" value="true"/>
+			<attribute name="optional" value="true"/>
+			<attribute name="gradle.buildServer" value="true"/>
+			<attribute name="resource" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-11/"/>
-	<classpathentry kind="con" path="org.eclipse.buildship.core.gradleclasspathcontainer"/>
+	<classpathentry kind="src" output="build/classes/java/test" path="src/test/java">
+		<attributes>
+			<attribute name="test" value="true"/>
+			<attribute name="optional" value="true"/>
+			<attribute name="gradle.buildServer" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="src" output="build/resources/main" path="src/main/resources">
+		<attributes>
+			<attribute name="optional" value="true"/>
+			<attribute name="gradle.buildServer" value="true"/>
+			<attribute name="resource" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="src" output="build/classes/java/main" path="src/main/java">
+		<attributes>
+			<attribute name="gradle.buildServer" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="src" output="build/classes/java/test" path="build/generated/sources/annotationProcessor/java/test">
+		<attributes>
+			<attribute name="test" value="true"/>
+			<attribute name="optional" value="true"/>
+			<attribute name="gradle.buildServer" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="src" output="build/classes/java/main" path="build/generated/sources/annotationProcessor/java/main">
+		<attributes>
+			<attribute name="optional" value="true"/>
+			<attribute name="gradle.buildServer" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.launching.macosx.MacOSXType/JavaSE-11">
+		<attributes>
+			<attribute name="gradle.buildServer" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="/Users/olivierlediouris/.gradle/caches/modules-2/files-2.1/javax.ws.rs/javax.ws.rs-api/2.0-m04/cf6a1531404c5288e87872571e8cf22e2bec1e48/javax.ws.rs-api-2.0-m04.jar" sourcepath="/Users/olivierlediouris/.gradle/caches/modules-2/files-2.1/javax.ws.rs/javax.ws.rs-api/2.0-m04/31fb393a75ca9996192a5d3b532a1900289f86ce/javax.ws.rs-api-2.0-m04-sources.jar">
+		<attributes>
+			<attribute name="gradle.buildServer" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="/Users/olivierlediouris/.gradle/caches/modules-2/files-2.1/com.google.guava/guava/r05/97fd3078118f05895ba5c3a95f3c335e2a2f34d/guava-r05.jar" sourcepath="/Users/olivierlediouris/.gradle/caches/modules-2/files-2.1/com.google.guava/guava/r05/832591e013c47e36cb962e11956e69cb8e1700b7/guava-r05-sources.jar">
+		<attributes>
+			<attribute name="gradle.buildServer" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="/Users/olivierlediouris/.gradle/caches/modules-2/files-2.1/net.agkn/hll/1.6.0/48ab2ccfe7f3013052d639dd7a196902f9108960/hll-1.6.0.jar" sourcepath="/Users/olivierlediouris/.gradle/caches/modules-2/files-2.1/net.agkn/hll/1.6.0/3f2d4ac00efd11df3e0a8207046a6dabcf3fbea1/hll-1.6.0-sources.jar">
+		<attributes>
+			<attribute name="gradle.buildServer" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="/Users/olivierlediouris/.gradle/caches/modules-2/files-2.1/it.unimi.dsi/fastutil/7.0.12/9d9b3cfcf42706f3300e96c47c8df99194bf8d73/fastutil-7.0.12.jar" sourcepath="/Users/olivierlediouris/.gradle/caches/modules-2/files-2.1/it.unimi.dsi/fastutil/7.0.12/4dc9c1e6bb1c47ffec41117b7641e37ef28fd957/fastutil-7.0.12-sources.jar">
+		<attributes>
+			<attribute name="gradle.buildServer" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="/Users/olivierlediouris/.gradle/caches/modules-2/files-2.1/com.sun.jersey/jersey-client/1.12/d468a05f81031e8b5470f829e3dcedb399d369a2/jersey-client-1.12.jar" sourcepath="/Users/olivierlediouris/.gradle/caches/modules-2/files-2.1/com.sun.jersey/jersey-client/1.12/4d49f92ccd0f95c13fe5ec6707f12de114122ded/jersey-client-1.12-sources.jar">
+		<attributes>
+			<attribute name="gradle.buildServer" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="/Users/olivierlediouris/.gradle/caches/modules-2/files-2.1/com.sun.jersey/jersey-core/1.12/b6e4ec5b0f807515e3c18c15cfa62061fca7f706/jersey-core-1.12.jar" sourcepath="/Users/olivierlediouris/.gradle/caches/modules-2/files-2.1/com.sun.jersey/jersey-core/1.12/c8a9c28ed8bd6c2f0dc0dccbd6bc9e6a60fd67ed/jersey-core-1.12-sources.jar">
+		<attributes>
+			<attribute name="gradle.buildServer" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="/Users/olivierlediouris/.m2/repository/org/hamcrest/hamcrest-core/1.3/hamcrest-core-1.3.jar">
+		<attributes>
+			<attribute name="test" value="true"/>
+			<attribute name="gradle.buildServer" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="/Users/olivierlediouris/.m2/repository/junit/junit/4.13/junit-4.13.jar">
+		<attributes>
+			<attribute name="test" value="true"/>
+			<attribute name="gradle.buildServer" value="true"/>
+		</attributes>
+	</classpathentry>
 	<classpathentry kind="output" path="bin/default"/>
 </classpath>
