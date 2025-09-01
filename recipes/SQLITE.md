@@ -84,7 +84,7 @@ sqlite> .read oliv.sql
 ```
 
 ## A GUI for SQLite
-Cool stuff, easy to use, perfect!
+Cool stuff, easy to use, perfect! `DB Browser for SQLite`.
 - <https://sqlitebrowser.org/>
   - Works on Linux, Mac, and Windows.
   - On a Raspberry Pi, do a 
@@ -139,5 +139,31 @@ $ ./gui.sh sql/the_new_db.db
 > sqlite>
 > ```
   
+### Misc and bulk...
+See https://www.sqlitetutorial.net/
+
+Execute a script and return:
+```
+$ sqlite3 sql/recipes.db < sql/create.tables.sql
+```
+or
+```
+$ sqlite3 db/recipes.db
+sqlite> .read sql/create.tables.sql
+```
+To see a table structure:
+```
+sqlite> .schema recipes
+```
+or
+```
+SELECT sql FROM sqlite_schema WHERE name = 'recipes';
+```
+
+view all tables:
+```
+sqlite> .tables
+```
+
 
 ---
