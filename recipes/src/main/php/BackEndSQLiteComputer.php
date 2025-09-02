@@ -8,6 +8,7 @@ class Ingredient {
 class Recipe {
     public $id;
     public $name;
+    public $nb_ing;
 }
 
 class BackEndSQLiteComputer {
@@ -68,10 +69,12 @@ class BackEndSQLiteComputer {
             throw new Exception("DB Not connected yet.");
         } else {
             $recipeArray = [];
-            $sql = 'SELECT RANK,
-                           NAME
-                    FROM RECIPES
-                    WHERE (UPPER(NAME) LIKE UPPER(\'%' . $filter . '%\'))
+            $sql = 'SELECT R.RANK,
+                           R.NAME,
+                           COUNT(IPR.INGREDIENT) AS NB_ING
+                    FROM RECIPES R, INGREDIENTS_PER_RECIPE IPR
+                    WHERE (UPPER(R.NAME) LIKE UPPER(\'%' . $filter . '%\')) AND (R.RANK = IPR.RECIPE)
+                    GROUP BY R.RANK
                     ORDER BY 2;';
 
             echo("SQL to execute : [" . $sql . "]<br/>" . PHP_EOL);
@@ -82,11 +85,13 @@ class BackEndSQLiteComputer {
                     // echo ("We have " . $row[0] . "...<br/>" . PHP_EOL);
                     $rank = (float)$row[0];
                     $name = $row[1];
+                    $nb_ing = (float)$row[2];
 
                     $recipe = new Recipe();
 
                     $recipe->id = $rank;
                     $recipe->name = $name;
+                    $recipe->nb_ing = $nb_ing;
 
                     array_push($recipeArray, $recipe);
                 }

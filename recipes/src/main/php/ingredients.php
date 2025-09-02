@@ -118,9 +118,9 @@ try {
         echo "Will delete Ingredient " . $ing_id . " from INGREDIENTS... <br/>" . PHP_EOL;
 
         try {
-            $backend->connectDB("./sql/recipes.db");
-            echo("Connection created.<br/>". PHP_EOL);
-            $db = $backend->getDBObject();
+          $backend->connectDB("./sql/recipes.db");
+          echo("Connection created.<br/>". PHP_EOL);
+          $db = $backend->getDBObject();
 
           $sql = 'DELETE FROM INGREDIENTS WHERE (RANK = ' . ($ing_id) . ')';
           echo('Performing statement <code>' . $sql . '</code><br/>');

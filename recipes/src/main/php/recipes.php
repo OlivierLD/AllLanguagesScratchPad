@@ -54,7 +54,6 @@ try {
           $recipes = $backend->buildRecipeList($rec_name);
           echo("Returned " . count($recipes) . " row(s)<br/>");
 
-
           echo("<h2>Recipes</h2>");
 
           ?> <!-- To Recipe creation form -->
@@ -66,21 +65,28 @@ try {
 
           <?php
 
-
           echo "<table>";
-          echo "<tr><th>Rank</th><th>Recipe</th></tr>";
+          echo "<tr><th>Rank</th><th>Recipe</th><th>Nb Ingredients</th></tr>";
 
           for ($i=0; $i<count($recipes); $i++) {
             $recipe = $recipes[$i];
             echo(
               "<tr><td>" . urldecode($recipe->id) . "</td>" .
                   "<td>" . urldecode($recipe->name) . "</td>" .
+                  "<td>" . $recipe->nb_ing . "</td>" .
                   "<td>" .
                      "<form action=\"" . basename(__FILE__) . "\" method=\"post\">" .
                         "<input type=\"hidden\" name=\"operation\" value=\"edit\">" .
                         "<input type=\"hidden\" name=\"rec-id\" value=\"" . $recipe->id . "\">" .
                         "<input type=\"hidden\" name=\"rec-name\" value=\"" . urldecode($recipe->name) . "\">" .
                         "<input type=\"submit\" value=\"Edit\">" .
+                     "</form>" .
+                  "</td>" .
+                  "<td>" .
+                     "<form action=\"" . basename(__FILE__) . "\" method=\"post\">" .
+                        "<input type=\"hidden\" name=\"operation\" value=\"details\">" .
+                        "<input type=\"hidden\" name=\"rec-id\" value=\"" . $recipe->id . "\">" .
+                        "<input type=\"submit\" value=\"Details\">" .
                      "</form>" .
                   "</td>" .
                   "<td>" .
@@ -113,7 +119,7 @@ try {
           </table>
         </form>
         <?php
-      }  else if ($operation == 'delete') {
+      } else if ($operation == 'delete') {
         $rec_id = $_POST['rec-id'];
         echo "Will delete Recipe " . $rec_id . " from RECIPES... <br/>" . PHP_EOL;
 
@@ -122,22 +128,22 @@ try {
             echo("Connection created.<br/>". PHP_EOL);
             $db = $backend->getDBObject();
 
-          $sql = 'DELETE FROM RECIPES WHERE (RANK = ' . ($rec_id) . ')';
-          echo('Performing statement <code>' . $sql . '</code><br/>');
+            $sql = 'DELETE FROM RECIPES WHERE (RANK = ' . ($rec_id) . ')';
+            echo('Performing statement <code>' . $sql . '</code><br/>');
 
-          if (true) { // Do perform ?
-            try {
-              $db->exec($sql);
-              echo "OK. Operation performed successfully<br/>" . PHP_EOL;
-            } catch (Throwable $e) {
-              echo "Captured Throwable for exec() : " . $e->getMessage() . "<br/>" . PHP_EOL;
+            if (true) { // Do perform ?
+              try {
+                $db->exec($sql);
+                echo "OK. Operation performed successfully<br/>" . PHP_EOL;
+              } catch (Throwable $e) {
+                echo "Captured Throwable for exec() : " . $e->getMessage() . "<br/>" . PHP_EOL;
+              }
+            } else {
+              echo "Stby<br/>" . PHP_EOL;
             }
-          } else {
-            echo "Stby<br/>" . PHP_EOL;
-          }
-          // On ferme !
-          $backend->closeDB();
-          echo("Closed DB<br/>".PHP_EOL);
+            // On ferme !
+            $backend->closeDB();
+            echo("Closed DB<br/>".PHP_EOL);
           ?>
         <form action="<?php echo(basename(__FILE__)); ?>" method="get">
           <input type="submit" value="Query Form">
@@ -147,7 +153,7 @@ try {
         } catch (Throwable $e) {
           echo "Captured Throwable for connection : " . $e->getMessage() . "<br/>" . PHP_EOL;
         }
-      }  else if ($operation == 'edit') {
+      } else if ($operation == 'edit') {
         echo "Edit Recipe... <br/>" . PHP_EOL;
         $rec_id = $_POST['rec-id'];
         $rec_name = $_POST['rec-name'];
@@ -166,15 +172,179 @@ try {
         </form>
 
         <?php
-      }  else if ($operation == 'update') {
+      } else if ($operation == 'details') {
+        echo "Details... <br/>" . PHP_EOL;
         $rec_id = $_POST['rec-id'];
-        $rec_name = $_POST['rec-name'];
-        echo "Will update Recipe " . $rec_id . " to name " . $rec_name . "... <br/>" . PHP_EOL;
+
+        // All ingredients for recipe $rec_id.
+        // select * from recipes_extended where recipe_id = :rec_id order by ingredient_name;
+        // See https://www.php.net/manual/en/sqlite3.prepare.php
 
         try {
             $backend->connectDB("./sql/recipes.db");
             echo("Connection created.<br/>". PHP_EOL);
             $db = $backend->getDBObject();
+
+            $ingList = $backend->buildIngredientList("");
+
+            // Get the recipe name too
+            $sql = 'SELECT NAME FROM RECIPES WHERE (RANK = ' . ($rec_id) . ')';
+            echo('Performing statement <code>' . $sql . '</code><br/>');
+            $results = $db->query($sql);
+            $rec_name = $results->fetchArray()[0]; // Assume one and only one row...
+            echo "<h2>Details for Recipe \"" . urldecode($rec_name) . "\"</h2>";
+
+            $sql = 'SELECT * FROM RECIPES_EXTENDED WHERE RECIPE_ID = :REC_ID ORDER BY INGREDIENT_NAME;';
+            echo('Performing statement <code>' . $sql . '</code><br/>');
+            $stmt = $db->prepare($sql);
+            $stmt->bindValue(':REC_ID', $rec_id, SQLITE3_INTEGER);
+
+            if (true) { // Do perform ?
+              try {
+                $result = $stmt->execute();
+                ?>
+                <table>
+                  <tr><th>Ingredient</th><th>-</th></tr>
+                <?php
+                while ($row = $result->fetchArray()) {
+                    // echo("Row : " . (float)$row[0] . ", " . $row[1] . ", " . (float)$row[2] . ", " . $row[3] . "<br/>");
+                    echo(
+                      "<tr>" .
+                        "<td>" . urldecode($row[3]) . "</td>" .
+                        "<td>" .
+                          "<form action=\"" . basename(__FILE__) . "\" method=\"post\">" .
+                             "<input type=\"hidden\" name=\"operation\" value=\"delete-ingredient\">" .
+                             "<input type=\"hidden\" name=\"rec-id\" value=\"" . $rec_id . "\">" .
+                             "<input type=\"hidden\" name=\"ing-id\" value=\"" . $row[2] . "\">" .
+                             "<input type=\"submit\" value=\"Delete\">" .
+                          "</form>" .
+                        "</td>" .
+                      "</tr>" . PHP_EOL);
+                }
+
+                ?>
+                </table>
+                <?php
+                echo "OK. Operation performed successfully<br/>" . PHP_EOL;
+              } catch (Throwable $e) {
+                echo "Captured Throwable for exec() : " . $e->getMessage() . "<br/>" . PHP_EOL;
+              }
+            } else {
+              echo "Stby<br/>" . PHP_EOL;
+            }
+            // On ferme !
+            $backend->closeDB();
+            echo("Closed DB<br/>".PHP_EOL);
+        ?>
+        <form action="<?php echo(basename(__FILE__)); ?>" method="post">
+          <input type="hidden" name="operation" value="add-ingredient">
+          <input type="hidden" name="rec-id" value="<?php echo($rec_id); ?>">
+          <table>
+            <tr>
+              <td valign="top">Ingredient :</td>
+              <td>
+                <select name="ing-id">
+                  <?php
+                    foreach($ingList as $ing) {
+                      echo('<option value="' . $ing->id . '">' . urldecode($ing->name) . '</option>');
+                    }
+                  ?>
+                </select>
+              </td>
+            </tr>
+            <tr>
+              <td colspan="2" style="text-align: center;"><input type="submit" value="Add Ingredient"></td>
+            </tr>
+          </table>
+        </form>
+
+        <?php
+        } catch (Throwable $e) {
+          echo "Captured Throwable for connection : " . $e->getMessage() . "<br/>" . PHP_EOL;
+        }
+      } else if ($operation == 'add-ingredient') {
+        // add-ingredient to a recipe
+        $rec_id = $_POST['rec-id'];
+        $ing_id = $_POST['ing-id'];
+
+        // Insert ingredient into recipe
+        echo "Will add Ingredient " . $ing_id . " to Recipe " . $rec_id . "... <br/>" . PHP_EOL;
+
+        $sql = 'INSERT INTO INGREDIENTS_PER_RECIPE (RECIPE, INGREDIENT) VALUES (' . ($rec_id) . ', ' . ($ing_id) . ')';
+        echo('Performing statement <code>' . $sql . '</code><br/>');
+        if (true) { // Do perform ?
+          try {
+            $backend->connectDB("./sql/recipes.db");
+            echo("Connection created.<br/>". PHP_EOL);
+            $db = $backend->getDBObject();
+
+            $db->exec($sql);
+            echo "OK. Operation performed successfully<br/>" . PHP_EOL;
+            // On ferme !
+            $backend->closeDB();
+            echo("Closed DB<br/>" . PHP_EOL);
+          } catch (Throwable $e) {
+            echo "Captured Throwable for exec() : " . $e->getMessage() . "<br/>" . PHP_EOL;
+          }
+        } else {
+          echo "Stby<br/>" . PHP_EOL;
+        }
+
+        // Back to recipe details
+        ?>
+        <form action="<?php echo(basename(__FILE__)) ?>" method="post">
+          <input type="hidden" name="operation" value="details">
+          <input type="hidden" name="rec-id" value="<?php echo $rec_id ?>">
+          <input type="submit" value="Back to Details">
+        </form>
+
+        <?php
+
+      } else if ($operation == 'delete-ingredient') {
+        $rec_id = $_POST['rec-id'];
+        $ing_id = $_POST['ing-id'];
+        // Delete ingredient from recipe
+        echo "Will delete Ingredient " . $ing_id . " from Recipe " . $rec_id . "... <br/>" . PHP_EOL;
+
+        $sql = 'DELETE FROM INGREDIENTS_PER_RECIPE WHERE RECIPE = ' . ($rec_id) . ' AND INGREDIENT = ' . ($ing_id) . ';';
+        echo('Performing statement <code>' . $sql . '</code><br/>');
+        if (true) { // Do perform ?
+          try {
+            $backend->connectDB("./sql/recipes.db");
+            echo("Connection created.<br/>". PHP_EOL);
+            $db = $backend->getDBObject();
+
+            $db->exec($sql);
+            echo "OK. Operation performed successfully<br/>" . PHP_EOL;
+            // On ferme !
+            $backend->closeDB();
+            echo("Closed DB<br/>" . PHP_EOL);
+          } catch (Throwable $e) {
+            echo "Captured Throwable for exec() : " . $e->getMessage() . "<br/>" . PHP_EOL;
+          }
+        } else {
+          echo "Stby<br/>" . PHP_EOL;
+        }
+
+        // Back to recipe details
+        ?>
+        <form action="<?php echo(basename(__FILE__)) ?>" method="post">
+          <input type="hidden" name="operation" value="details">
+          <input type="hidden" name="rec-id" value="<?php echo $rec_id ?>">
+          <input type="submit" value="Back to Details">
+        </form>
+
+        <?php
+
+      } else if ($operation == 'update') {
+        $rec_id = $_POST['rec-id'];
+        $rec_name = $_POST['rec-name'];
+        echo "Will update Recipe " . $rec_id . " to name " . $rec_name . "... <br/>" . PHP_EOL;
+
+        try {
+          $backend->connectDB("./sql/recipes.db");
+          echo("Connection created.<br/>". PHP_EOL);
+          $db = $backend->getDBObject();
 
           $sql = 'UPDATE RECIPES SET NAME = \'' . ($rec_name) . '\' WHERE (RANK = ' . ($rec_id) . ')';
           echo('Performing statement <code>' . $sql . '</code><br/>');
@@ -202,7 +372,7 @@ try {
           echo "Captured Throwable for connection : " . $e->getMessage() . "<br/>" . PHP_EOL;
         }
 
-      }  else if ($operation == 'create') {
+      } else if ($operation == 'create') {
         echo "Create a new Recipe. <br/>" . PHP_EOL;
 
         ?>
@@ -221,7 +391,7 @@ try {
           </table>
         </form>
         <?php
-      }  else if ($operation == 'insert') {
+      } else if ($operation == 'insert') {
         $rec_name = $_POST['rec-name'];
         echo "Will insert Recipe into RECIPES: " . $rec_name . "... <br/>" . PHP_EOL;
 
@@ -257,7 +427,7 @@ try {
           echo "Captured Throwable for connection : " . $e->getMessage() . "<br/>" . PHP_EOL;
         }
       }
-    } else { // Then display the query form
+    } else { // Then display the recipe query form
         ?>
         <form action="<?php echo(basename(__FILE__)); ?>" method="post">
           <input type="hidden" name="operation" value="query">
