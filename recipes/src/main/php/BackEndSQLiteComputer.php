@@ -75,6 +75,12 @@ class BackEndSQLiteComputer {
                     FROM RECIPES R, INGREDIENTS_PER_RECIPE IPR
                     WHERE (UPPER(R.NAME) LIKE UPPER(\'%' . $filter . '%\')) AND (R.RANK = IPR.RECIPE)
                     GROUP BY R.RANK
+                    UNION
+                    SELECT R.RANK,
+                           R.NAME,
+                           0 AS NB_ING
+                    FROM RECIPES R
+                    WHERE R.RANK NOT IN (SELECT RECIPE FROM INGREDIENTS_PER_RECIPE)
                     ORDER BY 2;';
 
             echo("SQL to execute : [" . $sql . "]<br/>" . PHP_EOL);

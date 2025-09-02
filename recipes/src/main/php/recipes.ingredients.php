@@ -7,13 +7,13 @@
 
   <style type="text/css">
 		* {
-			font-family: 'Courier New', Courier, monospace;
+			font-family: Verdana, 'Courier New', Courier, monospace;
 		}
-        td {
-            border: 1px solid black;
-            border-radius: 5px;
-            padding: 5px;
-        }
+    td {
+        border: 1px solid black;
+        border-radius: 5px;
+        padding: 5px;
+    }
     </style>
 </head>
 
@@ -21,6 +21,7 @@
 <h2>Recipes, and others...</h2>
 
 <?php
+$VERBOSE = false;
 
 ini_set('memory_limit', '-1'); // Required for memory consuming operations...
 
@@ -37,7 +38,9 @@ try {
     }
 
     $backend = new BackEndSQLiteComputer();
-    echo("Backend created.<br/>". PHP_EOL);
+    if ($VERBOSE) {
+      echo("Backend created.<br/>". PHP_EOL);
+    }
 
     // $backend->connectDB("./sql/recipes.db");
     // echo("Connection created.<br/>". PHP_EOL);
@@ -46,7 +49,7 @@ try {
       $operation = $_POST['operation'];
       if ($operation == 'find-recipes') {
         $ing_list = $_POST['ing-list'];
-        echo "Finding Recipes matching ingredients " . $ing_list . " ... <br/>" . PHP_EOL;
+        echo "<b>Finding Recipes matching ingredients " . $ing_list . " ... </b><br/>" . PHP_EOL;
         $ing_array = explode(",", $ing_list);
         for ($i=0; $i<count($ing_array); $i++) {
           $ing_array[$i] = trim($ing_array[$i]);
@@ -72,7 +75,9 @@ GROUP BY RECIPE_ID
 
         try {
           $backend->connectDB("./sql/recipes.db");
-          echo("Connection created.<br/>". PHP_EOL);
+          if ($VERBOSE) {
+            echo("Connection created.<br/>". PHP_EOL);
+          }
 
           $db = $backend->getDBObject();
           $results = $db->query($sql);
@@ -97,7 +102,9 @@ GROUP BY RECIPE_ID
 
           // On ferme !
           $backend->closeDB();
-          echo("Closed DB<br/>".PHP_EOL);
+          if ($VERBOSE) {
+            echo("Closed DB<br/>".PHP_EOL);
+          }
         } catch (Throwable $e) {
           echo "Captured Throwable for connection : " . $e->getMessage() . "<br/>" . PHP_EOL;
         }

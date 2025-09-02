@@ -7,13 +7,13 @@
 
   <style type="text/css">
 		* {
-			font-family: 'Courier New', Courier, monospace;
+			font-family: Verdana, 'Courier New', Courier, monospace;
 		}
-        td {
-            border: 1px solid black;
-            border-radius: 5px;
-            padding: 5px;
-        }
+    td {
+        border: 1px solid black;
+        border-radius: 5px;
+        padding: 5px;
+    }
     </style>
 </head>
 
@@ -21,6 +21,8 @@
 <h2>Ingredients, and others...</h2>
 
 <?php
+
+$VERBOSE = false;
 
 ini_set('memory_limit', '-1'); // Required for memory consuming operations...
 
@@ -37,7 +39,9 @@ try {
     }
 
     $backend = new BackEndSQLiteComputer();
-    echo("Backend created.<br/>". PHP_EOL);
+    if ($VERBOSE) {
+      echo("Backend created.<br/>". PHP_EOL);
+    }
 
     // $backend->connectDB("./sql/recipes.db");
     // echo("Connection created.<br/>". PHP_EOL);
@@ -49,7 +53,9 @@ try {
           $ing_name = $_POST['ing-name'];
 
           $backend->connectDB("./sql/recipes.db");
-          echo("Connection created.<br/>". PHP_EOL);
+          if ($VERBOSE) {
+            echo("Connection created.<br/>". PHP_EOL);
+          }
 
           $ingredients = $backend->buildIngredientList($ing_name);
           echo("Returned " . count($ingredients) . " row(s)<br/>");
@@ -65,7 +71,6 @@ try {
           </form>
 
           <?php
-
 
           echo "<table>";
           echo "<tr><th>Rank</th><th>Ingredient</th></tr>";
@@ -97,7 +102,9 @@ try {
 
           // On ferme !
           $backend->closeDB();
-          echo("Closed DB<br/>".PHP_EOL);
+          if ($VERBOSE) {
+            echo("Closed DB<br/>".PHP_EOL);
+          }
         } catch (Throwable $e) {
           echo "Captured Throwable for connection : " . $e->getMessage() . "<br/>" . PHP_EOL;
         }
@@ -119,7 +126,9 @@ try {
 
         try {
           $backend->connectDB("./sql/recipes.db");
-          echo("Connection created.<br/>". PHP_EOL);
+          if ($VERBOSE) {
+            echo("Connection created.<br/>". PHP_EOL);
+          }
           $db = $backend->getDBObject();
 
           $sql = 'DELETE FROM INGREDIENTS WHERE (RANK = ' . ($ing_id) . ')';
@@ -137,7 +146,9 @@ try {
           }
           // On ferme !
           $backend->closeDB();
-          echo("Closed DB<br/>".PHP_EOL);
+          if ($VERBOSE) {
+            echo("Closed DB<br/>".PHP_EOL);
+          }
           ?>
         <form action="<?php echo(basename(__FILE__)); ?>" method="get">
           <input type="submit" value="Query Form">
@@ -172,11 +183,15 @@ try {
         echo "Will update Ingredient " . $ing_id . " to name " . $ing_name . "... <br/>" . PHP_EOL;
 
         try {
-            $backend->connectDB("./sql/recipes.db");
+          $backend->connectDB("./sql/recipes.db");
+          if ($VERBOSE) {
             echo("Connection created.<br/>". PHP_EOL);
-            $db = $backend->getDBObject();
+          }
+          $db = $backend->getDBObject();
 
-          $sql = 'UPDATE INGREDIENTS SET NAME = \'' . ($ing_name) . '\' WHERE (RANK = ' . ($ing_id) . ')';
+          $escapedName = str_replace("'", "''", $ing_name);
+
+          $sql = 'UPDATE INGREDIENTS SET NAME = \'' . ($escapedName) . '\' WHERE (RANK = ' . ($ing_id) . ')';
           echo('Performing statement <code>' . $sql . '</code><br/>');
 
           if (true) { // Do perform ?
@@ -191,7 +206,9 @@ try {
           }
           // On ferme !
           $backend->closeDB();
-          echo("Closed DB<br/>".PHP_EOL);
+          if ($VERBOSE) {
+            echo("Closed DB<br/>".PHP_EOL);
+          }
           ?>
         <form action="<?php echo(basename(__FILE__)); ?>" method="get">
           <input type="submit" value="Query Form">
@@ -226,11 +243,14 @@ try {
         echo "Will insert Ingredient into INGREDIENTS: " . $ing_name . "... <br/>" . PHP_EOL;
 
         try {
-            $backend->connectDB("./sql/recipes.db");
+          $backend->connectDB("./sql/recipes.db");
+          if ($VERBOSE) {
             echo("Connection created.<br/>". PHP_EOL);
-            $db = $backend->getDBObject();
+          }
+          $db = $backend->getDBObject();
 
-          $sql = 'INSERT INTO INGREDIENTS (NAME ) VALUES (\'' . ($ing_name) . '\')';
+          $escapedName = str_replace("'", "''", $ing_name);
+          $sql = 'INSERT INTO INGREDIENTS (NAME ) VALUES (\'' . ($escapedName) . '\')';
           echo('Performing statement <code>' . $sql . '</code><br/>');
 
           if (true) { // Do perform ?
@@ -245,7 +265,9 @@ try {
           }
           // On ferme !
           $backend->closeDB();
-          echo("Closed DB<br/>".PHP_EOL);
+          if ($VERBOSE) {
+            echo("Closed DB<br/>".PHP_EOL);
+          }
           ?>
         <form action="<?php echo(basename(__FILE__)); ?>" method="get">
           <input type="submit" value="Query Form">
