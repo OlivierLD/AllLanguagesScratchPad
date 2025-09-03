@@ -222,7 +222,9 @@ try {
                 <table>
                   <tr><th>Ingredient</th><th>-</th></tr>
                 <?php
+                $nbRec = 0;
                 while ($row = $result->fetchArray()) {
+                    $nbRec += 1;
                     // echo("Row : " . (float)$row[0] . ", " . $row[1] . ", " . (float)$row[2] . ", " . $row[3] . "<br/>");
                     echo(
                       "<tr>" .
@@ -237,7 +239,9 @@ try {
                         "</td>" .
                       "</tr>" . PHP_EOL);
                 }
-
+                if ($nbRec == 0) {
+                  echo ("<tr><td colspan='2'>Rien pour le moment</td></tr>" . PHP_EOL);
+                }
                 ?>
                 </table>
                 <?php
@@ -284,6 +288,15 @@ try {
             </tr>
           </table>
         </form>
+        <hr/>
+        <form action="<?php echo(basename(__FILE__)); ?>" method="get">
+          <table>
+            <tr>
+              <td colspan="2" style="text-align: center;"><input type="submit" value="Back to recipes query"></td>
+            </tr>
+          </table>
+        </form>
+
 
         <?php
         } catch (Throwable $e) {
