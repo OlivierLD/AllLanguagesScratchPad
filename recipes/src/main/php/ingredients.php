@@ -138,6 +138,9 @@ try {
             try {
               $db->exec($sql);
               echo "OK. Operation performed successfully<br/>" . PHP_EOL;
+            } catch (SQLite3Exception $sqlEx) {
+              echo "Captured Exception for exec() : " . $sqlEx->getMessage() . "<br/>" . PHP_EOL;
+              echo ("Error Code: " . $sqlEx->getCode() . "<br/>" . PHP_EOL);
             } catch (Throwable $e) {
               echo "Captured Throwable for exec() : " . $e->getMessage() . "<br/>" . PHP_EOL;
             }
@@ -198,6 +201,9 @@ try {
             try {
               $db->exec($sql);
               echo "OK. Operation performed successfully<br/>" . PHP_EOL;
+            } catch (SQLite3Exception $sqlEx) {
+              echo "Captured Exception for exec() : " . $sqlEx->getMessage() . "<br/>" . PHP_EOL;
+              echo ("Error Code: " . $sqlEx->getCode() . "<br/>" . PHP_EOL);
             } catch (Throwable $e) {
               echo "Captured Throwable for exec() : " . $e->getMessage() . "<br/>" . PHP_EOL;
             }
@@ -257,8 +263,22 @@ try {
             try {
               $db->exec($sql);
               echo "OK. Operation performed successfully<br/>" . PHP_EOL;
+            } catch (SQLite3Exception $sqlEx) {
+              if ($sqlEx->getCode() == 19) { // Constraint violation
+                echo "<b style='color: red;'>Oops ! Violation de contrainte ! [" . $ing_name . "] existe d&eacute;j&agrave; !</b><br/>" . PHP_EOL;
+                echo "Message : " . $sqlEx->getMessage() . "<br/>" . PHP_EOL;
+              } else {
+                echo "Captured Exception for exec() : " . $sqlEx->getMessage() . "<br/>" . PHP_EOL;
+                echo ("Error Code: " . $sqlEx->getCode() . "<br/>" . PHP_EOL);
+              }
             } catch (Throwable $e) {
+              // var_dump($e);
               echo "Captured Throwable for exec() : " . $e->getMessage() . "<br/>" . PHP_EOL;
+              // echo 'Type: [' . get_class($e) . "]\n";
+              // echo "Instance of db_message_exception? " . var_export($e instanceof db_message_exception, true) . "<br/>" . PHP_EOL;
+              // echo "Instance of db_handled_exception? " . var_export($e instanceof db_handled_exception, true) . "<br/>" . PHP_EOL;
+              // echo "Instance of db_exception?         " . var_export($e instanceof db_exception, true) . "<br/>" . PHP_EOL;
+              // echo "Instance of Exception?            " . var_export($e instanceof Exception, true) . "<br/>" . PHP_EOL;
             }
           } else {
             echo "Stby<br/>" . PHP_EOL;
@@ -274,8 +294,8 @@ try {
         </form>
 
           <?php
-
         } catch (Throwable $e) {
+          // var_dump($e);
           echo "Captured Throwable for connection : " . $e->getMessage() . "<br/>" . PHP_EOL;
         }
       }

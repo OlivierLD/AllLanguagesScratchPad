@@ -18,6 +18,7 @@ class BackEndSQLiteComputer {
 
     public function connectDB(string $location) : void {
         self::$db = new SQLite3($location);
+        self::$db->enableExceptions(true); // Error list: https://www.sqlite.org/rescode.html
     }
 
     public function closeDB() : void {

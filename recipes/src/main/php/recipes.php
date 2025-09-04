@@ -146,6 +146,9 @@ try {
               try {
                 $db->exec($sql);
                 echo "OK. Operation performed successfully<br/>" . PHP_EOL;
+              } catch (SQLite3Exception $sqlEx) {
+                echo "Captured Exception for exec() : " . $sqlEx->getMessage() . "<br/>" . PHP_EOL;
+                echo ("Error Code: " . $sqlEx->getCode() . "<br/>" . PHP_EOL);
               } catch (Throwable $e) {
                 echo "Captured Throwable for exec() : " . $e->getMessage() . "<br/>" . PHP_EOL;
               }
@@ -327,6 +330,12 @@ try {
             if ($VERBOSE) {
               echo("Closed DB<br/>" . PHP_EOL);
             }
+          } catch (SQLite3Exception $sqlEx) {
+            echo "Captured Exception for exec() : " . $sqlEx->getMessage() . "<br/>" . PHP_EOL;
+            echo ("Error Code: " . $sqlEx->getCode() . "<br/>" . PHP_EOL);
+          } catch (SQLite3Exception $sqlEx) {
+            echo "Captured Exception for exec() : " . $sqlEx->getMessage() . "<br/>" . PHP_EOL;
+            echo ("Error Code: " . $sqlEx->getCode() . "<br/>" . PHP_EOL);
           } catch (Throwable $e) {
             echo "Captured Throwable for exec() : " . $e->getMessage() . "<br/>" . PHP_EOL;
           }
@@ -367,6 +376,9 @@ try {
             if ($VERBOSE) {
               echo("Closed DB<br/>" . PHP_EOL);
             }
+          } catch (SQLite3Exception $sqlEx) {
+            echo "Captured Exception for exec() : " . $sqlEx->getMessage() . "<br/>" . PHP_EOL;
+            echo ("Error Code: " . $sqlEx->getCode() . "<br/>" . PHP_EOL);
           } catch (Throwable $e) {
             echo "Captured Throwable for exec() : " . $e->getMessage() . "<br/>" . PHP_EOL;
           }
@@ -404,6 +416,9 @@ try {
             try {
               $db->exec($sql);
               echo "OK. Operation performed successfully<br/>" . PHP_EOL;
+            } catch (SQLite3Exception $sqlEx) {
+              echo "Captured Exception for exec() : " . $sqlEx->getMessage() . "<br/>" . PHP_EOL;
+              echo ("Error Code: " . $sqlEx->getCode() . "<br/>" . PHP_EOL);
             } catch (Throwable $e) {
               echo "Captured Throwable for exec() : " . $e->getMessage() . "<br/>" . PHP_EOL;
             }
@@ -464,6 +479,9 @@ try {
             try {
               $db->exec($sql);
               echo "OK. Operation performed successfully<br/>" . PHP_EOL;
+            } catch (SQLite3Exception $sqlEx) {
+              echo "Captured Exception for exec() : " . $sqlEx->getMessage() . "<br/>" . PHP_EOL;
+              echo ("Error Code: " . $sqlEx->getCode() . "<br/>" . PHP_EOL);
             } catch (Throwable $e) {
               echo "Captured Throwable for exec() : " . $e->getMessage() . "<br/>" . PHP_EOL;
             }
