@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Recipes</title>
+  <title>Recipes Finder</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <style type="text/css">
@@ -18,7 +18,11 @@
 </head>
 
 <body style="background-color: rgba(255, 255, 255, 0.2); background-image: none;">
-<h2>Recipes, and others...</h2>
+<h1>Recipes DB</h1>
+<h2>Recipes query page...</h2>
+<div>
+  Entre the ingredients you have, comma separated, and you'll get a list of the recipes involving (all of) them.
+</div>
 
 <?php
 $VERBOSE = false;

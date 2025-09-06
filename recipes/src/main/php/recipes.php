@@ -18,6 +18,7 @@
 </head>
 
 <body style="background-color: rgba(255, 255, 255, 0.2); background-image: none;">
+<h1>Recipes DB</h1>
 <h2>Recipes, and others...</h2>
 
 <?php
@@ -51,23 +52,35 @@ try {
       if ($operation == 'query') { // Then do the query
         try {
           $rec_name = $_POST['rec-name'];
+          $sort_by = $_POST['sort-by'];
 
           $backend->connectDB("./sql/recipes.db");
           if ($VERBOSE) {
             echo("Connection created.<br/>". PHP_EOL);
           }
 
-          $recipes = $backend->buildRecipeList($rec_name);
+          $recipes = $backend->buildRecipeList($rec_name, $sort_by);
           echo("Returned " . count($recipes) . " row(s)<br/>");
 
           echo("<h2>Recipes</h2>");
 
           ?> <!-- To Recipe creation form -->
 
-          <form action="<?php echo(basename(__FILE__)); ?>" method="post">
-            <input type="hidden" name="operation" value="create">
-            <input type="submit" value="Create New Recipe">
-          </form>
+          <table>
+            <tr>
+              <td>
+                <form action="<?php echo(basename(__FILE__)); ?>" method="post">
+                  <input type="hidden" name="operation" value="create">
+                  <input type="submit" value="Create New Recipe">
+                </form>
+              </td>
+              <td>
+                <form action="<?php echo(basename(__FILE__)); ?>" method="get">
+                  <input type="submit" value="Query Again ?">
+                </form>
+              </td>
+            </tr>
+          </table>
 
           <?php
 
@@ -117,16 +130,7 @@ try {
         }
         echo("<hr/>" . PHP_EOL);
         // echo("Again ? Click <a href='#'>Here</a>.");
-        ?>
-        <form action="<?php echo(basename(__FILE__)); ?>" method="get">
-          <!--input type="hidden" name="operation" value="blank"-->
-          <table>
-            <tr>
-              <td colspan="2" style="text-align: center;"><input type="submit" value="Query Again ?"></td>
-            </tr>
-          </table>
-        </form>
-        <?php
+
       } else if ($operation == 'delete') {
         $rec_id = $_POST['rec-id'];
         if ($VERBOSE) {
@@ -266,8 +270,9 @@ try {
         <form action="<?php echo(basename(__FILE__)); ?>" method="post">
           <input type="hidden" name="operation" value="details">
           <input type="hidden" name="rec-id" value="<?php echo($rec_id); ?>">
-          <input type="text" name="ing-filter" value="<?php echo($ing_filter); ?>" placeholder="Filter on Ingredients">
+          <input type="text" name="ing-filter" value="<?php echo($ing_filter); ?>" id="ing-filter" placeholder="Filter on Ingredients">
           <input type="submit" value="Filter on Ingredients List">
+          (joker is '%')
         </form>
 
         <form action="<?php echo(basename(__FILE__)); ?>" method="post">
@@ -300,6 +305,16 @@ try {
           </table>
         </form>
 
+        <script type="text/javascript">
+          setTimeout(() => {
+            let filter = document.getElementById("ing-filter");
+            if (filter) {
+              filter.focus();
+            } else {
+              console.log('Filter not found...')
+            }
+          }, 500);
+        </script>
 
         <?php
         } catch (Throwable $e) {
@@ -325,6 +340,18 @@ try {
 
             $db->exec($sql);
             echo "OK. Operation performed successfully<br/>" . PHP_EOL;
+
+            // Sumbit automatically if everything went well
+            ?>
+            <script type="text/javascript">
+              // alert('Yo! It worked!');
+              setTimeout(function(){
+                document.getElementById("back-to-details").submit();
+              }, 1000);
+
+            </script>
+            <?php
+
             // On ferme !
             $backend->closeDB();
             if ($VERBOSE) {
@@ -345,7 +372,7 @@ try {
 
         // Back to recipe details
         ?>
-        <form action="<?php echo(basename(__FILE__)) ?>" method="post">
+        <form action="<?php echo(basename(__FILE__)) ?>" id="back-to-details" method="post">
           <input type="hidden" name="operation" value="details">
           <input type="hidden" name="rec-id" value="<?php echo $rec_id ?>">
           <input type="submit" value="Back to Details">
@@ -472,13 +499,18 @@ try {
 
           $escapedName = str_replace("'", "''", $rec_name);
 
-          $sql = 'INSERT INTO RECIPES (NAME ) VALUES (\'' . ($escapedName) . '\')';
+          $sql = 'INSERT INTO RECIPES (NAME) VALUES (\'' . ($escapedName) . '\')';
           echo('Performing statement <code>' . $sql . '</code><br/>');
+          $createdRecId = -1;
 
           if (true) { // Do perform ?
             try {
               $db->exec($sql);
               echo "OK. Operation performed successfully<br/>" . PHP_EOL;
+
+              $sql = 'SELECT RANK FROM RECIPES WHERE NAME = \'' . ($escapedName) . '\'';
+              $results = $db->query($sql);
+              $createdRecId = $results->fetchArray()[0]; // Assume one and only one row...
             } catch (SQLite3Exception $sqlEx) {
               echo "Captured Exception for exec() : " . $sqlEx->getMessage() . "<br/>" . PHP_EOL;
               echo ("Error Code: " . $sqlEx->getCode() . "<br/>" . PHP_EOL);
@@ -494,12 +526,30 @@ try {
             echo("Closed DB<br/>".PHP_EOL);
           }
           ?>
-        <form action="<?php echo(basename(__FILE__)); ?>" method="get">
-          <input type="submit" value="Query Form">
-        </form>
+        <table>
+          <tr>
+            <td>
+              <form action="<?php echo(basename(__FILE__)); ?>" method="get">
+                <input type="submit" value="Query Form">
+              </form>
+            </td>
 
+        <?php
+          if ($createdRecId != -1) {
+        ?>
+            <td>
+              <form action="<?php echo(basename(__FILE__)); ?>" method="post">
+                <input type="hidden" name="operation" value="details">
+                <input type="hidden" name="rec-id" value="<?php echo $createdRecId; ?>">
+                <input type="submit" value="Add Details">
+              </form>
+            </td>
+        <?php
+          }
+          ?>
+          </tr>
+        </table>
           <?php
-
         } catch (Throwable $e) {
           echo "Captured Throwable for connection : " . $e->getMessage() . "<br/>" . PHP_EOL;
         }
@@ -510,7 +560,18 @@ try {
           <input type="hidden" name="operation" value="query">
           <table>
             <tr>
-              <td valign="top">Recipe (part of the name) :</td><td><input type="text" name="rec-name" size="40"></td>
+              <td valign="top">Recipe (part of the name) :</td>
+              <td><input type="text" name="rec-name" size="40"></td>
+            </tr>
+            <tr>
+              <td>
+                Sort by
+              </td>
+              <td>
+                <input type="radio" name="sort-by" value="1" id="rank"><label for="rank">Rank</label>
+                <input type="radio" name="sort-by" value="2" id="name" checked><label for="name">Name</label>
+                <input type="radio" name="sort-by" value="3" id="nb-ing"><label for="nb-ing">Nb Ingredients</label>
+              </td>
             </tr>
             <tr>
               <td colspan="2" style="text-align: center;"><input type="submit" value="Query"></td>

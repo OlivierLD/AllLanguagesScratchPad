@@ -65,7 +65,7 @@ class BackEndSQLiteComputer {
         }
     }
 
-    public function buildRecipeList(string $filter) : array {
+    public function buildRecipeList(string $filter, int $sort_by=2) : array {
         if (self::$db == null) {
             throw new Exception("DB Not connected yet.");
         } else {
@@ -82,7 +82,7 @@ class BackEndSQLiteComputer {
                            0 AS NB_ING
                     FROM RECIPES R
                     WHERE R.RANK NOT IN (SELECT RECIPE FROM INGREDIENTS_PER_RECIPE)
-                    ORDER BY 2;';
+                    ORDER BY ' . $sort_by . ';';
 
             echo("SQL to execute : [" . $sql . "]<br/>" . PHP_EOL);
 

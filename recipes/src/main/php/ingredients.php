@@ -18,6 +18,7 @@
 </head>
 
 <body style="background-color: rgba(255, 255, 255, 0.2); background-image: none;">
+<h1>Recipes DB</h1>
 <h2>Ingredients, and others...</h2>
 
 <?php
