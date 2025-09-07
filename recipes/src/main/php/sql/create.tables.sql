@@ -33,9 +33,12 @@ create table ingredients (
   constraint uk_name_ingredients unique (name)
 );
 
+-- ALTER TABLE recipes
+--   ADD pdf BLOB default null;
 create table recipes (
   rank integer not null primary key autoincrement,
   name varchar(64) not null,
+  pdf BLOB default null,
   constraint uk_name_recipes unique (name)
 );
 
