@@ -1,8 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <title>Recipes Index</title>
+    <meta name="description" content="An index for the recipes database, php and SQLite">
+    <meta name="keywords" content="HTML5, document, web, php, SQLite">
     <style type="text/css">
   * {
     font-family: 'Courier New', Courier, monospace;
@@ -23,8 +25,16 @@
     <li><a href="./ingredients.php" target="ingredients">Ingr&eacute;dients</a></li>
     <li><a href="./recipes.php" target="recipes">Recettes</a></li>
     <li><a href="./recipes.ingredients.php" target="rec-finder">Find Recipes by Ingredients</a></li>
-    <li><a href="./free_sql.php" target="recipes">Free SQL (careful with that)</a></li>
+    <li>
+      <a href="./free_sql.php" target="free-sql">Free SQL (careful with that)</a>
+      <ul>
+        <li><a href="./free_sql.php?stmt=SELECT+R.RANK%2C%0D%0A+++++++R.NAME%2C%0D%0A+++++++COUNT%28IPR.INGREDIENT%29+AS+NB_ING%0D%0AFROM+RECIPES+R%2C+%0D%0A+++++INGREDIENTS_PER_RECIPE+IPR%0D%0AWHERE+%28UPPER%28R.NAME%29+LIKE+UPPER%28%27%25%27%29%29+%0D%0A++AND+%28R.RANK+%3D+IPR.RECIPE%29%0D%0AGROUP+BY+R.RANK%0D%0AUNION%0D%0ASELECT+R.RANK%2C%0D%0A+++++++R.NAME%2C%0D%0A+++++++0+AS+NB_ING%0D%0AFROM+RECIPES+R%0D%0AWHERE+R.RANK+NOT+IN+%28SELECT+RECIPE+FROM+INGREDIENTS_PER_RECIPE%29%0D%0AORDER+BY+3+DESC%3B%27" target="free-sql">An example: Recipes sorted by nb ingredients</a></li>
+      </ul>
+    </li>
   </ul>
   <hr/>
+  <footer>
+    &copy; 2025, OlivSoft. All rights reserved.
+  </footer>
 </body>
 </html>
