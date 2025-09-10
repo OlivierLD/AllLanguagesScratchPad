@@ -56,10 +56,10 @@ try {
     <?php
 // phpinfo();
 
-  $backend = new BackEndSQLiteComputer();
-  if ($VERBOSE) {
-    echo("Backend created.<br/>". PHP_EOL);
-  }
+$backend = new BackEndSQLiteComputer();
+if ($VERBOSE) {
+  echo("Backend created.<br/>". PHP_EOL);
+}
 
 
 if (isset($_POST['operation'])) {

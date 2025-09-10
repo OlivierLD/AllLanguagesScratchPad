@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<!--
+    Drag and Drop example.
+    Drag the image into the drop zone.
+
+    This code is incomplete...
+ +-->
+<html>
+<head>
+    <title>Drag and Drop Example</title>
+    <style>
+#dropzone {
+  width: 200px;
+  height: 200px;
+  border: 2px dashed black;
+  padding: 10px;
+  margin: 10px;
+}
+#image {
+  width: 100px;
+  height: 100px;
+  background-color:
+orange;
+  margin: 10px;
+}
+  </style>
+</head>
+<body>
+Drop Here
+<div>
+  <div id="dropzone">Drop Zone</div>
+  <div id="image" draggable="true">
+    <img src="./palm.04.jpg" alt="Draggable Image" width="100" height="100">
+  </div>
+</div>
+Drag Me
+<script>
+  var dragImage = document.getElementById("image");
+  var dropzone = document.getElementById("dropzone");
+  dragImage.addEventListener("dragstart", function(event) {
+    event.dataTransfer.setData("text/plain", event.target.id);
+  });
+  dropzone.addEventListener("dragover", function(event) {
+    event.preventDefault();
+    dropzone.style.backgroundColor = "yellow";
+  });
+  dropzone.addEventListener("dragleave", function(event) {
+    dropzone.style.backgroundColor = "";
+  });
+  dropzone.addEventListener("drop", function(event) {
+    event.preventDefault();
+    var data = event.dataTransfer.getData("text/plain");
+    // var data = event.dataTransfer.getData("image/jpg");
+    var draggedElement = document.getElementById(data);
+    dropzone.appendChild(draggedElement);
+    dropzone.style.backgroundColor = "";
+  });
+  </script>
+</body>
+</html>

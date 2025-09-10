@@ -37,7 +37,7 @@ let onFilesDropHandler = (event) => {
     console.log(`Reading ${f.name}`);
     console.log(`File Object: ${JSON.stringify(f, null, 2)}`);
 
-    let reader = new FileReader();
+    let reader = new FileReader(); // See https://developer.mozilla.org/en-US/docs/Web/API/FileReader
 
     reader.readAsText(f);
 
