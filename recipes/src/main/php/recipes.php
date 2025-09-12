@@ -253,6 +253,15 @@ try {
           </tr>
         </table>
 
+        <!-- Back to Query -->
+        <form action="<?php echo(basename(__FILE__)); ?>" method="get">
+          <table>
+            <tr>
+              <td colspan="2" style="text-align: center;"><input type="submit" value="Back to recipes query"></td>
+            </tr>
+          </table>
+        </form>
+
         <?php
       } else if ($operation == 'details') {
         echo "Details... <br/>" . PHP_EOL;
@@ -539,7 +548,6 @@ try {
                 </table>
               </form>
               <?php
-
           }
           // On ferme !
           $backend->closeDB();
