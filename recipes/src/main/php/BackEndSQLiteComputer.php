@@ -9,6 +9,7 @@ class Recipe {
     public $id;
     public $name;
     public $nb_ing;
+    public $pdf; // 0 or 1
 }
 
 class BackEndSQLiteComputer {
@@ -72,6 +73,7 @@ class BackEndSQLiteComputer {
             $recipeArray = [];
             $sql = 'SELECT R.RANK,
                            R.NAME,
+                           iif(R.PDF is null, 0, 1) AS PDF,
                            COUNT(IPR.INGREDIENT) AS NB_ING
                     FROM RECIPES R, INGREDIENTS_PER_RECIPE IPR
                     WHERE (UPPER(R.NAME) LIKE UPPER(\'%' . $filter . '%\')) AND (R.RANK = IPR.RECIPE)
@@ -79,6 +81,7 @@ class BackEndSQLiteComputer {
                     UNION
                     SELECT R.RANK,
                            R.NAME,
+                           iif(R.PDF is null, 0, 1) AS PDF,
                            0 AS NB_ING
                     FROM RECIPES R
                     WHERE R.RANK NOT IN (SELECT RECIPE FROM INGREDIENTS_PER_RECIPE)
@@ -92,13 +95,15 @@ class BackEndSQLiteComputer {
                     // echo ("We have " . $row[0] . "...<br/>" . PHP_EOL);
                     $rank = (float)$row[0];
                     $name = $row[1];
-                    $nb_ing = (float)$row[2];
+                    $pdf = $row[2];
+                    $nb_ing = (float)$row[3];
 
                     $recipe = new Recipe();
 
                     $recipe->id = $rank;
                     $recipe->name = $name;
                     $recipe->nb_ing = $nb_ing;
+                    $recipe->pdf = $pdf;
 
                     array_push($recipeArray, $recipe);
                 }

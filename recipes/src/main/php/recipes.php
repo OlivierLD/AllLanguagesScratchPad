@@ -85,7 +85,7 @@ try {
           <?php
 
           echo "<table>";
-          echo "<tr><th>Rank</th><th>Recipe</th><th>Nb Ingredients</th></tr>";
+          echo "<tr><th>Rank</th><th>Recipe</th><th>Nb Ingredients</th><th>pdf</th></tr>";
 
           for ($i=0; $i<count($recipes); $i++) {
             $recipe = $recipes[$i];
@@ -93,6 +93,7 @@ try {
               "<tr><td>" . urldecode($recipe->id) . "</td>" .
                   "<td>" . urldecode($recipe->name) . "</td>" .
                   "<td>" . $recipe->nb_ing . "</td>" .
+                  "<td>" . ($recipe->pdf ? '<a href="query.doc.php?recid=' . urldecode($recipe->id) . '" onclick="" target="_blank">pdf Doc</a>' : 'no-doc') . "</td>" .
                   "<td>" .
                      "<form action=\"" . basename(__FILE__) . "\" method=\"post\">" .
                         "<input type=\"hidden\" name=\"operation\" value=\"edit\">" .
