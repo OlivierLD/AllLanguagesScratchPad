@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>PHP, SQLite, Query pdf fromm DB</title>
+  <title>PHP, SQLite, Query pdf from DB</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <style type="text/css">
@@ -68,7 +68,6 @@ try {
     }
     $db = $backend->getDBObject();
 
-
     echo("-------------------------------<br/>" . PHP_EOL);
     if (true) {
         // Getting the document back...
@@ -76,15 +75,26 @@ try {
         if ($VERBOSE) {
             echo("Getting the document back...<br/>" . PHP_EOL);
         }
+        $rank = $_GET['recid'] ?? null;
+
         // $doc = query_document($db, 1);
-        $doc = query_document($db, 58);
+        $doc = query_document($db, $rank);
         if ($doc) {
-            $outFile = "./sql/out-sample.pdf";
-            file_put_contents($outFile, $doc);
+            $outFile = "./pdf/out-sample.pdf";
+            // $writeResult = file_put_contents($outFile, $doc);
+
+            $fhandle = fopen($outFile, "w");
+            fwrite($fhandle, $doc);
+            fclose($fhandle);
+
             if ($VERBOSE) {
                 echo("Document written to file: " . $outFile . "<br/>" . PHP_EOL);
             }
-            echo "Your pdf document is <a href='" . $outFile . "'>here</a>.<br/>" . PHP_EOL;
+            if (false /*$writeResult === false*/) {
+                echo ("Could not write to file: " . $outFile . "<br/>" . PHP_EOL);
+            } else {
+                echo "Your pdf document is <a href='" . $outFile . "'>here</a>.<br/>" . PHP_EOL;
+            }
 
             // echo "<iframe src='data:application/pdf;base64," .$doc . "' type='application/pdf' style='height:600px;width:60%;'></iframe><br/>" . PHP_EOL;
             // echo "<a href='data:application/pdf;base64," .$doc . "' type='application/pdf''>The pdf document</a><br/>" . PHP_EOL;

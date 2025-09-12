@@ -115,4 +115,28 @@ class BackEndSQLiteComputer {
         }
     }
 
+    public function insert_document($db, $mimeType, $filename, $rank) {
+
+        $sql = 'UPDATE RECIPES SET PDF = :doc WHERE RANK = :rank';
+
+        echo("Inserting document " . $filename . " as " . $mimeType . " for rank " . $rank . "...<br/>" . PHP_EOL);
+
+        $fh = fopen($filename, 'rb');
+        if (!$fh) {
+            throw new \Exception('Could not open file: ' . $filename);
+        }
+
+        // prepare statement
+        $stmt = $db->prepare($sql);
+
+        // $stmt->bindParam(':mime_type', $mimeType);
+        $stmt->bindParam(':doc', $fh, SQLITE3_BLOB);
+        $stmt->bindValue(':rank', $rank, SQLITE3_INTEGER);
+
+        // execute the SQL statement
+        $stmt->execute();
+
+        // return last inserted id
+        return;
+    }
 }

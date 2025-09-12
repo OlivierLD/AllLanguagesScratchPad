@@ -14,7 +14,38 @@
         border-radius: 5px;
         padding: 5px;
     }
-    </style>
+
+    .box {
+        background-color: white;
+        outline: 2px dashed black;
+        /* height: 400px; */
+    }
+    .box.is-dragover {
+        background-color: grey;
+    }
+
+    .box {
+        display:flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .box label strong {
+        text-decoration: underline;
+        color: blue;
+        cursor: pointer;
+    }
+
+    .box label strong:hover {
+        color: blueviolet
+    }
+
+    .box input {
+        display: none;
+    }
+  </style>
+
 </head>
 
 <body style="background-color: rgba(255, 255, 255, 0.2); background-image: none;">
@@ -93,7 +124,7 @@ try {
               "<tr><td>" . urldecode($recipe->id) . "</td>" .
                   "<td>" . urldecode($recipe->name) . "</td>" .
                   "<td>" . $recipe->nb_ing . "</td>" .
-                  "<td>" . ($recipe->pdf ? '<a href="query.doc.php?recid=' . urldecode($recipe->id) . '" onclick="" target="_blank">pdf Doc</a>' : 'no-doc') . "</td>" .
+                  "<td>" . ($recipe->pdf ? '<a href="query.doc.php?recid=' . urldecode($recipe->id) . '" onclick="" target="_blank">pdf Doc</a>' : ' - ') . "</td>" .
                   "<td>" .
                      "<form action=\"" . basename(__FILE__) . "\" method=\"post\">" .
                         "<input type=\"hidden\" name=\"operation\" value=\"edit\">" .
@@ -179,18 +210,48 @@ try {
         $rec_name = $_POST['rec-name'];
         echo "Edit Recipe [" . $rec_name . "]... <br/>" . PHP_EOL;
         ?>
-        <form action="<?php echo(basename(__FILE__)); ?>" method="post">
-          <input type="hidden" name="operation" value="update">
-          <input type="hidden" name="rec-id" value="<?php echo($rec_id); ?>">
-          <table>
-            <tr>
-              <td valign="top">Recipe :</td><td><input type="text" name="rec-name" size="40" value="<?php echo($rec_name); ?>"></td>
-            </tr>
-            <tr>
-              <td colspan="2" style="text-align: center;"><input type="submit" value="Update"></td>
-            </tr>
-          </table>
-        </form>
+        <table>
+          <tr>
+            <td>
+              <form action="<?php echo(basename(__FILE__)); ?>" method="post">
+                <input type="hidden" name="operation" value="update">
+                <input type="hidden" name="rec-id" value="<?php echo($rec_id); ?>">
+                <table>
+                  <tr>
+                    <td valign="top">Recipe :</td><td><input type="text" name="rec-name" size="40" value="<?php echo($rec_name); ?>"></td>
+                  </tr>
+                  <tr>
+                    <td colspan="2" style="text-align: center;"><input type="submit" name="submit-type" value="Update"></td>
+                  </tr>
+                </table>
+              </form>
+            </td>
+            <td>
+              <form action="<?php echo(basename(__FILE__)); ?>" method="post" enctype="multipart/form-data"> <!-- enctype needed for file upload -->
+                <input type="hidden" name="operation" value="upload">
+                <input type="hidden" name="rec-id" value="<?php echo($rec_id); ?>">
+                <table>
+                  <tr>
+                    <td valign="top">
+                      <div class="box">
+                        <label>
+                          For Recipe "<?php echo($rec_name); ?>",<br/>
+                          <strong>Choose pdf</strong> to upload (or drag here, if it works...)<br/>
+                          <input class="box__file" type="file" name="files[]" multiple/>
+                        </label>
+                        <div class="file-list"></div>
+
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><input type="submit" name="submit-type" value="Upload"></td>
+                  </tr>
+                </table>
+              </form>
+            </td>
+          </tr>
+        </table>
 
         <?php
       } else if ($operation == 'details') {
@@ -424,48 +485,118 @@ try {
 
         <?php
 
-      } else if ($operation == 'update') {
-        $rec_id = $_POST['rec-id'];
-        $rec_name = $_POST['rec-name'];
-        echo "Will update Recipe " . $rec_id . " to name " . $rec_name . "... <br/>" . PHP_EOL;
+      } else if ($operation == 'upload') {
 
-        try {
+        $rec_id = $_POST['rec-id'];
+
+        if (false) {
+          echo ("-----------------------------<br/>" . PHP_EOL);
+          var_dump($_POST);
+          var_dump($_FILES);
+          echo ("-----------------------------<br/>" . PHP_EOL);
+        }
+
+        if (isset($_POST['submit-type']) && $_POST['submit-type'] == 'Upload' && isset($_FILES['files'])) {
+          echo "Will upload file...<br/>" . PHP_EOL;
+          $uploaded_filenames = "";
+          $target_dir = "./pdf/"; // Default origin...
+
           $backend->connectDB("./sql/recipes.db");
           if ($VERBOSE) {
             echo("Connection created.<br/>". PHP_EOL);
           }
           $db = $backend->getDBObject();
 
-          $escapedName = str_replace("'", "''", $rec_name);
-          $sql = 'UPDATE RECIPES SET NAME = \'' . $escapedName . '\' WHERE (RANK = ' . ($rec_id) . ')';
-          echo('Performing statement <code>' . $sql . '</code><br/>');
+          for ($i=0; $i<count($_FILES['files']['name']); $i++) {
+              // $filename = $_FILES['files']['name'][$i];
+              $filename = $target_dir . basename($_FILES['files']['name'][$i]); // We need to know where (which dir) the file comes from !!!
+              if ($_FILES['files']['tmp_name'][$i] && strlen($_FILES['files']['tmp_name'][$i]) > 0) { // Not always working if dragging, only if using the file selector
+                  $filename = $_FILES['files']['tmp_name'][$i]; // This is the real file to read
+              }
 
-          if (true) { // Do perform ?
-            try {
-              $db->exec($sql);
-              echo "OK. Operation performed successfully<br/>" . PHP_EOL;
-            } catch (SQLite3Exception $sqlEx) {
-              echo "Captured Exception for exec() : " . $sqlEx->getMessage() . "<br/>" . PHP_EOL;
-              echo ("Error Code: " . $sqlEx->getCode() . "<br/>" . PHP_EOL);
-            } catch (Throwable $e) {
-              echo "Captured Throwable for exec() : " . $e->getMessage() . "<br/>" . PHP_EOL;
-            }
-          } else {
-            echo "Stby<br/>" . PHP_EOL;
+              $filetype = $_FILES['files']['type'][$i];
+
+              $fh = fopen($filename, 'rb');
+              if (!$fh) {
+                  throw new Exception('Could not open file: ' . $filename);
+              }
+              $content = fread($fh, filesize($filename));
+              fclose($fh);
+              echo("File " . $filename . " of type " . $filetype . " has " . strlen($content) . " bytes.<br/>" . PHP_EOL);
+              // echo("Content: <pre>" . htmlspecialchars($content) . "</pre><br/>" . PHP_EOL);
+
+              // Next step: store in DB as BLOB
+              // See https://www.sqlitetutorial.net/sqlite-php/sqlite-blob/
+              // See in sql.sample.php.
+
+              $backend->insert_document($db, $filetype /*"application/pdf"*/, $filename, $rec_id);
+              ?>
+              <form action="<?php echo(basename(__FILE__)); ?>" method="get">
+                <table>
+                  <tr>
+                    <td colspan="2" style="text-align: center;"><input type="submit" value="Back to recipes query"></td>
+                  </tr>
+                </table>
+              </form>
+              <?php
+
           }
           // On ferme !
           $backend->closeDB();
-          if ($VERBOSE) {
-            echo("Closed DB<br/>".PHP_EOL);
-          }
-          ?>
-        <form action="<?php echo(basename(__FILE__)); ?>" method="get">
-          <input type="submit" value="Query Form">
-        </form>
-          <?php
+        }
 
-        } catch (Throwable $e) {
-          echo "Captured Throwable for connection : " . $e->getMessage() . "<br/>" . PHP_EOL;
+      } else if ($operation == 'update') {
+
+        if (false) {
+          echo ("-----------------------------<br/>" . PHP_EOL);
+          var_dump($_POST);
+          echo ("-----------------------------<br/>" . PHP_EOL);
+        }
+
+        if (isset($_POST['submit-type']) && $_POST['submit-type'] == 'Update') {
+
+          $rec_id = $_POST['rec-id'];
+          $rec_name = $_POST['rec-name'];
+          echo "Will update Recipe " . $rec_id . " to name " . $rec_name . "... <br/>" . PHP_EOL;
+
+          try {
+            $backend->connectDB("./sql/recipes.db");
+            if ($VERBOSE) {
+              echo("Connection created.<br/>". PHP_EOL);
+            }
+            $db = $backend->getDBObject();
+
+            $escapedName = str_replace("'", "''", $rec_name);
+            $sql = 'UPDATE RECIPES SET NAME = \'' . $escapedName . '\' WHERE (RANK = ' . ($rec_id) . ')';
+            echo('Performing statement <code>' . $sql . '</code><br/>');
+
+            if (true) { // Do perform ?
+              try {
+                $db->exec($sql);
+                echo "OK. Operation performed successfully<br/>" . PHP_EOL;
+              } catch (SQLite3Exception $sqlEx) {
+                echo "Captured Exception for exec() : " . $sqlEx->getMessage() . "<br/>" . PHP_EOL;
+                echo ("Error Code: " . $sqlEx->getCode() . "<br/>" . PHP_EOL);
+              } catch (Throwable $e) {
+                echo "Captured Throwable for exec() : " . $e->getMessage() . "<br/>" . PHP_EOL;
+              }
+            } else {
+              echo "Stby<br/>" . PHP_EOL;
+            }
+            // On ferme !
+            $backend->closeDB();
+            if ($VERBOSE) {
+              echo("Closed DB<br/>".PHP_EOL);
+            }
+            ?>
+          <form action="<?php echo(basename(__FILE__)); ?>" method="get">
+            <input type="submit" value="Query Form">
+          </form>
+            <?php
+
+          } catch (Throwable $e) {
+            echo "Captured Throwable for connection : " . $e->getMessage() . "<br/>" . PHP_EOL;
+          }
         }
 
       } else if ($operation == 'create') {
@@ -586,5 +717,49 @@ try {
     echo "[Captured Throwable (big) for recipes.php : " . $plaf . "] " . PHP_EOL;
 }
 ?>
+
+    <script>
+
+        const box = document.querySelector('.box');
+        const fileInput = document.querySelector('[name="files[]"');
+        const selectButton = document.querySelector('label strong');
+        const fileList = document.querySelector('.file-list');
+
+        let droppedFiles = [];
+
+        [ 'drag', 'dragstart', 'dragend', 'dragover', 'dragenter', 'dragleave', 'drop' ].forEach( event => box.addEventListener(event, function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }), false );
+
+        [ 'dragover', 'dragenter' ].forEach( event => box.addEventListener(event, function(e) {
+            box.classList.add('is-dragover');
+        }), false );
+
+        [ 'dragleave', 'dragend', 'drop' ].forEach( event => box.addEventListener(event, function(e) {
+            box.classList.remove('is-dragover');
+        }), false );
+
+        box.addEventListener('drop', function(e) {
+            droppedFiles = e.dataTransfer.files;
+            fileInput.files = droppedFiles;
+            updateFileList();
+        }, false );
+
+        fileInput.addEventListener( 'change', updateFileList );
+
+        function updateFileList() {
+            const filesArray = Array.from(fileInput.files);
+            if (filesArray.length > 1) {
+                fileList.innerHTML = '<p>Selected files:</p><ul><li>' + filesArray.map(f => f.name).join('</li><li>') + '</li></ul>';
+            } else if (filesArray.length == 1) {
+                fileList.innerHTML = `<p>Selected file: ${filesArray[0].name}</p>`;
+            } else {
+                fileList.innerHTML = '';
+            }
+        }
+
+    </script>
+
 </body>
 </html>
