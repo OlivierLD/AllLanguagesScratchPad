@@ -26,14 +26,8 @@ ini_set('memory_limit', '-1'); // Required for reloadOneStation (or its equivale
 
 function query_document($db, $rank) {
 
-    $sql = 'SELECT PDF FROM RECIPES WHERE RANK = :rank';
-
-    // $fh = fopen($filename, 'rb');
-    // if (!$fh) {
-    //     throw new \Exception('Could not open file: ' . $filename);
-    // }
     $doc = null;
-
+    $sql = 'SELECT PDF FROM RECIPES WHERE RANK = :rank';
     // prepare statement
     $stmt = $db->prepare($sql);
 
@@ -46,8 +40,7 @@ function query_document($db, $rank) {
             $doc = $row[0];
         }
     }
-
-    // return last inserted id
+    // return last queried id. Should be only one.
     return $doc;
 }
 
@@ -64,12 +57,15 @@ try {
     }
 
     $backend = new BackEndSQLiteComputer();
-    echo("Backend created.<br/>". PHP_EOL);
-
+    if ($VERBOSE) {
+        echo("Backend created.<br/>". PHP_EOL);
+    }
     // $backend->getStationsData();
 
     $backend->connectDB("./sql/recipes.db");
-    echo("Connection created.<br/>". PHP_EOL);
+    if ($VERBOSE) {
+        echo("Connection created.<br/>". PHP_EOL);
+    }
     $db = $backend->getDBObject();
 
 
