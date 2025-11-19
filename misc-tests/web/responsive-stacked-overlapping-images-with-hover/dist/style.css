@@ -1,0 +1,43 @@
+@property --_m {syntax: "<length>";inherits: true;initial-value: 0px}
+
+.container {
+  --s: 120px; /* image size*/
+  --g: 14px;  /* the gap */ 
+  
+  display: flex;
+  filter: drop-shadow(0 0 1px #000) drop-shadow(0 0 1px #000) drop-shadow(0 0 1px #000);
+  margin: 50px max(1em, 50% - 350px);
+  container-type: inline-size;
+}
+.container img {
+  width: var(--s);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  --_m: min((100cqw - sibling-count()*var(--s))/(sibling-count() - 1),var(--g));
+  margin-inline: 0 var(--_m);
+  mask: radial-gradient(50% 50% at var(--_r,calc(150% + var(--_m))),
+    #0000 calc(100% - 1px + var(--g)),#000 calc(100% + var(--g)));
+  transition: --_m .3s linear;
+  cursor: pointer;
+}
+.container.reverse img {
+  --_r: calc(-50% - var(--_m));
+  margin-inline: var(--_m) 0;
+}
+.container:not(.reverse) img:last-child,
+.container.reverse img:first-child {
+  mask: none;
+  margin: 0;
+}
+.container:not(.reverse):has(:not(:last-child):hover) img:not(:hover),
+.container.reverse:has(:not(:first-child):hover) img:not(:hover) {
+  --_m: min((100cqw - var(--g) - sibling-count()*var(--s))/(sibling-count() - 2),var(--g));
+}
+.container img:hover {
+  --_m: var(--g);
+ }
+
+
+html {
+  background: linear-gradient(90deg in hsl,#D1F2A5,#FF6B6B);
+}
