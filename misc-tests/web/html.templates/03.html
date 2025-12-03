@@ -6,13 +6,31 @@
 <body>
 ...
 <script>
-	var link = document.querySelector('link[rel="import"]');
-	var content = link.import;
+	if (true) { // New code
+		var link = document.querySelector('link[rel="import"]');
+		var content = link.href;
+		fetch(content).then(response => {
+			response.text().then(doc => {
+				let content = new DOMParser().parseFromString(doc, "text/html");
 
-	// Grab DOM from warning.html's document.
-	var el = content.querySelector('.warning');
+				// Grab DOM from warning.html's document.
+				var el = content.querySelector('.warning');
 
-	document.body.appendChild(el.cloneNode(true));
+				document.body.appendChild(el.cloneNode(true));
+			});
+		},(error, errmess) => {
+			console.log(error);
+		});
+	}
+
+	if (false) { // Original code, not working.
+		var link = document.querySelector('link[rel="import"]');
+		var content = link.import;
+		// Grab DOM from warning.html's document.
+		var el = content.querySelector('.warning');
+
+		document.body.appendChild(el.cloneNode(true));
+	}
 </script>
 </body>
 </html>
