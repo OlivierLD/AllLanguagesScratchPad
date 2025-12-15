@@ -238,6 +238,8 @@ try {
                           For Recipe "<?php echo($rec_name); ?>",<br/>
                           <strong>Choose pdf</strong> to upload (or drag here, if it works...)<br/>
                           <input class="box__file" type="file" name="files[]" multiple/>
+                          <br/>
+                          Click the "Upload" button when file is chosen.
                         </label>
                         <div class="file-list"></div>
 
@@ -710,7 +712,7 @@ try {
               <td>
                 <input type="radio" name="sort-by" value="1" id="rank"><label for="rank">Rank</label>
                 <input type="radio" name="sort-by" value="2" id="name" checked><label for="name">Name</label>
-                <input type="radio" name="sort-by" value="3" id="nb-ing"><label for="nb-ing">Nb Ingredients</label>
+                <input type="radio" name="sort-by" value="4" id="nb-ing"><label for="nb-ing">Nb Ingredients</label>
               </td>
             </tr>
             <tr>
