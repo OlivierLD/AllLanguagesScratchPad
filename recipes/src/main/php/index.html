@@ -6,30 +6,107 @@
     <meta name="description" content="An index for the recipes database, php and SQLite">
     <meta name="keywords" content="HTML5, document, web, php, SQLite">
     <style type="text/css">
-  * {
-    font-family: 'Courier New', Courier, monospace;
-  }
-  td {
-    border: 1px solid black;
+* {
+  font-family: 'Courier New', Courier, monospace;
+}
+td {
+  border: 1px solid black;
+  border-radius: 5px;
+  padding: 5px;
+}
+footer {
+  font-style: italic;
+}
+body {
+  background-image: url('./tambouille.jpg');
+  background-color: rgba(255,255,255,0.75);
+  background-blend-mode: lighten;
+}
+.tablinks {
+  font-weight: bold;
+}
+.tab {
+    overflow-x: auto;
+    border: 1px solid #ccc;
     border-radius: 5px;
-    padding: 5px;
-  }
-  footer {
-    font-style: italic;
-  }
-  body {
-    background-image: url('./tambouille.jpg');
-    background-color: rgba(255,255,255,0.75);
-    background-blend-mode: lighten;
-  }
+    background-color: rgba(241, 241, 241, 0.5);
+}
+
+/* Style the buttons inside the tab */
+.tab button {
+    background-color: inherit;
+    float: left;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    padding: 14px 16px;
+    transition: 0.3s;
+    font-size: 12px;
+}
+
+/* Change background color of buttons on hover */
+.tab button:hover {
+    background-color: #ddd;
+}
+
+/* Create an active/current tablink class */
+.tab button.tab-active {
+    background-color: #ccc;
+}
+.dialog-tab-content {
+    height: 95%;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
     </style>
+    <script type="text/javascript">
+let openTab = (evt, tabName) => {
+    let tabLinks = document.getElementsByClassName("tablinks"); // Tabs/Buttons
+
+    for (let i=0; i<tabLinks.length; i++) {
+        tabLinks[i].className = tabLinks[i].className.replace(" tab-active", ""); // Reset
+    }
+    let divSections = document.querySelectorAll(".tab-section");
+
+    for (let i=0; i<divSections.length; i++) {
+        divSections[i].style.display = (divSections[i].id === tabName) ? 'block' : 'none';
+    }
+    evt.currentTarget.className += " tab-active";
+};
+
+    </script>
+
 </head>
 <body>
   <h1>Recettes - Base de donn&eacute;es. PHP &amp; SQLite.</h1>
-  <div>
-    L'interface est rudimentaire - pour le moment - mais &ccedil;a fonctionne.
+
+  <div class="tab" style="margin-top: 30px; padding-top: 0px; margin-bottom: 10px; display: grid; grid-template-columns: auto auto auto auto auto auto auto auto auto auto auto;"> <!-- TODO Improve the grid-template... -->
+      <button class="tablinks tab-active" onclick="openTab(event, 'cooking-01');" title="Ingredients">Ingredients</button>
+      <button class="tablinks" onclick="openTab(event, 'cooking-02');">Recettes</button>
+      <button class="tablinks" onclick="openTab(event, 'cooking-03');">Find Recipes by Ingredients</button>
   </div>
-  <ul>
+
+  <div class="dialog-tab-content">
+      <div id="cooking-01" class="tab-section" style="display: block;">
+        <iframe src="./ingredients.php" width="100%" style="min-height: 1000px;">
+
+        </iframe>
+
+      </div>
+      <div id="cooking-02" class="tab-section" style="display: none;">
+        <iframe src="./recipes.php" width="100%" style="min-height: 1000px;">
+
+        </iframe>
+      </div>
+      <div id="cooking-03" class="tab-section" style="display: none;">
+        <iframe src="./recipes.ingredients.php" width="100%" style="min-height: 1000px;">
+
+        </iframe>
+      </div>
+  </div>
+
+  <!--ul>
     <li><a href="./ingredients.php" target="ingredients">Ingr&eacute;dients</a></li>
     <li><a href="./recipes.php" target="recipes">Recettes</a></li>
     <li><a href="./recipes.ingredients.php" target="rec-finder">Find Recipes by Ingredients</a></li>
@@ -39,7 +116,7 @@
         <li><a href="./free_sql.php?stmt=SELECT+R.RANK%2C%0D%0A+++++++R.NAME%2C%0D%0A+++++++COUNT%28IPR.INGREDIENT%29+AS+NB_ING%0D%0AFROM+RECIPES+R%2C+%0D%0A+++++INGREDIENTS_PER_RECIPE+IPR%0D%0AWHERE+%28UPPER%28R.NAME%29+LIKE+UPPER%28%27%25%27%29%29+%0D%0A++AND+%28R.RANK+%3D+IPR.RECIPE%29%0D%0AGROUP+BY+R.RANK%0D%0AUNION%0D%0ASELECT+R.RANK%2C%0D%0A+++++++R.NAME%2C%0D%0A+++++++0+AS+NB_ING%0D%0AFROM+RECIPES+R%0D%0AWHERE+R.RANK+NOT+IN+%28SELECT+RECIPE+FROM+INGREDIENTS_PER_RECIPE%29%0D%0AORDER+BY+3+DESC%3B%27" target="free-sql">An example: Recipes sorted by nb ingredients</a></li>
       </ul>
     </li>
-  </ul>
+  </ul-->
   <hr/>
   <footer>
     &copy; 2025, OlivSoft. All rights reserved (of course my horse, tu parles !).

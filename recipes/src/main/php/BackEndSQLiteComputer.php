@@ -1,5 +1,7 @@
 <?php
 
+// Recipe Utilities - Backend SQLite Computer
+
 class Ingredient {
     public $id;
     public $name;
