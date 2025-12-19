@@ -49,7 +49,7 @@
 </head>
 
 <body style="background-color: rgba(255, 255, 255, 0.2); background-image: none;">
-<h1>Recipes DB</h1>
+<!--h1>Recipes DB</h1-->
 <h2>Recipes, and others...</h2>
 
 <?php
@@ -57,6 +57,11 @@
 $VERBOSE = false;
 
 ini_set('memory_limit', '-1'); // Required for memory consuming operations...
+// Ti avoid the  PHP Warning:  POST Content-Length of 10085720 bytes exceeds the limit of 8388608 bytes in Unknown on line 0
+// ini_set('upload_max_filesize', '1000M');
+ini_set('upload_max_filesize', '-1');
+// ini_set('post_max_size', '1000M');
+ini_set('post_max_size', '-1');
 
 try {
     set_time_limit(3600); // In seconds. 300: 5 minutes, 3600: one hour
@@ -737,26 +742,42 @@ try {
 
         let droppedFiles = [];
 
-        [ 'drag', 'dragstart', 'dragend', 'dragover', 'dragenter', 'dragleave', 'drop' ].forEach( event => box.addEventListener(event, function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }), false );
+        try {
+          [ 'drag', 'dragstart', 'dragend', 'dragover', 'dragenter', 'dragleave', 'drop' ]
+              .forEach( event => {
+                if (box) {
+                  box.addEventListener(event, function(e) {
+                      e.preventDefault();
+                      e.stopPropagation();
+                  })
+                }
+              }, false );
+        } catch (err) {
+          console.log('Error setting drag events: ' + err);
+        }
+        try {
+          [ 'dragover', 'dragenter' ].forEach( event => box.addEventListener(event, function(e) {
+              box.classList.add('is-dragover');
+          }), false );
 
-        [ 'dragover', 'dragenter' ].forEach( event => box.addEventListener(event, function(e) {
-            box.classList.add('is-dragover');
-        }), false );
+          [ 'dragleave', 'dragend', 'drop' ].forEach( event => box.addEventListener(event, function(e) {
+              box.classList.remove('is-dragover');
+          }), false );
 
-        [ 'dragleave', 'dragend', 'drop' ].forEach( event => box.addEventListener(event, function(e) {
-            box.classList.remove('is-dragover');
-        }), false );
+          box.addEventListener('drop', function(e) {
+              droppedFiles = e.dataTransfer.files;
+              fileInput.files = droppedFiles;
+              updateFileList();
+          }, false );
+        } catch (err) {
+          console.log('Error setting drag events 2: ' + err);
+        }
 
-        box.addEventListener('drop', function(e) {
-            droppedFiles = e.dataTransfer.files;
-            fileInput.files = droppedFiles;
-            updateFileList();
-        }, false );
-
-        fileInput.addEventListener( 'change', updateFileList );
+        try {
+          fileInput.addEventListener( 'change', updateFileList );
+        } catch (err) {
+          console.log('Error setting file input change event: ' + err);
+        }
 
         function updateFileList() {
             const filesArray = Array.from(fileInput.files);

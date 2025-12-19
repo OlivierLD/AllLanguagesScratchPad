@@ -18,10 +18,10 @@
 </head>
 
 <body style="background-color: rgba(255, 255, 255, 0.2); background-image: none;">
-<h1>Recipes DB</h1>
+<!--h1>Recipes DB</h1-->
 <h2>Recipes query page...</h2>
 <div>
-  Entre the ingredients you have, comma separated, and you'll get a list of the recipes involving (all of) them.
+  Entre the ingredients you have (joker is %), comma separated, and you'll get a list of the recipes involving (all of) them.
 </div>
 
 <?php
