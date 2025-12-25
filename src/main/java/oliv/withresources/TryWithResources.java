@@ -23,7 +23,7 @@ public class TryWithResources {
     }
 
     public static void two() {
-        try (Scanner scanner = new Scanner(new File("test.txt"))) {
+        try (Scanner scanner = new Scanner(new File("test.txt"))) { // With resource
             while (scanner.hasNext()) {
                 System.out.println(scanner.nextLine());
             }

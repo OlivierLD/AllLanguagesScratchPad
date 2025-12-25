@@ -3,6 +3,9 @@ package oliv.ca;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
+/**
+ * Cellular Automata
+ */
 public class ruleGenerator {
 
 	public static int[] getRule(int value) {
