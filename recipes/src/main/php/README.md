@@ -1,11 +1,11 @@
 # Recipes DB
 
 PHP and SQLite.
-Also shows how to upload and download PDFs in a BLOG.
+Also shows how to upload and download PDFs in a BLOB (Binary Large OBject).
 
 
 # How-to
-1 - Start the php server from the `php` directory:
+1 - Start the (local) php server from the `php` directory:
 ```
 php $ php -S localhost:8000
 ```
