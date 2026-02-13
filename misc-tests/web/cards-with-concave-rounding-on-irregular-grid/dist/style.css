@@ -1,0 +1,195 @@
+/* ====== Relevant CSS for cards ====== */
+:has(> .grid), .grid, .wrap, .back, .card { display: grid }
+
+:has(> .grid) {
+	--g: .5em;
+	place-content: center;
+	grid-template: min(100%, 100vw)/ min(100%, 40em);
+	padding: var(--g)
+}
+
+.grid, .card { grid-gap: var(--g) }
+
+.grid {
+	grid-template: /* the main grid */
+		auto 4fr auto 3fr/ 
+		4fr repeat(3, minmax(1.5lh, auto)) 4fr;
+	
+	/* just prettifying */
+	color: #ededed;
+	text-shadow: 1px 1px 2px #0009;
+	filter: drop-shadow(2px 2px 4px #0039)
+}
+
+/* inherit main grid template */
+.wrap, .back { grid-template: subgrid/ subgrid }
+
+.wrap {
+	/* cut out corner side effects of filter */
+	clip-path: inset(-2em);
+	filter: 
+		url(#shape) /* create card shape */
+		url(#round) /* round shape corners */;
+	/* don't allow its children to blend with backdrop behind */
+	isolation: isolate;
+	
+	&:nth-of-type(1) { /* top left card */
+		/* part of grid it inherits */
+		grid-area: 1/ 1/ span 2/ span 3;
+		
+		/* card frame created via .back::before & card itself 
+		 * occupy the exact same space */
+		.back::before, .card {
+			grid-area: inherit;
+			margin: .5em 0 0 2.5em
+		}
+	}
+	
+	&:nth-of-type(2) { /* right side card */
+		grid-area: 2/ 2/ span 2/ -1;
+		
+		.back::before, .card {
+			grid-area: 1/ 3/ -2/ -1;
+			margin-bottom: -2.5em;
+		}
+		
+		.back::after { grid-area: 2/ 1/ -1/ -2 }
+		
+		/* just prettifying */
+		h2 {
+			place-self: start end;
+			text-align: right
+		}
+	}
+	
+	&:nth-of-type(3) { /* bottom left card */
+		grid-area: 3/ 1/ -1/ -2;
+		
+		.back::before, .card {
+			grid-area: 1/ 1/ -1/ -2;
+			margin-right: -1.5em;
+		}
+		
+		.back::after { grid-area: 1/ 2/ span 1/ -1 }
+		
+		.card { grid-template-rows: auto 1fr auto }
+		
+		h2 { grid-row: 2 }
+	}
+	
+	/* just prettifying */
+	h2 {
+		align-self: end;
+		font: 700 1.5em montserrat, sans-serif;
+	}
+	
+	span {
+		border: solid 2px #0f4c5c;
+		padding: 2px .5em;
+		border-radius: 5px;
+		box-shadow: inset 0 0 3px #000c, 1px 1px 3px #0009;
+		background: rgb(from #0f4c5c r g b/ .75);
+	}
+}
+
+.back {
+	/* occupy entire parent */
+	grid-area: 1/ 1/ -1/ -1;
+	
+	&::before, &::after { content: '' }
+	
+	&::before { /* creates card frame */
+		outline: solid 9em #000;
+		border-radius: .75em
+	}
+	
+	/* gets placed in exact grid area sized by button 
+	 * to pass its parent button dimensions */
+	&::after {
+		margin: calc(-1*var(--g));
+		background: #000
+	}
+}
+
+.card {
+	z-index: 1;
+	padding: var(--g);
+	opacity: calc(1 - 1/ var(--m));
+	background: var(--img) 50%/ cover;
+	mix-blend-mode: lighten;
+}
+
+.back::after, button { border-radius: 3lh }
+
+.wrap:nth-of-type(1) .back::after, 
+button:nth-of-type(1) { grid-area: 1/ 3 }
+
+button {
+	z-index: 2;
+	border: none;
+	padding: .1875em 0 0;
+	background: #0f4c5c;
+	color: inherit;
+	font: 1.5em/ 2 bebas neue, sans-serif;
+	
+	&:nth-of-type(1) { aspect-ratio: 1 }
+	
+	&:nth-of-type(2) {
+		grid-area: 3/ 2/ span 1/ span 3;
+		aspect-ratio: 3;
+		background: linear-gradient(#e36414, #fbab24)
+	}
+}
+
+/* Cards prettifying */
+[data-ico]::before {
+	text-shadow: none;
+	filter: brightness(0) invert(1) 
+		drop-shadow(1px 1px 1px #0009);
+	content: attr(data-ico)
+}
+
+.heart {
+	place-self: start;
+	line-height: 2
+}
+
+.tags {
+	display: flex;
+	gap: var(--g)
+}
+
+/* General page styles */
+* { margin: 0 }
+
+html, body, header, footer { display: grid }
+
+html { min-height: 100% }
+
+body {
+	grid-template-rows: auto minmax(80vmin, 1fr) auto;
+	background: 
+		url(https://images.unsplash.com/photo-1622695947048-0a61326463e5?w=1600) 50%/ cover #ababab;
+	background-blend-mode: screen;
+	font: clamp(.75em, 3vw, 1.5em)/ 1.25em open sans, sans-serif;
+}
+
+svg[aria-hidden='true'][height='0'] { position: fixed }
+
+header, footer {
+	grid-template-columns: min(100%, 52em);
+	justify-content: center;
+	padding: .5em;
+	font-size: min(1.25rem, 1em);
+	line-height: 1.125
+}
+
+p {
+	padding: inherit;
+	border-radius: 7px;
+	background: #fff6
+}
+
+kbd, code { font-family: monospace }
+
+a { color: crimson }
