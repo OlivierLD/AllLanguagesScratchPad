@@ -39,6 +39,7 @@ create table recipes (
   rank integer not null primary key autoincrement,
   name varchar(64) not null,
   pdf BLOB default null,
+  preference_level integer default null, -- 1 is the highest
   constraint uk_name_recipes unique (name)
 );
 

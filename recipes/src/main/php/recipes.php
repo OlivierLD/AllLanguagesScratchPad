@@ -6,9 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <style type="text/css">
-		* {
-			font-family: Verdana, 'Courier New', Courier, monospace;
-		}
+    * {
+        font-family: Verdana, 'Courier New', Courier, monospace;
+    }
     td {
         border: 1px solid black;
         border-radius: 5px;
@@ -121,7 +121,7 @@ try {
           <?php
 
           echo "<table>";
-          echo "<tr><th>Rank</th><th>Recipe</th><th>Nb Ingredients</th><th>pdf</th></tr>";
+          echo "<tr><th>Rank</th><th>Recipe</th><th>Nb Ingredients</th><th>Preference</th><th>pdf</th></tr>";
 
           for ($i=0; $i<count($recipes); $i++) {
             $recipe = $recipes[$i];
@@ -129,12 +129,14 @@ try {
               "<tr><td>" . urldecode($recipe->id) . "</td>" .
                   "<td>" . urldecode($recipe->name) . "</td>" .
                   "<td>" . $recipe->nb_ing . "</td>" .
+                  "<td>" . $recipe->pref_level . "</td>" .
                   "<td>" . ($recipe->pdf ? '<a href="query.doc.php?recid=' . urldecode($recipe->id) . '" onclick="" target="_blank">pdf Doc</a>' : ' - ') . "</td>" .
                   "<td>" .
                      "<form action=\"" . basename(__FILE__) . "\" method=\"post\">" .
                         "<input type=\"hidden\" name=\"operation\" value=\"edit\">" .
                         "<input type=\"hidden\" name=\"rec-id\" value=\"" . $recipe->id . "\">" .
                         "<input type=\"hidden\" name=\"rec-name\" value=\"" . urldecode($recipe->name) . "\">" .
+                        "<input type=\"hidden\" name=\"pref-level\" value=\"" . $recipe->pref_level . "\">" .
                         "<input type=\"submit\" value=\"Edit\">" .
                      "</form>" .
                   "</td>" .
@@ -213,6 +215,7 @@ try {
       } else if ($operation == 'edit') {
         $rec_id = $_POST['rec-id'];
         $rec_name = $_POST['rec-name'];
+        $pref_level = $_POST['pref-level'];
         echo "Edit Recipe [" . $rec_name . "]... <br/>" . PHP_EOL;
         ?>
         <table>
@@ -224,6 +227,9 @@ try {
                 <table>
                   <tr>
                     <td valign="top">Recipe :</td><td><input type="text" name="rec-name" size="40" value="<?php echo($rec_name); ?>"></td>
+                  </tr>
+                  <tr>
+                    <td valign="top">Preference level :</td><td><input type="number" name="pref-level" size="5" value="<?php echo($pref_level); ?>"></td>
                   </tr>
                   <tr>
                     <td colspan="2" style="text-align: center;"><input type="submit" name="submit-type" value="Update"></td>
@@ -572,7 +578,8 @@ try {
 
           $rec_id = $_POST['rec-id'];
           $rec_name = $_POST['rec-name'];
-          echo "Will update Recipe " . $rec_id . " to name " . $rec_name . "... <br/>" . PHP_EOL;
+          $pref_level = $_POST['pref-level'];
+          echo "Will update Recipe " . $rec_id . " to name " . $rec_name . ", level [" . $pref_level . "]... <br/>" . PHP_EOL;
 
           try {
             $backend->connectDB("./sql/recipes.db");
@@ -582,7 +589,7 @@ try {
             $db = $backend->getDBObject();
 
             $escapedName = str_replace("'", "''", $rec_name);
-            $sql = 'UPDATE RECIPES SET NAME = \'' . $escapedName . '\' WHERE (RANK = ' . ($rec_id) . ')';
+            $sql = 'UPDATE RECIPES SET NAME = \'' . $escapedName . '\', PREFERENCE_LEVEL = ' . ($pref_level == '' ? 'NULL' : $pref_level) . ' WHERE (RANK = ' . ($rec_id) . ')';
             echo('Performing statement <code>' . $sql . '</code><br/>');
 
             if (true) { // Do perform ?
@@ -714,10 +721,11 @@ try {
               <td>
                 Sort by
               </td>
-              <td>
+              <td> <!-- values are positions in the select stmt -->
                 <input type="radio" name="sort-by" value="1" id="rank"><label for="rank">Rank</label>
                 <input type="radio" name="sort-by" value="2" id="name" checked><label for="name">Name</label>
-                <input type="radio" name="sort-by" value="4" id="nb-ing"><label for="nb-ing">Nb Ingredients</label>
+                <input type="radio" name="sort-by" value="5" id="nb-ing"><label for="nb-ing">Nb Ingredients</label>
+                <input type="radio" name="sort-by" value="3" id="pref-level"><label for="pref-level">Pref Level</label>
               </td>
             </tr>
             <tr>

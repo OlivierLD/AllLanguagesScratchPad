@@ -11,6 +11,7 @@ class Recipe {
     public $id;
     public $name;
     public $nb_ing;
+    public $pref_level; // null, or on [1..]
     public $pdf; // 0 or 1
 }
 
@@ -75,6 +76,7 @@ class BackEndSQLiteComputer {
             $recipeArray = [];
             $sql = 'SELECT R.RANK,
                            R.NAME,
+                           IFNULL(R.PREFERENCE_LEVEL, 0),
                            iif(R.PDF is null, 0, 1) AS PDF,
                            COUNT(IPR.INGREDIENT) AS NB_ING
                     FROM RECIPES R, INGREDIENTS_PER_RECIPE IPR
@@ -83,11 +85,12 @@ class BackEndSQLiteComputer {
                     UNION
                     SELECT R.RANK,
                            R.NAME,
+                           IFNULL(R.PREFERENCE_LEVEL, 0),
                            iif(R.PDF is null, 0, 1) AS PDF,
                            0 AS NB_ING
                     FROM RECIPES R
                     WHERE R.RANK NOT IN (SELECT RECIPE FROM INGREDIENTS_PER_RECIPE)
-                    ORDER BY ' . $sort_by . ';';
+                    ORDER BY ' . $sort_by . ($sort_by == 3 ? ' DESC' : '') . ';';
 
             echo("SQL to execute : [" . $sql . "]<br/>" . PHP_EOL);
 
@@ -98,13 +101,15 @@ class BackEndSQLiteComputer {
                     $rank = (float)$row[0];
                     $name = $row[1];
                     $pdf = $row[2];
-                    $nb_ing = (float)$row[3];
+                    $pref_level = (float)$row[3];
+                    $nb_ing = (float)$row[4];
 
                     $recipe = new Recipe();
 
                     $recipe->id = $rank;
                     $recipe->name = $name;
                     $recipe->nb_ing = $nb_ing;
+                    $recipe->pref_level = $pref_level;
                     $recipe->pdf = $pdf;
 
                     array_push($recipeArray, $recipe);
