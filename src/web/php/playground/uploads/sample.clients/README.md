@@ -1,1 +1,1 @@
-This directory is NOT to check in.
+Sample clients.
