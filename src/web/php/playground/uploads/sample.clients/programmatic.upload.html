@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<!--
+ ! A tool to test data.sender.php
+ !
+ ! Upload a file (with a given type...)
+ ! Invokes (post) upload.php
+ !
+ ! Pre-populate the <input type="file"...>,
+ ! see https://stackoverflow.com/questions/1696877/how-to-set-a-value-to-a-file-input-in-html-to-a-client-side-disk-file-system-pat
+ !
+ ! Turn the form's display to 'block' to see them...
+ +-->
+<html>
+<head>
+    <!--meta charset="UTF-8">
+    <meta charset="ISO-8859-1"-->
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>Composite Elements Uploader - PHP</title>
+    <link rel="icon" type="image/ico" href="icons/hammerhead.02.ico">
+    <style type="text/css">
+      * {
+        font-family: 'Courier New'
+      }
+      h1 {
+        /* text-stroke: 2px orange; */ /* Might not be supported */
+        font-size: 3em;
+        color: black;
+        -webkit-text-fill-color: white; /* Will override color (regardless of order) */
+        -webkit-text-stroke: 3px black;
+      }
+    </style>
+</head>
+<script type="text/javascript">
+
+async function loadURLToInputField(url, fileId, fileName, fileType) {
+  await getFileURL(url, fileId, fileName, fileType, (imgBlob) => {
+    // Load img blob to input
+    let finalFileName = fileName; // should .replace(/[/\\?%*:|"<>]/g, '-') for remove special char like / \
+    let file = new File([imgBlob], finalFileName, {type: fileType, lastModified:new Date().getTime()}, 'utf-8');
+    let container = new DataTransfer();
+    container.items.add(file);
+    document.querySelector('#' + fileId).files = container.files;
+  });
+}
+
+// xml blob res
+async function getFileURL(url, fileId, fileName, fileType, callback) {
+  var xhr = new XMLHttpRequest();
+  xhr.onload = function() {
+      callback(xhr.response);
+  };
+  xhr.open('GET', url);
+  xhr.responseType = 'blob';
+  xhr.send();
+}
+
+let preLoad = async (url, fileId, fileName, fileType) => {
+  await loadURLToInputField(url, fileId, fileName, fileType);
+}
+
+</script>
+<body>
+
+    <h1>Automatic Composite File(s) Upload raw UI...</h1>
+
+    <div style="display: grid; grid-template-columns: 50% 50%;">
+      <div id="left-one" style="display: block;"> <!-- File Upload form -->
+        <h4>File(s) upload</h4>
+        <div id="files-upload-form" style="display: none;">
+          <!-- TODO in action, the full path on the machine the service is running on ? -->
+          <!-- form action="http://passe-coque.com/tech.and.nav/composites/data.sender.php" -->
+          <form action="../data.sender.php"
+                method="post"
+                enctype="multipart/form-data"
+                target="upload-iframe"
+                style="border: 1px solid navy; border-radius: 10px; padding: 10px; width: 90%;"
+                id="upload-form">
+              <input type="hidden" name="operation" value="uploads">
+              <label for="composite-name">Composite Name:</label>
+              <input type="text" name="composite-name" id="composite-name" placeholder="Composite Name"><br/>
+              <hr/>
+              Select file(s) to upload (or populate with the button below):<br/>
+              <hr/>
+              <input type="file" name="fileToUpload-1" id="fileToUpload-1">
+              <br/><br/>
+              <input type="file" name="fileToUpload-2" id="fileToUpload-2">
+              <br/><br/>
+              <input type="file" name="fileToUpload-3" id="fileToUpload-3">
+              <br/><br/>
+              <input type="file" name="fileToUpload-4" id="fileToUpload-4">
+              <br/><br/>
+              <hr/>
+              <br/>
+              <!--input type="submit" value="Upload the files above" name="submit"-->
+          </form>
+
+          <br/><br/>
+          <!-- For the gribs, use application/octet-stream as mime-type -->
+          <button onclick="preLoad('./sample.files/wizard150.jpg', 'fileToUpload-1', 'wizard.jpg', 'image/jpg');" title="Populate the first file input.">Populate input field</button>, with sample image...
+        </div>
+        <hr/>
+        <label for="usr-composite-name">Composite Name:</label>
+        <input type="text" id="usr-composite-name" placeholder="Composite Name"><br/>
+        <br/><br/>
+
+        Click <button onclick="proceed();" title="Proceed to uploads!">Here</button> to upload all files and submit the form (javascript).
+        <!--button onclick="proceed(false);" title="Proceed to upload.">Upload the file mentionned</button-->
+      </div>
+      <div id="right-one" style="display: block;">
+        <h4>JSON Content</h4>
+        <div id="files-upload-form" style="display: none;">
+          <!-- TODO in action, the full path on the machine the service is running on ? -->
+          <!-- form action="http://passe-coque.com/tech.and.nav/composites/data.sender.php" -->
+          <form action="../data.sender.php"
+                method="post"
+                enctype="multipart/form-data"
+                target="upload-iframe"
+                style="border: 1px solid navy; border-radius: 10px; padding: 10px; width: 90%;"
+                id="json-form">
+              <input type="hidden" name="operation" value="send-json">
+              <label for="composite-name-json">Composite Name:</label>
+              <input type="text" name="composite-name" id="composite-name-json" placeholder="Composite Name"><br/>
+              <br/><br/>
+              <label for="file-name">JSON File Name:</label>
+              <input type="text" name="file-name" id="file-name" placeholder="JSON File Name"><br/>
+              <hr/>
+              JSON Content:<br/>
+              <hr/>
+              <textarea rows="10" cols="50" name="json-content" id="json-content" form="json-form" placeholder="JSON Content..."></textarea>
+              <hr/>
+              <br/>
+              <!--input type="submit" value="Send Content" name="submit"-->
+          </form>
+        </div>
+        <hr/>
+        <label for="usr-composite-name-2">Composite Name:</label>
+        <input type="text" id="usr-composite-name-2" placeholder="Composite Name"><br/>
+        <br/><br/>
+
+        Click <button onclick="proceedJSON('GRIB.json', { dummy: 'Value', subElement: { akeu: 'coucou', coucou: 'larigou' }});" title="Proceed to uploads!">Here</button> to upload the JSON file (javascript).
+      </div>
+    </div>
+
+    <br/><br/>
+
+    <iframe name="upload-iframe" src="dummy.html" style="width: 80%; height: 200px;"></iframe>
+
+</body>
+</html>
+<script type="text/javascript">
+
+// const DATA_FILES = [
+//   { file: "./sample.files/wizard150.jpg", mimeType: "image/jpg" }
+// ];
+
+const DATA_FILES = [
+  { file: "./sample.data/2026-02-20T11:00/_ATL-0002-FINE-2_0.png", mimeType: "image/png" },
+  { file: "./sample.data/2026-02-20T11:00/_ATL-0002-FINE-2_1.png", mimeType: "image/png" },
+  { file: "./sample.data/2026-02-20T11:00/_ATL-0002-FINE-2_2.png", mimeType: "image/png" },
+  { file: "./sample.data/2026-02-20T11:00/_ATL-0002-FINE-2_3.png", mimeType: "image/png" }
+];
+
+let processOneFile = async (element, index) => {
+    console.log(`... Processing ${element.file}...`);
+    let finalFileName = element.file.substring(element.file.lastIndexOf('/') + 1);
+    await preLoad(element.file, `fileToUpload-${index}`, finalFileName, element.mimeType);
+}
+
+let proceed = async (loop=true) => {
+  console.log("Let's go with faxes!");
+  let faxform = document.getElementById('upload-form');
+  let compositeName = // '2026-02-20T11:00';
+                      document.getElementById("usr-composite-name").value;
+
+  if (loop) {
+    document.getElementById('composite-name').value = compositeName;
+    for (let i=0; i<DATA_FILES.length; i++) {
+      let element = DATA_FILES[i];
+      console.log(`Processing ${element.file}`);
+      await processOneFile(element, i + 1);
+    }
+    window.setTimeout( () => {
+      faxform.submit(); // requires the form NOT not have a submit button
+    }, 1000); // To wait for the processOneFile(s) to be completed...
+  } else {
+      // let compositeName = '2026-02-20T11:00';
+      document.getElementById('composite-name').value = compositeName;
+      faxform.submit(); // requires the form NOT not have a submit button
+  }
+};
+
+let proceedJSON = async (fname, jsonObject) => {
+  console.log("Let's go with JSON!");
+  let jsonform = document.getElementById('json-form');
+  let compositeName = // '2026-02-20T11:00';
+                      document.getElementById("usr-composite-name-2").value;
+
+  // <input type="text" name="file-name" id="file-name" placeholder="JSON File Name"><br/>
+  document.getElementById("file-name").value = fname;
+  // <textarea rows="10" cols="50" name="json-content" id="json-content" form="json-form" placeholder="JSON Content..."></textarea>
+  let content = JSON.stringify(jsonObject, null, 2); // formatted
+  document.getElementById("json-content").value = content;
+
+  document.getElementById('composite-name-json').value = compositeName;
+  jsonform.submit(); // requires the form NOT not have a submit button
+};
+</script>

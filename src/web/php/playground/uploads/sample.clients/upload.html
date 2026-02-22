@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<!--
+ ! A tool to test data.sender.php
+ !
+ ! Upload a file (with a given type...)
+ ! Invokes (post) upload.php
+ !
+ ! Pre-populate the <input type="file"...>,
+ ! see https://stackoverflow.com/questions/1696877/how-to-set-a-value-to-a-file-input-in-html-to-a-client-side-disk-file-system-pat
+ +-->
+<html>
+<head>
+    <!--meta charset="UTF-8">
+    <meta charset="ISO-8859-1"-->
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <link rel="icon" type="image/ico" href="./icons/hammerhead.02.ico">
+    <title>Composite Elements Uploader - PHP</title>
+    <style type="text/css">
+      * {
+        font-family: 'Courier New'
+      }
+      h1 {
+        /* text-stroke: 2px orange; */ /* Might not be supported */
+        font-size: 3em;
+        color: black;
+        -webkit-text-fill-color: white; /* Will override color (regardless of order) */
+        -webkit-text-stroke: 3px black;
+      }
+    </style>
+</head>
+<script type="text/javascript">
+
+function loadURLToInputField(url, fileId, fileName, fileType) {
+  getFileURL(url, fileId, fileName, fileType, (imgBlob) => {
+    // Load img blob to input
+    let finalFileName = fileName; // should .replace(/[/\\?%*:|"<>]/g, '-') for remove special char like / \
+    let file = new File([imgBlob], finalFileName, {type: fileType, lastModified:new Date().getTime()}, 'utf-8');
+    let container = new DataTransfer();
+    container.items.add(file);
+    document.querySelector('#' + fileId).files = container.files;
+  });
+}
+
+// xml blob res
+function getFileURL(url, fileId, fileName, fileType, callback){
+  var xhr = new XMLHttpRequest();
+  xhr.onload = function() {
+      callback(xhr.response);
+  };
+  xhr.open('GET', url);
+  xhr.responseType = 'blob';
+  xhr.send();
+}
+
+let preLoad = (url, fileId, fileName, fileType) => {
+  loadURLToInputField(url, fileId, fileName, fileType);
+}
+
+</script>
+<body>
+
+    <h1>Composite File(s) Upload raw UI</h1>
+    <h3>With input "file" preload</h3>
+
+    <div style="display: grid; grid-template-columns: 50% 50%;">
+      <div id="left-one"> <!-- File Upload form -->
+        <h4>File(s) upload</h4>
+        <form action="data.sender.php"
+              method="post"
+              enctype="multipart/form-data"
+              target="upload-iframe"
+              style="border: 1px solid navy; border-radius: 10px; padding: 10px; width: 90%;">
+            <input type="hidden" name="operation" value="uploads">
+            <label for="composite-name">Composite Name:</label>
+            <input type="text" name="composite-name" id="composite-name" placeholder="Composite Name"><br/>
+            <hr/>
+            Select file(s) to upload (or populate with the button below):<br/>
+            <hr/>
+            <input type="file" name="fileToUpload-1" id="fileToUpload-1">
+            <br/><br/>
+            <input type="file" name="fileToUpload-2" id="fileToUpload-2">
+            <hr/>
+            <br/>
+            <input type="submit" value="Upload the files above" name="submit">
+        </form>
+
+        <br/><br/>
+        <!-- For the gribs, use application/octet-stream as mime-type -->
+        <button onclick="preLoad('../sample.files/wavestop.gif', 'fileToUpload-1', 'wavetop.gif', 'image/gif');" title="Populate the first file input.">Populate input field</button>, with wavestop.gif
+      </div>
+      <div id="right-one">
+        <h4>JSON Content</h4>
+        <form action="data.sender.php"
+              method="post"
+              enctype="multipart/form-data"
+              target="upload-iframe"
+              style="border: 1px solid navy; border-radius: 10px; padding: 10px; width: 90%;"
+              id="json-form">
+            <input type="hidden" name="operation" value="send-json">
+            <label for="composite-name">Composite Name:</label>
+            <input type="text" name="composite-name" id="composite-name" placeholder="Composite Name"><br/>
+            <br/><br/>
+            <label for="file-name">JSON File Name:</label>
+            <input type="text" name="file-name" id="file-name" placeholder="JSON File Name"><br/>
+            <hr/>
+            JSON Content:<br/>
+            <hr/>
+            <textarea rows="10" cols="50" name="json-content" form="json-form" placeholder="JSON Content..."></textarea>
+            <hr/>
+            <br/>
+            <input type="submit" value="Send Content" name="submit">
+        </form>
+
+      </div>
+    </div>
+    <br/><br/>
+
+    <iframe name="upload-iframe" src="dummy.html" style="width: 80%; height: 200px;"></iframe>
+
+</body>
+</html>
+<script type="text/javascript">
+// window.onload = () => {
+//   document.querySelectorAll("iframe")[0].innerHTML = "PHP resut will show up here.";
+// };
+</script>
