@@ -11,4 +11,5 @@ To run the stuff
 $ cd src/main/php
 $ php -S localhost:8000
 ```
-and then, try `http://localhost:8000/sql.sample.php` from a browser.
+and then, try `http://localhost:8000/sql.sample.php` from a browser.  
+Or `http://localhost:8000/index.html`.
