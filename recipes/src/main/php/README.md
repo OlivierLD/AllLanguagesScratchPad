@@ -16,5 +16,8 @@ More [doc](../../../../../AllLanguagesScratchPad/src/main/java/SQLITE.md) on SQL
 # TODO on the Recipes DB
 
 - A form to upload recipes' pdfs. ✅ Done.
+- Accent insensitive queries... `select *  from ingredients where upper(REPLACE(name, 'ï', 'i')) like '%CHOI%';` ...
+
+
 
 ---
