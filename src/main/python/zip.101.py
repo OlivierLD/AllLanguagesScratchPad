@@ -9,6 +9,7 @@ with zipfile.ZipFile('example.zip', 'w') as myzip:
   myzip.writestr('data.txt', 'Some data here')
   htmlContent: str = '<html>'
   htmlContent += '<head>'
+  htmlContent += '<title>An Index!</title>'
   htmlContent += '</head>'
   htmlContent += '<body>'
   htmlContent += '<h1>Hi There!</h1>'
