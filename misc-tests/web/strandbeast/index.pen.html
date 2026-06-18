@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Strand Beast</title>
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+
+<div class="scene">
+  <div class="floor"></div>
+
+  <div class="strandbeest">
+    <div class="strandbeest-leg" style="--leg: 0">
+      <div class="strandbeest-shadow"></div>
+      <div class="strandbeest-panel b">
+        <div class="strandbeest-panel d">
+          <div class="strandbeest-panel f"></div>
+        </div>
+        <div class="strandbeest-panel e"></div>
+      </div>
+      <div class="strandbeest-panel c">
+        <div class="strandbeest-panel g">
+          <div class="strandbeest-panel h"></div>
+          <div class="strandbeest-panel i"></div>
+        </div>
+      </div>
+      <div class="strandbeest-crank">
+        <div class="strandbeest-panel j"></div>
+        <div class="strandbeest-panel k"></div>
+      </div>
+    </div>
+    <div class="strandbeest-leg" style="--leg: 1">
+      <div class="strandbeest-shadow"></div>
+      <div class="strandbeest-panel b">
+        <div class="strandbeest-panel d">
+          <div class="strandbeest-panel f"></div>
+        </div>
+        <div class="strandbeest-panel e"></div>
+      </div>
+      <div class="strandbeest-panel c">
+        <div class="strandbeest-panel g">
+          <div class="strandbeest-panel h"></div>
+          <div class="strandbeest-panel i"></div>
+        </div>
+      </div>
+      <div class="strandbeest-crank">
+        <div class="strandbeest-panel j"></div>
+        <div class="strandbeest-panel k"></div>
+      </div>
+    </div>
+    <div class="strandbeest-leg" style="--leg: 2">
+      <div class="strandbeest-shadow"></div>
+      <div class="strandbeest-panel b">
+        <div class="strandbeest-panel d">
+          <div class="strandbeest-panel f"></div>
+        </div>
+        <div class="strandbeest-panel e"></div>
+      </div>
+      <div class="strandbeest-panel c">
+        <div class="strandbeest-panel g">
+          <div class="strandbeest-panel h"></div>
+          <div class="strandbeest-panel i"></div>
+        </div>
+      </div>
+      <div class="strandbeest-crank">
+        <div class="strandbeest-panel j"></div>
+        <div class="strandbeest-panel k"></div>
+      </div>
+    </div>
+    <div class="strandbeest-leg" style="--leg: 3">
+      <div class="strandbeest-shadow"></div>
+      <div class="strandbeest-panel b">
+        <div class="strandbeest-panel d">
+          <div class="strandbeest-panel f"></div>
+        </div>
+        <div class="strandbeest-panel e"></div>
+      </div>
+      <div class="strandbeest-panel c">
+        <div class="strandbeest-panel g">
+          <div class="strandbeest-panel h"></div>
+          <div class="strandbeest-panel i"></div>
+        </div>
+      </div>
+      <div class="strandbeest-crank">
+        <div class="strandbeest-panel j"></div>
+        <div class="strandbeest-panel k"></div>
+      </div>
+    </div>
+    <div class="strandbeest-leg" style="--leg: 4">
+      <div class="strandbeest-shadow"></div>
+      <div class="strandbeest-panel b">
+        <div class="strandbeest-panel d">
+          <div class="strandbeest-panel f"></div>
+        </div>
+        <div class="strandbeest-panel e"></div>
+      </div>
+      <div class="strandbeest-panel c">
+        <div class="strandbeest-panel g">
+          <div class="strandbeest-panel h"></div>
+          <div class="strandbeest-panel i"></div>
+        </div>
+      </div>
+      <div class="strandbeest-crank">
+        <div class="strandbeest-panel j"></div>
+        <div class="strandbeest-panel k"></div>
+      </div>
+    </div>
+    <div class="strandbeest-leg" style="--leg: 5">
+      <div class="strandbeest-shadow"></div>
+      <div class="strandbeest-panel b">
+        <div class="strandbeest-panel d">
+          <div class="strandbeest-panel f"></div>
+        </div>
+        <div class="strandbeest-panel e"></div>
+      </div>
+      <div class="strandbeest-panel c">
+        <div class="strandbeest-panel g">
+          <div class="strandbeest-panel h"></div>
+          <div class="strandbeest-panel i"></div>
+        </div>
+      </div>
+      <div class="strandbeest-crank">
+        <div class="strandbeest-panel j"></div>
+        <div class="strandbeest-panel k"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- js for slideVars -->
+<script type="module">
+  import { slideVars } from "https://esm.sh/@codepen/slidevars";
+
+  slideVars.init({
+    "--pos": {
+      type: "slider",
+      min: 0,
+      max: 720,
+      default: 0,
+      unit: ""
+    },
+    "--rotate": {
+      type: "slider",
+      min: -180,
+      max: 180,
+      default: 30,
+      unit: "deg"
+    },
+    "--tilt": {
+      type: "slider",
+      min: 0,
+      max: 40,
+      default: 15,
+      unit: "deg"
+    }
+  },{
+    auto: false,
+    defaultOpen: true
+  });
+</script>
+
+
+</body>
+</html>

@@ -1,0 +1,185 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --rotate: 10deg;
+    --pos: 0deg;
+}
+
+body {
+    display: grid;
+    place-items: center;
+    height: 100dvh;
+    background-color: #000;
+    color: #fff;
+    overflow: clip;
+    perspective: 800px;
+
+    * { transform-style: preserve-3d; }
+}
+
+.scene {
+    position: relative;
+    transform:
+        rotateX(calc(var(--tilt, 15deg) * -1))
+        rotateY(var(--rotate, 15deg));
+    font-size: 3px;
+}
+
+.floor {
+    position: absolute;
+    inset: -160em;
+    background:
+        radial-gradient(closest-side, transparent, black),
+        repeating-conic-gradient(from 45deg, #333 0 12.5%, #555 0 25%) calc(var(--pos, 0) * -0.75em) 0 / 10em 10em
+    ;
+    background-color: #fff;
+    transform: rotateX(90deg) translateZ(-74em);
+}
+
+.strandbeest {
+}
+
+.strandbeest-leg {
+    --cycle: calc((var(--pos) * 2deg + var(--leg, 0) * 60deg) * var(--_rev, 1));
+
+    &:nth-child(even) {
+        --_ry: 180deg;
+        --_rev: -1;
+    }
+
+    transform:
+        translateZ(calc(var(--leg) * -20em + 50em))
+        rotateY(var(--_ry, 0deg))
+        translateX(-38em);
+
+    --crankX: calc(38 + 15 * cos(var(--cycle)));
+    --crankY: calc(-7.8 + 15 * sin(var(--cycle)));
+
+    --BM: calc(sqrt(pow(var(--crankX), 2) + pow(var(--crankY), 2)));
+
+    --angle_Bt: acos((1722.25 + pow(var(--BM), 2) - 2500) / (83 * var(--BM)));
+    --angle_B: calc(0deg - (var(--angle_Bt) - atan2(var(--crankY), var(--crankX))));
+    --bx: calc(cos(var(--angle_B)) * 41.5);
+    --by: calc(sin(var(--angle_B)) * 41.5);
+
+    --angle_J: calc(atan2(var(--by) - var(--crankY), var(--bx) - var(--crankX)) - var(--cycle));
+
+    --angle_Ct: acos((1544.49 + pow(var(--BM), 2) - 3831.61) / (78.6 * var(--BM)));
+    --angle_C: calc(var(--angle_Ct) + atan2(var(--crankY), var(--crankX)));
+    --cx: calc(cos(var(--angle_C)) * 39.3);
+    --cy: calc(sin(var(--angle_C)) * 39.3);
+
+    --angle_K: calc(atan2(var(--cy) - var(--crankY), var(--cx) - var(--crankX)) - var(--cycle));
+
+    --dx: calc(cos(var(--angle_B) - 86.26831deg) * 40.1);
+    --dy: calc(sin(var(--angle_B) - 86.26831deg) * 40.1);
+
+    --CD: calc(sqrt(pow(var(--cx) - var(--dx), 2) + pow(var(--cy) - var(--dy), 2)));
+
+    --angle_de: acos((1608.01 + pow(var(--CD), 2) - 1544.49) / (80.2 * var(--CD)));
+    --angle_fe: acos((1552.36 + pow(var(--CD), 2) - 1346.89) / (78.8 * var(--CD)));
+    --angle_F: calc(180deg + var(--angle_de) + var(--angle_fe));
+
+    --angle_ce: acos((1544.49 + pow(var(--CD), 2) - 1608.01) / (78.6 * var(--CD)));
+    --angle_ge: acos((1346.89 + pow(var(--CD), 2) - 1552.36) / (73.4 * var(--CD)));
+    --angle_G: calc(180deg - var(--angle_ce) - var(--angle_ge));
+
+    --angle_I: calc(var(--angle_C) - var(--angle_ce) - var(--angle_ge) - 279.09627deg);
+    --ix: calc(var(--cx) + cos(var(--angle_I)) * 49);
+    --iy: calc(var(--cy) + sin(var(--angle_I)) * 49);
+
+    --shadow-opacity: calc((var(--iy) - 60) / 30);
+}
+
+.strandbeest-crank {
+    position: absolute;
+    left: 38em; top: -17.8em;
+    width: 15em;
+    transform-origin: left;
+    rotate: var(--cycle, 0deg);
+}
+
+.strandbeest-panel {
+    position: absolute;
+    background-color: #fff;
+    background-image: linear-gradient(90deg, var(--clr1, transparent), var(--clr2, transparent));
+    box-shadow: 0 0 4em #0008 inset;
+    left: 0em; top: 50%;
+    height: 16em;
+    translate: 0 -50%;
+    transform-origin: left;
+
+    &.b {
+        --clr1: #aca; --clr2: #fff;
+        top: -10em;
+        width: 41.5em;
+        transform: rotateX(90deg) rotateY(var(--angle_B)) ;
+    }
+    &.c {
+        --clr1: #aca; --clr2: #686;
+        top: -10em;
+        width: 39.3em;
+        transform: rotateX(90deg) rotateY(var(--angle_C)) ;
+    }
+    &.d {
+        --clr1: #aca; --clr2: #aac;
+        width: 40.1em;
+        rotate: y -86.26831deg;
+    }
+    &.e {
+        --clr1: #fff; --clr2: #aac;
+        left: 100%;
+        width: 55.8em;
+        rotate: y -134.18326deg;
+    }
+    &.f {
+        --clr1: #aac; --clr2: #668;
+        left: 100%;
+        width: 39.4em;
+        rotate: y var(--angle_F);
+    }
+    &.g {
+        --clr1: #686; --clr2: #668;
+        left: 100%;
+        width: 36.7em;
+        rotate: y var(--angle_G);
+    }
+    &.h {
+        --clr1: #668; --clr2: #333;
+        left: 100%;
+        width: 65.7em;
+        rotate: y -132.54139deg;
+    }
+    &.i {
+        --clr1: #686; --clr2: #333;
+        width: 49em;
+        rotate: y -99.09627deg;
+    }
+    &.j {
+        --clr1: #caa; --clr2: #fff;
+        left: 100%;
+        width: 50em;
+        transform: rotateX(90deg) rotateY(var(--angle_J)) ;
+    }
+    &.k {
+        --clr1: #caa; --clr2: #686;
+        left: 100%;
+        width: 61.9em;
+        transform: rotateX(90deg) rotateY(var(--angle_K)) ;
+    }
+}
+
+.strandbeest-shadow {
+    position: absolute;
+    inset: -8em -36em;
+    opacity: var(--shadow-opacity, 1);
+    background-image:
+        linear-gradient(to right, transparent 50%, #000 0, 60%, transparent),
+        linear-gradient(to left, transparent 50%, #000 0, 60%, transparent);
+    transform: rotateX(90deg) translateZ(-74em) translateX(calc(var(--ix) * 1em - 0em));
+    filter: blur(8em);
+}

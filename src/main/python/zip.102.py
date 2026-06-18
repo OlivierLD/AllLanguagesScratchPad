@@ -14,6 +14,7 @@ try:
         if not os.path.isdir(filename):
             # read the file
             print(f"-- Content of {filename} --")
+            # TODO Find how to get the full content ?
             for line in z.open(filename):
                 print(line.decode('utf-8'))
         else:

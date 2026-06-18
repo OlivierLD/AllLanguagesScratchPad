@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>A test</title>
+    <!--link rel="stylesheet" href="./style.css"-->
+    <style type="text/css">
+
+body {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: #f0f0e8;
+  background-image: var(--texture-noise);
+  font-family: var(--font-base);
+  font-size: var(--step-0);
+  color: var(--color-dark);
+
+  &::after {
+    position: absolute;
+    content: '';
+    inset: 0;
+    background-image: var(--texture-grid);
+    opacity: .8;
+    z-index: -10;
+  }
+}
+
+main {
+  display: flex;
+  position: relative;
+	/* flex-direction: column; */
+	gap: 1em;
+  padding: 1em;
+  align-self: center;
+	justify-content: center;
+  align-items: center;
+  width: 100%;
+	max-width: 1000px;
+  flex-grow: 1;
+  flex-wrap: wrap;
+
+  section {
+    display: flex;
+    flex-direction: column;
+    background: var(--color-light-50);
+    padding: 1em;
+    border: solid 1px var(--color-dark-25);
+    width: fit-content;
+    border-radius: .5em;
+  }
+
+  .wide {
+    width: 100%;
+    flex-grow: grow;
+  }
+}
+
+:root {
+  /* Flexoki Color Palette - 400 */
+  --color-red: hsl(13, 100%, 87%);
+  --color-orange: hsl(27, 98%, 84%);
+  --color-yellow: hsl(46, 83%, 80%);
+  --color-green: hsl(66, 45%, 79%);
+  --color-cyan: hsl(158, 47%, 83%);
+  --color-blue: hsl(199, 42%, 84%);
+  --color-purple: hsl(274, 27%, 88%);
+  --color-magenta: hsl(345, 88%, 90%);
+}
+
+/* Some default template overrides */
+main {
+  strong, p {
+    font-family: var(--font-whimsy); /* Love this font 🤩 Source: https://shantellsans.com/ */
+  }
+}
+
+/* Main experiment time, let's go 🥳 */
+.sticky-note-wrapper {
+  /* A couple of CSS variables so we can easily shift colour or add rotation from HTML or JavaScript */
+  --note-rotate: deg;
+  --note-color: #feff9c;
+
+  position: relative;
+
+  /* The perspective trick is here to help keep things smooth in Firefox browsers. */
+  /* At least for me, without it, rottated elements be looking all pixelated 😔 */
+  transform: perspective(1px) rotate(var(--note-rotate));
+
+  /* V2! - Now with shadow applied on the wrapper, instead of a blank <div> inside */
+  /* Thanks to Cédric Aellen - https://alienlebarge.ch/ */
+  &::before {
+    position: absolute;
+    inset: 0;
+    content: '';
+    background: var(--color-dark-25);
+    border-radius:0 0 100px/5px 0;
+    filter: blur(2px);
+  }
+
+  .sticky-note-content {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
+
+    font-size: var(--step--1);
+    padding: 1em;
+    aspect-ratio: 1 / 1;
+    min-width: 200px;
+    width: min-content;
+
+    color: var(--color-dark);
+    background-color: var(--note-color);
+    background-image:  var(--texture-noise),
+    linear-gradient(165deg,transparent 84%, var(--color-dark-25) 100%);
+
+    /* While I haven't yet, this would be sweet to set up with CSS variables. */
+    /* Then you could generate new values (at build time for me as I use 11ty) and have different "folds" */
+    /* Bonus points if you hook up the same variable with some calculations for the shadow above */
+    border-radius: 0 0 75%/10% 0;
+
+    /* And finally some border/outline stuff I chucked on just to give it more of a "lifted" feel. a bit of thickness */
+    /* I just experimented until I achieved a look I was happy with, play around with these yourself or remove it altogether if you prefer */
+    border-bottom: solid 2px var(--color-dark-50);
+    outline: solid 1px var(--color-dark-25);
+    outline-offset: -1px;
+
+    /* I prefer to control the shadow a bit more, so opted to use a standalone div (above) over a box-shadow */
+    /* But I kept it here should you want to test it for yourself */
+    /* box-shadow: 0px 5px 10px var(--color-dark-25); */
+  }
+}
+    </style>
+</head>
+<body>
+
+<main>
+  <aside class="sticky-note-wrapper" style="--note-rotate: 3deg">
+    <div class="sticky-note-content" style="width: 300px;">
+      <!--strong>White Stork</strong-->
+      <strong>Dates à retenir :</strong>
+      <!--p>Quite a big bird! They don't have traditional voice boxes and so instead make sounds by chattering their bills together.</p-->
+      <p>
+        <ul>
+          <li>Du 26 au 28 juin 2026, Rubi's Cup, à Groix. Le Passe-Coque trophy se passe à Groix cette année.</li>
+          <li>La "Mini Atlantique", qui a lieu tous les deux ans, verra sa 11ème édition s'élancer le 22 juillet 2026 depuis Port Olona. Course réservée aux Class Mini, en solitaire et sans assistance. Nomaddict sera présent.</li>
+          <li>Le Grand Pavois de La Rochelle du 22 au 27 septembre où Nomaddict sera présent.</li>
+        </ul>
+      </p>
+    </div>
+  </aside>
+
+  <aside class="sticky-note-wrapper" style="--note-color: var(--color-red); --note-rotate: -5deg"">
+    <div class="sticky-note-content">
+      <strong>Western Cattle-Egret</strong>
+      <p>Opportunistic feeders that can be found following (or standing on) cattle and sheep. They know it’s snack time when a tractor disturbs the field.</p>
+    </div>
+  </aside>
+
+</main>
+
+</body>
+</html>

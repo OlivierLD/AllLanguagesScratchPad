@@ -1,0 +1,83 @@
+/*
+	Some base CSS styles I use for these experiments,
+	including CSS variables, a reset, and base styling for
+	many of the properties.
+*/
+/* @import url(https://codepen.io/HejChristian/pen/QwWeZQE.css); */
+@import url(./import01.css);
+
+:root {
+  /* Flexoki Color Palette - 400 */
+  --color-red: hsl(13, 100%, 87%);
+  --color-orange: hsl(27, 98%, 84%);
+  --color-yellow: hsl(46, 83%, 80%);
+  --color-green: hsl(66, 45%, 79%);
+  --color-cyan: hsl(158, 47%, 83%);
+  --color-blue: hsl(199, 42%, 84%);
+  --color-purple: hsl(274, 27%, 88%);
+  --color-magenta: hsl(345, 88%, 90%);
+}
+
+/* Some default template overrides */
+main {
+  strong, p {
+    font-family: var(--font-whimsy); /* Love this font 🤩 Source: https://shantellsans.com/ */
+  }
+}
+
+/* Main experiment time, let's go 🥳 */
+.sticky-note-wrapper {
+  /* A couple of CSS variables so we can easily shift colour or add rotation from HTML or JavaScript */
+  --note-rotate: deg;
+  --note-color: #feff9c;
+
+  position: relative;
+
+  /* The perspective trick is here to help keep things smooth in Firefox browsers. */
+  /* At least for me, without it, rottated elements be looking all pixelated 😔 */
+  transform: perspective(1px) rotate(var(--note-rotate));
+
+  /* V2! - Now with shadow applied on the wrapper, instead of a blank <div> inside */
+  /* Thanks to Cédric Aellen - https://alienlebarge.ch/ */
+  &::before {
+    position: absolute;
+    inset: 0;
+    content: '';
+    background: var(--color-dark-25);
+    border-radius:0 0 100px/5px 0;
+    filter: blur(2px);
+  }
+
+  .sticky-note-content {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
+
+    font-size: var(--step--1);
+    padding: 1em;
+    aspect-ratio: 1 / 1;
+    min-width: 200px;
+    width: min-content;
+
+    color: var(--color-dark);
+    background-color: var(--note-color);
+    background-image:  var(--texture-noise),
+    linear-gradient(165deg,transparent 84%, var(--color-dark-25) 100%);
+
+    /* While I haven't yet, this would be sweet to set up with CSS variables. */
+    /* Then you could generate new values (at build time for me as I use 11ty) and have different "folds" */
+    /* Bonus points if you hook up the same variable with some calculations for the shadow above */
+    border-radius: 0 0 75%/10% 0;
+
+    /* And finally some border/outline stuff I chucked on just to give it more of a "lifted" feel. a bit of thickness */
+    /* I just experimented until I achieved a look I was happy with, play around with these yourself or remove it altogether if you prefer */
+    border-bottom: solid 2px var(--color-dark-50);
+    outline: solid 1px var(--color-dark-25);
+    outline-offset: -1px;
+
+    /* I prefer to control the shadow a bit more, so opted to use a standalone div (above) over a box-shadow */
+    /* But I kept it here should you want to test it for yourself */
+    /* box-shadow: 0px 5px 10px var(--color-dark-25); */
+  }
+}

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+
+<!-- Experiment Title & Support Check -->
+<header>
+    <h1>Sticky Note</h1>
+    <p>Turning an &#60;aside&#62; into a nice sticky note with some CSS</p>
+</header>
+<!-- Experiment Title & Support Check -->
+
+<!-- Experiment Start -->
+<main>
+    <aside class="sticky-note-wrapper" style="--note-rotate: 3deg">
+        <div class="sticky-note-content">
+            <strong>White Stork</strong>
+            <p>Quite a big bird! They don't have traditional voice boxes and so instead make sounds by chattering their bills together.</p>
+        </div>
+    </aside>
+
+    <aside class="sticky-note-wrapper" style="--note-color: var(--color-red); --note-rotate: -5deg"">
+    <div class="sticky-note-content">
+        <strong>Western Cattle-Egret</strong>
+        <p>Opportunistic feeders that can be found following (or standing on) cattle and sheep. They know it’s snack time when a tractor disturbs the field.</p>
+    </div>
+    </aside>
+
+    <aside class="sticky-note-wrapper" style="--note-color: var(--color-blue); --note-rotate: 7deg"">
+    <div class="sticky-note-content">
+        <strong>Zitting Cisticola</strong>
+        <p>Super small, super cute! They have a very bouncy flight pattern and make a lil squeak with each flap.</p>
+    </div>
+    </aside>
+</main>
+<!-- Experiment End -->
+
+<!-- Lab Notes & Settings -->
+<div class="button-stack">
+    <button command="show-modal" commandfor="experimentDialog" class="experiment-notes-button">About</button>
+</div>
+
+<dialog id="experimentDialog" class="experiment-notes" closedby="any">
+    <div class="dialog-sidebar">
+        <button command="close" commandfor="experimentDialog"></button>
+        <section>
+            <article>
+                <h2>About</h2>
+                <p>To add a bit of whimsy to my site I decided to add some sticky notes! These are being applied to the <code>&#60;aside&#62;</code> HTML element. My approach makes use of some elliptical border-radius and a linear-gradient to fake a “fold” in the paper.</p>
+                <p>I had initially wanted to do this with just one element, so no wrapper or anything. I got close, but the shadow layer (being applied as a pseudo element at the time) ended up in front of everything else. A standalone shadow layer (and the whole wrapper) can be avoided if you just want to use a box-shadow - but I specifically wanted to adjust elliptical border-radius on this too, to help achieve the look I was after.</p>
+                <p>A nice noise texture and handwritten-style font really help to bring the idea of a sticky note together, imo. For font I am using Shantell Sans (Links down below).</p>
+                <h3>Problems</h3>
+                <p>Mentioned above, mentioned in the CSS comments, the main problem is that I ended up turning this into a wrapper and <s>having an extra div <strong>just</strong> for the shadow layer</s>. Not ideal! But it works. It’s also easily omitted and you can still get most of the way there with a <code>box-shadow</code> in CSS.</p>
+                <h3>V2 Update!</h3>
+                <p>I've updated the shadow approach thanks to C&eacute;dric Aellen sharing a <a href="https://codepen.io/editor/alienlebarge/pen/019ea66b-c46c-7d0f-ae93-8960faae8bf4" target="_blank" rel="noopener noreferrer">CodePen</a> that demonstrates how to do it with a pseudo element applied to the wrapper itself (Not the note layer!)</p>
+                <p>Like this we can do away with the blank <code>&#60;div&#62;</code> being used just for shadow, and it's all a bit more tidy.</p>
+            </article>
+            <article>
+                <h2>Credits</h2>
+                <ul class="credit-list">
+                    <li>
+                        <a href="https://shantellsans.com/" target="_blank" rel="noopener noreferrer">Shantell Sans - Handwritten font</a>
+                        <p>A recent addition to the fonts I will be using regularly 💜</p>
+                    </li>
+                    <li>
+                        <a href="https://alienlebarge.ch/" target="_blank" rel="noopener noreferrer">C&eacute;dric Aellen</a>
+                        <p>Thanks to C&eacute;dric for showing how the shadow can be achieved via a pseudo instead! 💜</p>
+                    </li>
+                </ul>
+            </article>
+        </section>
+        <footer>
+            <p>June 2026, Christian Alder</p>
+            <p><a href="https://bsky.app/profile/hejchristian.com" target="_blank" rel="noopener noreferrer">Bluesky</a> | <a href="https://front-end.social/@hejchristian" target="_blank" rel="noopener noreferrer">Mastodon</a></p>
+        </footer>
+    </div>
+</dialog>
+<!-- Lab Notes & Settings -->
+
+<script src="./script.js"></script>
+</body>
+</html>
