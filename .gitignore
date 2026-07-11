@@ -1,6 +1,6 @@
 .gradle
-**/build/
 **/*.class
+**/build/
 HLL/build/
 jersey-client-tests/build/
 
