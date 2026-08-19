@@ -1,4 +1,5 @@
 .gradle
+*.class
 **/*.class
 **/build/
 HLL/build/
