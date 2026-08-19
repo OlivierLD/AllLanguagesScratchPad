@@ -8,7 +8,7 @@ public class TryWithResources {
 
     public static void one() {
         Scanner scanner = null;
-        try {
+        try {  // No resource
             scanner = new Scanner(new File("test.txt"));
             while (scanner.hasNext()) {
                 System.out.println(scanner.nextLine());

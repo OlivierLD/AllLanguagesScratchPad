@@ -41,8 +41,7 @@ public class ZipWritingTest {
         File zipFileName = Paths.get(OUTPUT_ZIP).toFile();
 
         // open the zip stream in a try resource block, no finally needed
-        try( ZipOutputStream zipStream = new ZipOutputStream(new FileOutputStream(zipFileName)) ) {
-
+        try (ZipOutputStream zipStream = new ZipOutputStream(new FileOutputStream(zipFileName))) {
             // traverse every file in the selected directory and add them
             // to the zip file by calling addToZipFile(..)
             DirectoryStream<Path> dirStream = Files.newDirectoryStream(directory);
@@ -64,7 +63,6 @@ public class ZipWritingTest {
     private void addToZipFile(Path file, ZipOutputStream zipStream) {
         String inputFileName = file.toFile().getPath();
         try (FileInputStream inputStream = new FileInputStream(inputFileName)) {
-
             // create a new ZipEntry, which is basically another file
             // within the archive. We omit the path from the filename
             ZipEntry entry = new ZipEntry(file.toFile().getName());
