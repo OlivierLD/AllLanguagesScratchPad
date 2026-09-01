@@ -20,6 +20,10 @@ h1 {
 	text-shadow: 4px 4px 8px black, 0 0 25px white, 0 0 10px cyan;
 }
 
+#lamp-span {
+    color: silver;
+	text-shadow: 4px 4px 8px black, 0 0 25px white, 0 0 10px cyan;
+}
 
 * {
   box-sizing: border-box;
@@ -85,9 +89,9 @@ h1 {
 
 <h1>A little library lamp used as a checkbox</h1>
 
-<input type="checkbox" id="lib">
+<input type="checkbox" id="lib" onchange="lampOnOff(this);">
 <label for="lib" class="lib">
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M8 20H12M16 20H12M12 20V11" stroke="#ACA6A9" stroke-width="2" stroke-linecap="round"/>
         <path d="M17 11V16" stroke="#ACA6A9" stroke-width="1.5" stroke-linecap="round" class="onoff"/>
         <path d="M15 4H9C6.23858 4 4 6.23858 4 9V9.5C4 10.3284 4.67157 11 5.5 11H18.5C19.3284 11 20 10.3284 20 9.5V9C20 6.23858 17.7614 4 15 4Z" stroke="#ACA6A9" stroke-width="2"/>
@@ -107,5 +111,14 @@ h1 {
 
 </label>
 
+<span id="lamp-span"></span>
+
 </body>
+<script type="text/javascript">
+    function lampOnOff(cb) {
+        let mess = "Lamp is " + (cb.checked ? "on" : "off");
+        console.log(mess);
+        document.getElementById('lamp-span').innerHTML = mess;
+    }
+</script>
 </html>

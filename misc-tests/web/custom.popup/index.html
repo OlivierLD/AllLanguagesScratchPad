@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dummy Title</title>
+    <style type="text/css">
+/*
+  Inspired from  - https://stackoverflow.com/a/16481062
+  Posted by Mohamed Iqzas, modified by community. See post 'Timeline' for change history
+  Retrieved 2026-08-29, License - CC BY-SA 4.0
+
+
+  Basic features only, no fancy stuff, no animation, no styling, just a simple right-click menu.
+*/
+
+.show {
+  /* z-index: 1000; */
+  position: absolute;
+  background-color: #e6e911;
+  border: 1px solid blue;
+  font-family: sans-serif;
+  padding: 10px;
+  display: block;
+  margin: 10;
+  /* list-style-type: none; */
+  /* list-style: none; */
+}
+
+.hide {
+  display: none;
+}
+
+/* .show li {
+  list-style: none;
+} */
+
+.show a {
+  border: 0 !important;
+  text-decoration: none;
+}
+
+.show a:hover {
+  text-decoration: underline !important;
+}
+    </style>
+</head>
+<body id="the-body">
+
+
+<h3>Right-Click Menu - right-click on the links below to see a popup menu</h3>
+<div id="test1">
+  <a href="" class="test">Click</a>
+  <a href="" class="test">Clack</a>
+  <a href="" class="test">Boom</a>
+  <a href="" class="test">Paf</a>
+</div>
+
+<!-- initially hidden right-click menu -->
+<div class="hide" id="popup-menu">
+  <ul>
+    <li>
+      <a href="http://www.google.com" target="_blank">Gogol</a>
+    </li>
+    <li>
+      <a href="http://olivierld.github.io" target="Oliv">OlivierLD</a>
+    </li>
+    <li>
+      <a href="http://passe-coque.com" target="Passe-Coque">Passe-Coque</a>
+    </li>
+  </ul>
+</div>
+
+<hr/>
+Et c'est tout.
+</body>
+
+<script type="text/javascript">
+
+window.onload = function() {
+
+  console.log("Window loaded !");
+
+  if (document.getElementById("test1").addEventListener) {
+    document.getElementById("test1").addEventListener('contextmenu', function(e) {
+      // alert("You've tried to open context menu");
+      e.preventDefault();
+
+      document.getElementById("popup-menu").className = "show";
+      document.getElementById("popup-menu").style.top = mouseY(event) + 'px';
+      document.getElementById("popup-menu").style.left = mouseX(event) + 'px';
+
+      // window.event.returnValue = false;
+
+    });
+  } else {
+
+    alert("You've tried to open context menu... Not supported.");
+
+  }
+
+  // Hide the popup menu on a click outside the menu...
+  document.getElementById("the-body").addEventListener("click", function(event) {
+    console.log("Hiding Popup!");
+    document.getElementById("popup-menu").className = "hide";
+  });
+
+};
+
+// Get X pos of the mouse when clicked
+function mouseX(evt) {
+  if (evt.pageX) {
+    return evt.pageX;
+  } else if (evt.clientX) {
+    return evt.clientX + (document.documentElement.scrollLeft ? document.documentElement.scrollLeft : document.body.scrollLeft);
+  } else {
+    return null;
+  }
+}
+
+// Get Y pos of the mouse when clicked
+function mouseY(evt) {
+  if (evt.pageY) {
+    return evt.pageY;
+  } else if (evt.clientY) {
+    return evt.clientY + (document.documentElement.scrollTop ? document.documentElement.scrollTop : document.body.scrollTop);
+  } else {
+    return null;
+  }
+}
+
+</script>
+</html>
