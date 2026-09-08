@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Popup demo</title>
+    <link rel="icon" href="../dialogs/01/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./style.css">
+    <script type="text/javascript" src="./script.js"></script>
+</head>
+<body id="the-body">
+
+<h3>Right-Click Popup Menu</h3>
+<h4>Looking ugly, working OK</h4>
+<hr/>
+<div>
+  Right-click on the links below to see a popup menu.
+  <div id="test1">
+    <a href="" class="test">Click</a>
+    <a href="" class="test">Clack</a>
+    <a href="" class="test">Boom</a>
+    <a href="" class="test">Paf</a>
+  </div>
+</div>
+
+<!-- initially hidden right-click menu. Just an example. -->
+<div class="hide" id="popup-menu" style="grid-template-columns: 100%;">
+  <div>
+    <span style="float: left;">Yeah, what ?</span>
+    <span id="close-popup" style="float: right; font-size: 1.2em;" onclick="document.getElementById('popup-menu').className = 'hide';">&times;</span>
+  </div>
+  <!--hr/-->
+  <div>
+    <ul id="buttons">
+      <li>
+        <a href="http://www.google.com" target="_blank">Gogol</a>
+      </li>
+      <li>
+        <a href="http://olivierld.github.io" target="Oliv">OlivierLD</a>
+      </li>
+      <li>
+        <a href="http://passe-coque.com" target="Passe-Coque">Passe-Coque</a>
+      </li>
+      <li>
+        <a href="" onclick="alert('Something else was clicked!');">Something else</a>
+      </li>
+    </ul>
+  </div>
+</div>
+
+<hr/>
+To close the popup:
+<ul>
+  <li>Click inside or outside the popup</li>
+  <li>Press the Escape key</li>
+  <li>Click the <span style="font-size: 1rem; border: 1px solid black; border-radius: 50%;">&times;</span> button on the top right of the popup</li>
+</ul>
+<hr/>
+Et c'est tout.
+</body>
+
+<script type="text/javascript">
+
+window.onload = () => {
+  console.log("Window loaded !");
+  doOnLoad();
+}
+
+</script>
+</html>
