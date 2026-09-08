@@ -1,0 +1,13 @@
+{
+	"name": "olivs-mess",
+	"version": "0.0.1",
+	"description": "Oliv's bintz",
+	"keywords": [
+		"Stuff",
+		"Oliv",
+		"wow"
+	],
+	"scripts": {
+		"start": "node server.js"
+	}
+}

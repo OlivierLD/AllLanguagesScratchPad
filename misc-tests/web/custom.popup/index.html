@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Dummy Title</title>
+    <link rel="icon" href="../dialogs/01/favicon.svg" type="image/svg+xml" />
     <style type="text/css">
 /*
   Inspired from  - https://stackoverflow.com/a/16481062
@@ -16,11 +17,11 @@
 .show {
   /* z-index: 1000; */
   position: absolute;
-  background-color: #e6e911;
+  background-color: silver;
   border: 1px solid blue;
   font-family: sans-serif;
   padding: 10px;
-  display: block;
+  display: grid;
   margin: 10;
   /* list-style-type: none; */
   /* list-style: none; */
@@ -42,12 +43,19 @@
 .show a:hover {
   text-decoration: underline !important;
 }
+
+#close-popup:hover {
+  cursor: pointer;
+  color: red;
+  font-weight: bold;
+}
     </style>
 </head>
 <body id="the-body">
 
 
 <h3>Right-Click Menu - right-click on the links below to see a popup menu</h3>
+<h4>Looking ugly, working OK</h4>
 <div id="test1">
   <a href="" class="test">Click</a>
   <a href="" class="test">Clack</a>
@@ -55,21 +63,34 @@
   <a href="" class="test">Paf</a>
 </div>
 
-<!-- initially hidden right-click menu -->
-<div class="hide" id="popup-menu">
-  <ul>
-    <li>
-      <a href="http://www.google.com" target="_blank">Gogol</a>
-    </li>
-    <li>
-      <a href="http://olivierld.github.io" target="Oliv">OlivierLD</a>
-    </li>
-    <li>
-      <a href="http://passe-coque.com" target="Passe-Coque">Passe-Coque</a>
-    </li>
-  </ul>
+<!-- initially hidden right-click menu. Just an example. -->
+<div class="hide" id="popup-menu" style="grid-template-columns: 100%;">
+  <div>
+    <span id="close-popup" style="float: right; font-size: 2em;" onclick="document.getElementById('popup-menu').className = 'hide';">&times;</span>
+  </div>
+  <!--hr/-->
+  <div>
+    <ul>
+      <li>
+        <a href="http://www.google.com" target="_blank">Gogol</a>
+      </li>
+      <li>
+        <a href="http://olivierld.github.io" target="Oliv">OlivierLD</a>
+      </li>
+      <li>
+        <a href="http://passe-coque.com" target="Passe-Coque">Passe-Coque</a>
+      </li>
+    </ul>
+  </div>
 </div>
 
+<hr/>
+To close the popup:
+<ul>
+  <li>Click inside or outside the popup</li>
+  <li>Press the Escape key</li>
+  <li>Click the &times; button on the top right of the popup</li>
+</ul>
 <hr/>
 Et c'est tout.
 </body>
@@ -98,11 +119,27 @@ window.onload = function() {
 
   }
 
-  // Hide the popup menu on a click outside the menu...
+  // Hide the popup menu on a click outside the menu (could be replace by document.body)...
   document.getElementById("the-body").addEventListener("click", function(event) {
-    console.log("Hiding Popup!");
+    console.log("Hiding Popup! (1)");
     document.getElementById("popup-menu").className = "hide";
   });
+
+  document.body.onkeydown = function(evt) {
+  // document.getElementById("popup-menu").onkeydown = function(evt) {
+      evt = evt || window.event;
+      var isEscape = false;
+      if ("key" in evt) {
+          isEscape = (evt.key === "Escape" || evt.key === "Esc");
+      } else {
+          isEscape = (evt.keyCode === 27);
+      }
+      if (isEscape) {
+          // alert("Escape Key Was Pressed");
+          console.log("Hiding Popup! (2)");
+          document.getElementById("popup-menu").className = "hide";
+      }
+  };
 
 };
 
