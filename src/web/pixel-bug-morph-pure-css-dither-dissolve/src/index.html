@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pixel Bug</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="stage">
+      <div class="pixel-bug" role="img" aria-label="Pixel art on graph paper of a cicada seen from above, with green veined wings, a purple and gold back and an orange head. Flipping the switch below turns it, square by square, into a shield bug with a blue and coral shell, wine red wings, lime markings and six blue legs, on beige paper.">
+        <div class="pixels" data-bug="cicada"></div>
+        <div class="veil" data-level="0"><div class="pixels" data-bug="shield"></div></div>
+        <div class="veil" data-level="1"><div class="pixels" data-bug="shield"></div></div>
+        <div class="veil" data-level="2"><div class="pixels" data-bug="shield"></div></div>
+        <div class="veil" data-level="3"><div class="pixels" data-bug="shield"></div></div>
+        <div class="graph"></div>
+      </div>
+      <label class="morph-toggle">
+        <span data-side="cicada" aria-hidden="true">Cicada</span>
+        <input type="checkbox" role="switch" aria-label="Show the shield bug" />
+        <span data-side="shield" aria-hidden="true">Shield bug</span>
+      </label>
+    </main>
+  </body>
+</html>
