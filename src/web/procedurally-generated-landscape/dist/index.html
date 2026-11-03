@@ -1,0 +1,352 @@
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Landscape</title>
+    <style>
+      html, body { margin: 0; block-size: 100%; background: #111; }
+      shader-canvas { position: fixed; inset: 0; aspect-ratio: auto; }
+    </style>
+    <script src="shader-canvas.js" defer></script>
+  </head>
+  <body>
+    <shader-canvas max-dpr="0.5">
+      <script type="x-shader/x-fragment">
+#version 300 es
+precision highp float;
+precision highp int;
+
+uniform float uTime;
+uniform vec2 uResolution;
+uniform vec2 uMouse;
+out vec4 fragColor;
+
+// Upper bound of terrainH
+const float H_MAX = 2.6;
+
+float scene(vec3 p);
+float terrainH(vec2 p);
+float raymarch(vec3 ro, vec3 rd, float tMax) {
+  float t = 0.0;
+  for (int i = 0; i < 150; i++) {
+    vec3 p = ro + t * rd;
+    if (rd.y > 0.0 && p.y > H_MAX) return -1.0;
+    float d = scene(p);
+    if (abs(d) < 0.002 + 0.0003 * t) return t;
+    t += d;
+    if (t > tMax) return -1.0;
+  }
+  // out of iterations: only a hit if we're still hugging the terrain
+  vec3 p = ro + t * rd;
+  return (p.y - terrainH(p.xz) < 0.05 * t) ? t : -1.0;
+}
+
+vec3 calcNormal(vec3 p) {
+  const float h = 0.0005;
+  const vec2 k = vec2(1.0, -1.0);
+  return normalize(k.xyy * scene(p + k.xyy * h) +
+                    k.yyx * scene(p + k.yyx * h) +
+                    k.yxy * scene(p + k.yxy * h) +
+                    k.xxx * scene(p + k.xxx * h));
+}
+
+// by IQ (MIT)
+float softShadow(vec3 ro, vec3 rd, float tMin, float tMax, float k) {
+  float result = 1.0;
+  float t = tMin;
+  for (int i = 0; i < 24; i++) {
+    float h = scene(ro + t * rd);
+    result = min(result, k * h / t);
+    if (result < 0.005 || t > tMax) break;
+    // scene() is scaled by 0.4, undo most of that for the shadow march
+    t += clamp(h * 2.0, 0.03, 0.5);
+  }
+  return clamp(result, 0.0, 1.0);
+}
+
+float calcAO(vec3 p, vec3 n) {
+  float occlusion = 0.0;
+  float weight = 1.0;
+  for (int i = 1; i <= 5; i++) {
+    float h = 0.03 * float(i * i);
+    occlusion += weight * (h - scene(p + n * h));
+    weight *= 0.7;
+  }
+  return clamp(1.0 - 2.0 * occlusion, 0.0, 1.0);
+}
+
+// The last value is the focal length: larger zooms in.
+mat3 cameraMatrix(vec3 eye, vec3 target, float roll) {
+  vec3 forward = normalize(target - eye);
+  vec3 up = vec3(sin(roll), cos(roll), 0.0);
+  vec3 right = normalize(cross(forward, up));
+  return mat3(right, cross(right, forward), forward);
+}
+
+vec3 lambert(vec3 n, vec3 l, vec3 albedo) {
+  return albedo * max(dot(n, l), 0.0);
+}
+
+vec3 linearToSrgb(vec3 c) {
+  c = clamp(c, 0.0, 1.0);
+  vec3 low = c * 12.92;
+  vec3 high = 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055;
+  return mix(low, high, step(vec3(0.0031308), c));
+}
+
+vec3 srgbToLinear(vec3 c) {
+  vec3 low = c / 12.92;
+  vec3 high = pow((c + 0.055) / 1.055, vec3(2.4));
+  return mix(low, high, step(vec3(0.04045), c));
+}
+
+// psrdnoise (c) 2021 Stefan Gustavson and Ian McEwan
+// https://github.com/stegu/psrdnoise
+// License MIT
+float psrdnoise(vec2 x, vec2 period, float alpha, out vec2 gradient) {
+
+  // Transform to simplex space (axis-aligned hexagonal grid)
+  vec2 uv = vec2(x.x + x.y*0.5, x.y);
+
+  // Determine which simplex we're in, with i0 being the "base"
+  vec2 i0 = floor(uv);
+  vec2 f0 = fract(uv);
+  // o1 is the offset in simplex space to the second corner
+  float cmp = step(f0.y, f0.x);
+  vec2 o1 = vec2(cmp, 1.0-cmp);
+
+  // Enumerate the remaining simplex corners
+  vec2 i1 = i0 + o1;
+  vec2 i2 = i0 + vec2(1.0, 1.0);
+
+  // Transform corners back to texture space
+  vec2 v0 = vec2(i0.x - i0.y * 0.5, i0.y);
+  vec2 v1 = vec2(v0.x + o1.x - o1.y * 0.5, v0.y + o1.y);
+  vec2 v2 = vec2(v0.x + 0.5, v0.y + 1.0);
+
+  // Compute vectors from v to each of the simplex corners
+  vec2 x0 = x - v0;
+  vec2 x1 = x - v1;
+  vec2 x2 = x - v2;
+
+  vec3 iu, iv;
+  vec3 xw, yw;
+
+  // Wrap to periods, if desired
+  if(any(greaterThan(period, vec2(0.0)))) {
+    xw = vec3(v0.x, v1.x, v2.x);
+    yw = vec3(v0.y, v1.y, v2.y);
+    if(period.x > 0.0)
+      xw = mod(vec3(v0.x, v1.x, v2.x), period.x);
+    if(period.y > 0.0)
+      yw = mod(vec3(v0.y, v1.y, v2.y), period.y);
+    // Transform back to simplex space and fix rounding errors
+    iu = floor(xw + 0.5*yw + 0.5);
+    iv = floor(yw + 0.5);
+  } else { // Shortcut if neither x nor y periods are specified
+    iu = vec3(i0.x, i1.x, i2.x);
+    iv = vec3(i0.y, i1.y, i2.y);
+  }
+
+  // Compute one pseudo-random hash value for each corner
+  vec3 hash = mod(iu, 289.0);
+  hash = mod((hash*51.0 + 2.0)*hash + iv, 289.0);
+  hash = mod((hash*34.0 + 10.0)*hash, 289.0);
+
+  // Pick a pseudo-random angle and add the desired rotation
+  vec3 psi = hash * 0.07482 + alpha;
+  vec3 gx = cos(psi);
+  vec3 gy = sin(psi);
+
+  // Reorganize for dot products below
+  vec2 g0 = vec2(gx.x,gy.x);
+  vec2 g1 = vec2(gx.y,gy.y);
+  vec2 g2 = vec2(gx.z,gy.z);
+
+  // Radial decay with distance from each simplex corner
+  vec3 w = 0.8 - vec3(dot(x0, x0), dot(x1, x1), dot(x2, x2));
+  w = max(w, 0.0);
+  vec3 w2 = w * w;
+  vec3 w4 = w2 * w2;
+
+  // The value of the linear ramp from each of the corners
+  vec3 gdotx = vec3(dot(g0, x0), dot(g1, x1), dot(g2, x2));
+
+  // Multiply by the radial decay and sum up the noise value
+  float n = dot(w4, gdotx);
+
+  // Compute the first order partial derivatives
+  vec3 w3 = w2 * w;
+  vec3 dw = -8.0 * w3 * gdotx;
+  vec2 dn0 = w4.x * g0 + dw.x * x0;
+  vec2 dn1 = w4.y * g1 + dw.y * x1;
+  vec2 dn2 = w4.z * g2 + dw.z * x2;
+  gradient = 10.9 * (dn0 + dn1 + dn2);
+
+  // Scale the return value to fit nicely into the range [-1,1]
+  return 10.9 * n;
+}
+
+float simplexNoise(vec2 p) {
+  vec2 gradient;
+  return psrdnoise(p, vec2(0.0), 0.0, gradient);
+}
+
+float simplexNoise(vec2 p, vec2 period) {
+  vec2 gradient;
+  return psrdnoise(p, period, 0.0, gradient);
+}
+
+float simplexFbm(vec2 p, int octaves, float gain) {
+  float sum = 0.0;
+  float amplitude = 1.0;
+  float total = 0.0;
+  for (int i = 0; i < octaves; i++) {
+    float n = simplexNoise(p);
+    sum += amplitude * n;
+    total += amplitude;
+    amplitude *= gain;
+    p = p * 2.0 + vec2(0.31, 0.57);
+  }
+  return sum / total;
+}
+
+float simplexFbm(vec2 p, int octaves) { return simplexFbm(p, octaves, 0.5); }
+
+float simplexFbm(vec2 p, vec2 period, int octaves, float gain) {
+  float sum = 0.0;
+  float amplitude = 1.0;
+  float total = 0.0;
+  for (int i = 0; i < octaves; i++) {
+    float n = simplexNoise(p, period);
+    sum += amplitude * n;
+    total += amplitude;
+    amplitude *= gain;
+    p = p * 2.0 + vec2(0.31, 0.57);
+    period *= 2.0;
+  }
+  return sum / total;
+}
+
+const float WATER = 0.0;
+const vec3 SUN = vec3(-0.6772, 0.6214, -0.3954);      // normalized direction to the sun, low and to the side
+const vec3 SUN_COLOR = vec3(1.0, 0.93, 0.8) * 1.1;
+
+float leaNoise(vec2 q)
+{
+  return sin(q.x*34.+cos(q.y*14.)*4.)*cos(q.y*23.+sin(q.x*32.)*3.)*.2;
+}
+float hash12(vec2 p);
+float terrainH(vec2 p) {
+  vec2 q = p * 0.12;
+  float sines1 = leaNoise(q*8.)*0.001;
+  float sines2 = leaNoise(q*.6)*.25 + leaNoise(q*.27+1.)*.8;
+  float base = simplexFbm(q,2) + sines1 + sines2; // about [-1, 1]
+  float range = smoothstep(-0.05, 0.35, base);
+  float sines3 = leaNoise(q);
+  return 1.8 * base + range * (sines3 + sines2*sines3) + .2;
+}
+
+// Distance bound for a heightfield: scaled down so steep slopes are not overshot.
+float scene(vec3 p) {
+  return (p.y - terrainH(p.xz)) * 0.4;
+}
+
+// Sky gradient with a sun glow and disc, seen in direction rd.
+vec3 sky(vec3 rd) {
+  vec3 horizon = srgbToLinear(vec3(0.78, 0.84, 0.90));
+  vec3 zenith = srgbToLinear(vec3(0.22, 0.43, 0.80));
+  vec3 c = mix(horizon, zenith, pow(max(rd.y, 0.0), 0.6));
+  float s = max(dot(rd, SUN), 0.0);
+  c += SUN_COLOR * (0.25 * pow(s, 6.0) + 6.0 * smoothstep(0.9985, 0.9995, s));
+  return c;
+}
+
+float hash12(vec2 p) {
+  vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+  p3 += dot(p3, p3.yzx + 33.33);
+  return fract((p3.x + p3.y) * p3.z);
+}
+
+vec3 gEye;
+mat3 gCam;
+
+// Shades one sample and returns linear color plus a depth for edge detection.
+vec3 shade(vec2 fc, out float depth) {
+  vec2 uv = (fc - 0.5 * uResolution) / uResolution.y;
+  vec3 rd = gCam * normalize(vec3(uv, 1.5));
+
+  vec3 color = sky(rd);
+  float tt = raymarch(gEye, rd, 60.0);
+  float tw = rd.y < 0.0 ? (WATER - gEye.y) / rd.y : -1.0;
+  depth = 80.0;
+
+  if (tw > 0.0 && (tt < 0.0 || tw < tt)) {
+    vec3 up = vec3(0.0, 1.0, 0.0);
+    float fresnel = 0.02 + 0.98 * pow(1.0 - max(dot(-rd, up), 0.0), 5.0);
+    depth = min(tw, 80.0);
+    vec3 r = reflect(rd, up);
+    vec3 deep = srgbToLinear(vec3(0.05, 0.18, 0.25));
+    color = mix(deep, sky(r), fresnel);
+    color += SUN_COLOR * pow(max(dot(r, SUN), 0.0), 300.0);
+    color = mix(color, sky(rd), 1.0 - exp(-pow(tw * 0.03, 2.0)));
+  } else if (tt > 0.0) {
+    depth = tt;
+    vec3 p = gEye + tt * rd;
+    p.y = terrainH(p.xz);
+    vec3 n = calcNormal(p);
+    float variance = cos(n.x * n.x*8.+n.z*13.+n.y*7.)*5e-2;
+    float jitter = 0.15 * simplexNoise(p.xz * 3.0);
+    float rock = smoothstep(0.80, 0.60, n.y);
+    float snow = smoothstep(1.00, 1.20, p.y + jitter) * smoothstep(0.30, 0.50, n.y);
+    vec3 albedo = srgbToLinear(vec3(0.25, 0.40, 0.14) + variance);
+    albedo = mix(albedo, srgbToLinear(vec3(0.55, 0.48, 0.34)), smoothstep(0.10, 0.02, p.y));
+    albedo = mix(albedo, srgbToLinear(vec3(0.36, 0.33, 0.30) + variance), rock);
+    albedo = mix(albedo, srgbToLinear(vec3(0.93, 0.95, 1.00) + variance), snow);
+
+    float shadow = dot(n, SUN) > 0.0 ? softShadow(p + n * 0.01, SUN, 0.02, 10.0, 10.0) : 0.0;
+    float ao = calcAO(p, n);
+    vec3 skyAmbient = vec3(0.30, 0.38, 0.50);
+    color = lambert(n, SUN, albedo) * SUN_COLOR * shadow
+          + albedo * skyAmbient * (0.5 + 0.5 * n.y) * ao;
+    if (p.y < WATER) color *= vec3(0.45, 0.60, 0.70);
+    color = mix(color, sky(rd), 1.0 - exp(-pow(tt * 0.03, 2.0)));
+  }
+  return color;
+}
+
+void main() {
+  gEye = vec3(0.4 * sin(0.07 * uTime), 1., -.7 * uTime);
+  gEye.y = max(terrainH(gEye.xz), 1.) + 0.2;
+  vec3 target = gEye + vec3(0.2 * sin(0.13 * uTime), -0.12, -1.0);
+  gCam = cameraMatrix(gEye, target, 0.0);
+
+  float d0;
+  vec3 c = shade(gl_FragCoord.xy, d0);
+
+  // edge detection
+  float luma = dot(c, vec3(0.2126, 0.7152, 0.0722));
+  float depthEdge = fwidth(d0) / d0;
+  float colorEdge = fwidth(luma);
+
+  bool isEdge = depthEdge > 0.08 || colorEdge > 0.05;
+  
+  if (isEdge) {
+    float d1;
+    //c += shade(gl_FragCoord.xy + vec2( 0.375, -0.125), d1);
+    c += shade(gl_FragCoord.xy + vec2( 0.125,  0.375), d1);
+    //c += shade(gl_FragCoord.xy + vec2(-0.375,  0.125), d1);
+    c += shade(gl_FragCoord.xy + vec2(-0.125, -0.375), d1);
+    c /= 3.0;
+  }
+
+  //for testing edge detection
+  // fragColor = vec4(vec3(isEdge), 1.0); return;
+
+  fragColor = vec4(linearToSrgb(c), 1.0);
+}      </script>
+    </shader-canvas>
+  </body>
+</html>

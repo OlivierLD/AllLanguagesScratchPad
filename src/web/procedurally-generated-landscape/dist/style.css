@@ -1,0 +1,6 @@
+html {
+  height: 100%;
+  background: #000;
+}
+
+shader-canvas, shader-canvas canvas { image-rendering: auto; }
