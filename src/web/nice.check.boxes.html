@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>From CodePen</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style type="text/css">
+@layer base, reactive;
+
+@layer base {
+  .switch {
+    position: relative;
+    display: inline-grid;
+    grid-template-columns: 1fr 1fr;
+    padding: 3px;
+    border-radius: 999px;
+    background: var(--switch-bg, oklch(28% 0 0));
+    cursor: pointer;
+    isolation: isolate;
+    /* The checkbox covers the whole pill, invisible: a click anywhere toggles it, and it keeps focus and keys. */
+    input {
+      position: absolute;
+      inset: 0;
+      margin: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+    > span {
+      padding: 5px 12px;
+      text-align: center;
+      color: var(--switch-ink, oklch(70% 0 0));
+      transition: color 200ms;
+    }
+    .a {
+      color: var(--switch-ink-on, oklch(18% 0 0));
+    }
+    &::before {
+      content: "";
+      position: absolute;
+      z-index: -1;
+      inset: 3px auto 3px 3px;
+      inline-size: calc(50% - 3px);
+      border-radius: 999px;
+      background: var(--switch-thumb, oklch(94% 0 0));
+      transition: translate 260ms cubic-bezier(0.3, 1.3, 0.5, 1);
+    }
+    &:has(input:checked) {
+      &::before {
+        translate: 100% 0;
+      }
+      .a {
+        color: var(--switch-ink, oklch(70% 0 0));
+      }
+      .b {
+        color: var(--switch-ink-on, oklch(18% 0 0));
+      }
+    }
+    &:has(input:focus-visible) {
+      outline: 2px solid var(--switch-focus, oklch(94% 0 0));
+      outline-offset: 2px;
+    }
+  }
+
+  @keyframes nudge {
+    50% {
+      translate: 0 5px;
+    }
+  }
+
+  /* Phones: the labels end the page instead of floating over the piece. */
+  @media (width < 700px) {
+    .labels {
+      position: static;
+      justify-content: center;
+      flex-wrap: wrap;
+      padding-block-end: 3vmin;
+    }
+    .labels.left {
+      padding-block-end: 6vmin;
+    }
+  }
+  /* The piece fills the first screen. "How it is built" and an arrow sit at the bottom of that screen
+     (pulled up by the height of that head), and the explanation follows below. */
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    display: grid;
+    grid-template-rows: minmax(100dvh, auto) auto;
+    justify-items: center;
+  } /* a tall piece grows */
+  body > main[class] {
+    justify-self: stretch;
+    padding-block-end: calc(4vmin + 104px);
+  } /* room for the heading */
+
+  @media (prefers-reduced-motion: reduce) {
+    .switch::before {
+      transition: none;
+    }
+  }
+}
+
+@layer base, reactive;
+
+@layer base {
+  :root {
+    color-scheme: light;
+    font-family:
+      system-ui,
+      -apple-system,
+      "Segoe UI",
+      sans-serif;
+  }
+  .app {
+    /* The page */
+    --bg: #f0f0ef;
+    --card: #fff;
+    --ink: #161616;
+    --mute: #8a8a8c;
+    --soft: #e6e6e6;
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.04), 0 18px 40px rgb(0 0 0 / 0.05);
+    /* The layout view */
+    --x-out: #f2f2fc;
+    --x-pad: #d9daf6;
+    --x-in: #eeeefc;
+    --x-line: #4c50e0;
+    --x-text: #a9aac4;
+    --x-badge: #2c2fd4;
+    --x-badge-ink: #fff;
+    --x-ghost: #b9b9c6;
+    --x-ghost-on: #9e9eb0;
+    --x-knob: #e6e6f4;
+    --switch-bg: #e2e2e0;
+    --switch-thumb: #fff;
+    --switch-ink: #8a8a8c;
+    --switch-ink-on: #161616;
+    --switch-focus: #4c50e0;
+    --stage-w: min(680px, 100vw - 32px);
+    --stage-h: 540px;
+  }
+  /* Dark: a near-black page, and the layout view drawn in amber. */
+  .app:has(.theme input:checked) {
+    color-scheme: dark;
+    --bg: #0d0e11;
+    --card: #1a1b20;
+    --ink: #f1f1f3;
+    --mute: #8b8d96;
+    --soft: #2c2d34;
+    --shadow: 0 0 0 1px #25262d, 0 24px 60px rgb(0 0 0 / 0.5);
+    --x-out: #17130b;
+    --x-pad: #3a2c12;
+    --x-in: #241c0d;
+    --x-line: #ffb547;
+    --x-text: #7c6845;
+    --x-badge: #ffb547;
+    --x-badge-ink: #1a1306;
+    --x-ghost: #4a3c22;
+    --x-ghost-on: #8a6a2c;
+    --x-knob: #c8a15a;
+    --switch-bg: #24252b;
+    --switch-thumb: #3a3b43;
+    --switch-ink: #8b8d96;
+    --switch-ink-on: #f1f1f3;
+    --switch-focus: #ffb547;
+  }
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+  .screen {
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    gap: 8px;
+    padding: 16px;
+  }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    transition:
+      background 0.3s,
+      color 0.3s;
+  }
+  button,
+  input {
+    font: inherit;
+    color: inherit;
+  }
+
+  small {
+    font-size: 16px;
+    color: var(--mute);
+  }
+  b {
+    font-weight: 600;
+  }
+}
+    </style>
+</head>
+<body class="app">
+<main class="screen">
+<h2>All in CSS</h2>
+
+<label class="switch theme">
+    <input type="checkbox" role="switch" aria-label="Dark theme"><span class="a">Light</span><span class="b">Dark</span>
+</label>
+
+</main>
+</body>
+</html>

@@ -1,0 +1,2094 @@
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #020307; }
+  canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+  /* the one control: sound on and off, small in the corner, out of the way */
+  #sound { position: fixed; right: calc(14px + env(safe-area-inset-right)); bottom: calc(14px + env(safe-area-inset-bottom)); z-index: 10;
+    width: 44px; height: 44px; padding: 0; border-radius: 50%; display: grid; place-items: center; cursor: pointer;
+    color: #efe6d8; background: rgba(10, 9, 12, .42); border: 1px solid rgba(240, 225, 205, .3);
+    -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); -webkit-tap-highlight-color: transparent;
+    opacity: .78; transition: opacity .7s, background .3s, border-color .3s, transform .15s; }
+  #sound:hover { opacity: 1; background: rgba(10, 9, 12, .62); border-color: rgba(240, 225, 205, .6); }
+  #sound:active { transform: scale(.93); }
+  #sound:focus-visible { outline: 2px solid rgba(240, 225, 205, .85); outline-offset: 3px; }
+  #sound.idle { opacity: 0; pointer-events: none; }
+  #sound.stuck { border-color: rgba(255, 140, 90, .9); opacity: 1; }
+  #sound svg { width: 22px; height: 22px; overflow: visible; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  #sound .spk { fill: currentColor; stroke-width: 1.2; }
+  #sound .wave { display: none; }
+  #sound.on .wave { display: inline; animation: wave 1.8s ease-in-out infinite; }
+  #sound.on .wave.w2 { animation-delay: .25s; }
+  #sound.on .mute { display: none; }
+  @keyframes wave { 0%, 100% { opacity: .45; } 50% { opacity: 1; } }
+  #sound.hint { animation: hint 2.6s ease-in-out 3; }
+  @keyframes hint { 0%, 100% { box-shadow: 0 0 0 0 rgba(255, 190, 110, 0); } 50% { box-shadow: 0 0 0 5px rgba(255, 190, 110, .16), 0 0 18px rgba(255, 170, 80, .4); } }
+  #sound .tip { position: absolute; right: 54px; padding: 6px 9px; border-radius: 8px; white-space: nowrap; pointer-events: none;
+    font: 500 12px/1 system-ui, -apple-system, "Segoe UI", sans-serif; letter-spacing: .03em; color: #efe6d8; background: rgba(10, 9, 12, .6);
+    opacity: 0; transform: translateX(4px); transition: opacity .25s, transform .25s; }
+  @media (hover: hover) { #sound:hover .tip { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { #sound.hint, #sound.on .wave { animation: none; } }
+</style>
+<button id="sound" class="hint" type="button" aria-label="Sound on" aria-pressed="false">
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path class="spk" d="M3.5 9.2h3.3l4.7-4v13.6l-4.7-4H3.5z"/>
+    <path class="mute" d="M15.6 9.4l5 5.2M20.6 9.4l-5 5.2"/>
+    <path class="wave" d="M15.2 9.1a4.2 4.2 0 0 1 0 5.8"/>
+    <path class="wave w2" d="M17.9 6.6a7.8 7.8 0 0 1 0 10.8"/>
+  </svg>
+  <span class="tip">Sound on</span>
+</button>
+<script>
+// Sound on and off. Browsers only let a page make sound after a click, so the
+// sound starts from this button. It works even before the scene has finished
+// loading: the audio is made here, inside the click, and the rest of the
+// page builds its sounds on it when it is ready. M on the keyboard does the same.
+(() => {
+  const btn = document.getElementById('sound'), tip = btn.querySelector('.tip');
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) { btn.remove(); return; }
+  const S = window.__stormAudio = { ctx: null, on: [], want: false, set: null, stuck: false };
+  // a short loop of silence played through an ordinary audio element: Safari and
+  // iPhones treat the page as playing music, and the ringer switch does not mute it
+  let el = null;
+  function silentLoop() {
+    const n = 4000, b = new ArrayBuffer(44 + n), v = new DataView(b), w = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+    w(0, 'RIFF'); v.setUint32(4, 36 + n, true); w(8, 'WAVE'); w(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+    v.setUint32(24, 8000, true); v.setUint32(28, 8000, true); v.setUint16(32, 1, true); v.setUint16(34, 8, true); w(36, 'data'); v.setUint32(40, n, true);
+    for (let i = 0; i < n; i++) v.setUint8(44 + i, 128);
+    const a = new Audio(URL.createObjectURL(new Blob([b], { type: 'audio/wav' }))); a.loop = true; a.setAttribute('playsinline', ''); return a;
+  }
+  const quiet = (p) => { if (p && p.catch) p.catch(() => { }); };
+  function start() {
+    // the kind of audio this page plays has to be set before the audio itself exists
+    try { if (navigator.audioSession && navigator.audioSession.type !== 'playback') navigator.audioSession.type = 'playback'; } catch (e) { }
+    try { if (!el) el = silentLoop(); quiet(el.play()); } catch (e) { }
+    let c = S.ctx;
+    // a context that never got going (or was closed) is replaced by a new one, made in this click
+    if (c && (S.stuck || c.state === 'closed')) { try { quiet(c.close()); } catch (e) { } c = S.ctx = null; }
+    if (!c) {
+      try { c = S.ctx = new AC(); } catch (e) { return; }
+      S.stuck = false;
+      try { c.addEventListener('statechange', () => { if (c.state === 'running' && S.ctx === c) { S.stuck = false; show(); } }); } catch (e) { }
+      for (const f of S.on) { try { f(c); } catch (e) { } }
+    }
+    if (c.state !== 'running') { try { quiet(c.resume()); } catch (e) { } }
+    try { const s = c.createBufferSource(); s.buffer = c.createBuffer(1, 1, c.sampleRate); s.connect(c.destination); s.start(0); } catch (e) { }
+    const mine = c;
+    // still silent a moment later: say so on the button, and the next press starts over
+    setTimeout(() => { if (S.ctx === mine && S.want && mine.state !== 'running') { S.stuck = true; show(); } }, 1500);
+  }
+  function show() {
+    const stuck = S.want && S.stuck, label = stuck ? 'Tap again for sound' : S.want ? 'Sound off' : 'Sound on';
+    btn.classList.toggle('on', S.want); btn.classList.toggle('stuck', stuck); btn.setAttribute('aria-pressed', S.want ? 'true' : 'false');
+    btn.setAttribute('aria-label', label); tip.textContent = label;
+  }
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation(); btn.classList.remove('hint');
+    // pressed while the sound should be on but never started: try again rather than turn it off
+    const retry = S.want && S.ctx && S.ctx.state !== 'running' && S.stuck;
+    if (!retry) S.want = !S.want;
+    if (S.want) start();
+    else { try { if (el) el.pause(); } catch (e) { } }
+    if (S.set) S.set(S.want);
+    else if (!S.want && S.ctx && S.ctx.state === 'running') { try { quiet(S.ctx.suspend()); } catch (e) { } }
+    show(); awake();
+  });
+  addEventListener('keydown', (e) => { if ((e.key === 'm' || e.key === 'M') && !e.repeat && !e.metaKey && !e.ctrlKey && !e.altKey) btn.click(); });
+  // while the sound plays and nothing moves, the button fades away; any move or touch brings it back
+  let idle = 0;
+  function awake() { btn.classList.remove('idle'); clearTimeout(idle); idle = setTimeout(() => { if (S.want && !btn.matches(':hover')) btn.classList.add('idle'); }, 3500); }
+  for (const ev of ['pointermove', 'pointerdown', 'touchstart', 'keydown']) addEventListener(ev, awake, { capture: true, passive: true });
+  setTimeout(() => btn.classList.remove('hint'), 9000);
+})();
+</script>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/",
+  "gsap": "https://cdn.jsdelivr.net/npm/gsap@3.13.0/index.js"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
+
+// =====================================================================
+// The Last Light.
+// A storm at night and a lighthouse alone on its rock. Lightning moves
+// inside the clouds and lights them from within, the beam turns through
+// the rain and the spray, and the sea throws itself at the rock. Then the
+// sea draws back, and a wave taller than the lighthouse rises out of the
+// dark and breaks over it. When the spray falls, the light is still turning.
+//
+// The sea is a sum of Gerstner waves drawn on a grid laid out in screen
+// space (fine where the eye is, coarse at the horizon); the great wave is
+// one more term, with its own shape, that leans and curls as it breaks.
+// The clouds are raymarched through a 3D noise texture made on the GPU and
+// lit from inside by each flash; the rain and mist are a second raymarch,
+// and the light the beams scatter along each ray is added up in closed
+// form. Lightning is grown by splitting and branching; the spray is thrown
+// on closed-form paths from wherever a wave strikes the rock.
+// Sound: the speaker button in the corner, or M.
+// =====================================================================
+
+const COARSE = matchMedia('(pointer: coarse)').matches;
+const LOW = COARSE || Math.min(screen.width, screen.height) < 700;
+const Q = LOW
+  ? { gridX: 150, gridY: 230, waves: 12, detail: 6, cloudDiv: 4, cloudSteps: 24, fogDiv: 2.5, beamSteps: 6, rain: 7000, spray: 6000, climax: 3800, bloom: 5, budget: 1.1e6, dpr: 1.5, msaa: 0, noise3: 64 }
+  : { gridX: 300, gridY: 460, waves: 16, detail: 10, cloudDiv: 3, cloudSteps: 40, fogDiv: 2, beamSteps: 10, rain: 15000, spray: 14000, climax: 9000, bloom: 6, budget: 2.6e6, dpr: 1.5, msaa: 4, noise3: 96 };
+
+// ---- small helpers ----
+const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+const lerp = (a, b, t) => a + (b - a) * t;
+const smooth = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+function mulberry32(a) {
+  return () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+}
+const gauss = (r) => Math.sqrt(-2 * Math.log(1 - r() * 0.999999)) * Math.cos(6.2831853 * r());
+const V3 = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
+
+// ---- renderer, camera ----
+const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance', stencil: false });
+renderer.outputColorSpace = THREE.LinearSRGBColorSpace;   // the last pass writes sRGB itself
+renderer.autoClear = false;
+document.body.appendChild(renderer.domElement);
+const GL = renderer.getContext();
+// a software renderer means a thumbnail bot or a machine without a GPU: show one still moment
+let SOFT = (() => { try { const x = GL.getExtension('WEBGL_debug_renderer_info'); return /swiftshader|llvmpipe|software/i.test(x ? GL.getParameter(x.UNMASKED_RENDERER_WEBGL) : ''); } catch (e) { return false; } })();
+const scene = new THREE.Scene();       // rock, tower, sea
+const overScene = new THREE.Scene();   // what is drawn over the air: lightning, rain, spray, the lamp's glare
+const camera = new THREE.PerspectiveCamera(45, 1, 0.4, 15000);
+
+let VW = 1, VH = 1, PR = 1;
+const PERF = { acc: 0, n: 0, cool: 4, scale: 1 };
+const RT = {};
+function makeTargets() {
+  const W = Math.max(2, Math.floor(VW * PR)), H = Math.max(2, Math.floor(VH * PR));
+  // the old targets go (the bloom chain is a list of them, and the sizes are plain numbers)
+  for (const k in RT) { const v = RT[k]; if (Array.isArray(v)) for (const t of v) t.dispose(); else if (v && v.dispose) v.dispose(); }
+  const lin = { type: THREE.HalfFloatType, depthBuffer: false, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter };
+  RT.depth = new THREE.DepthTexture(W, H, THREE.FloatType);
+  RT.scene = new THREE.WebGLRenderTarget(W, H, { type: THREE.HalfFloatType, samples: Q.msaa, depthTexture: RT.depth });
+  // the air over it all: clouds at a third of the size (built up over frames), rain and mist and beams at half
+  const cw = Math.max(2, Math.round(W / Q.cloudDiv)), ch = Math.max(2, Math.round(H / Q.cloudDiv));
+  RT.cloud = [0, 1].map(() => new THREE.WebGLRenderTarget(cw, ch, lin));
+  // how far away each pixel's solid thing is (the passes over it read this, not the depth itself)
+  RT.dist = new THREE.WebGLRenderTarget(W, H, { type: THREE.HalfFloatType, depthBuffer: false, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter });
+  RT.fog = new THREE.WebGLRenderTarget(Math.max(2, Math.round(W / Q.fogDiv)), Math.max(2, Math.round(H / Q.fogDiv)), lin);
+  // the picture with its air, and over it (depth-tested against the solid world) the lightning, rain and spray
+  RT.comp = new THREE.WebGLRenderTarget(W, H, { type: THREE.HalfFloatType, depthBuffer: true, depthTexture: RT.depth, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter });
+  RT.bloom = [];
+  for (let i = 0, w = W >> 1, h = H >> 1; i < Q.bloom; i++, w = Math.max(1, w >> 1), h = Math.max(1, h >> 1)) RT.bloom.push(new THREE.WebGLRenderTarget(w, h, lin));
+  RT.up = RT.bloom.map((t) => new THREE.WebGLRenderTarget(t.width, t.height, lin));
+  RT.W = W; RT.H = H; RT.cw = cw; RT.ch = ch; RT.ping = 0; RT.fresh = true;
+}
+function resize() {
+  VW = innerWidth; VH = innerHeight;
+  PR = Math.max(0.5, Math.min(Q.dpr, devicePixelRatio || 1, Math.sqrt(Q.budget / (VW * VH))) * PERF.scale * (SOFT ? 0.6 : 1));
+  renderer.setPixelRatio(PR); renderer.setSize(VW, VH, true);
+  camera.aspect = VW / VH; camera.updateProjectionMatrix();
+  makeTargets();
+}
+addEventListener('resize', resize);
+const PV = 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0., 1.); }';
+const pass = (fs, uniforms, defines = {}) => new FullScreenQuad(new THREE.ShaderMaterial({ uniforms, defines, vertexShader: PV, fragmentShader: fs, depthTest: false, depthWrite: false }));
+
+// =====================================================================
+// Noise. Small hashes and value noise for the surfaces, and for the
+// clouds a tileable 3D texture made once on the GPU, slice by slice:
+// Perlin noise carved by Worley cells (the round billows of cumulus) and
+// three octaves of Worley noise to wear their edges away.
+// =====================================================================
+const NOISE_GLSL = /* glsl */`
+  float h12(vec2 p) { vec3 q = fract(vec3(p.xyx) * .1031); q += dot(q, q.yzx + 33.33); return fract((q.x + q.y) * q.z); }
+  float h13(vec3 p) { p = fract(p * .1031); p += dot(p, p.zyx + 31.32); return fract((p.x + p.y) * p.z); }
+  vec2 h22(vec2 p) { vec3 q = fract(vec3(p.xyx) * vec3(.1031, .103, .0973)); q += dot(q, q.yzx + 33.33); return fract((q.xx + q.yz) * q.zy); }
+  vec3 h33(vec3 p) { p = fract(p * vec3(.1031, .103, .0973)); p += dot(p, p.yxz + 33.33); return fract((p.xxy + p.yxx) * p.zyx); }
+  float vnoise(vec2 p) {
+    vec2 i = floor(p), f = fract(p), u = f * f * f * (f * (f * 6. - 15.) + 10.);
+    return mix(mix(h12(i), h12(i + vec2(1, 0)), u.x), mix(h12(i + vec2(0, 1)), h12(i + vec2(1, 1)), u.x), u.y);
+  }
+  float vnoise3(vec3 p) {
+    vec3 i = floor(p), f = fract(p), u = f * f * (3. - 2. * f);
+    float a = mix(mix(h13(i), h13(i + vec3(1, 0, 0)), u.x), mix(h13(i + vec3(0, 1, 0)), h13(i + vec3(1, 1, 0)), u.x), u.y);
+    float b = mix(mix(h13(i + vec3(0, 0, 1)), h13(i + vec3(1, 0, 1)), u.x), mix(h13(i + vec3(0, 1, 1)), h13(i + vec3(1, 1, 1)), u.x), u.y);
+    return mix(a, b, u.z);
+  }
+  float fbm2(vec2 p) { float s = 0., a = .5; for (int i = 0; i < 5; i++) { s += a * vnoise(p); p = mat2(1.6, 1.2, -1.2, 1.6) * p; a *= .5; } return s; }
+  float fbm3(vec3 p) { float s = 0., a = .5; for (int i = 0; i < 4; i++) { s += a * vnoise3(p); p = p * 2.03 + vec3(1.7, 9.2, 3.1); a *= .5; } return s; }
+  // distance to the nearest and second nearest cell point
+  vec2 worley2(vec2 p) {
+    vec2 i = floor(p), f = fract(p); float d1 = 8., d2 = 8.;
+    for (int y = -1; y <= 1; y++) for (int x = -1; x <= 1; x++) {
+      vec2 g = vec2(x, y), o = h22(i + g), r = g + o - f; float d = dot(r, r);
+      if (d < d1) { d2 = d1; d1 = d; } else if (d < d2) d2 = d;
+    }
+    return sqrt(vec2(d1, d2));
+  }`;
+
+// the cloud texture: made on the GPU into a 3D render target, one slice at a time
+const NOISE3 = { tex: null };
+function buildNoise3() {
+  const N = SOFT ? 48 : Q.noise3;
+  const rt = new THREE.WebGL3DRenderTarget(N, N, N, { depthBuffer: false });
+  const t = rt.texture;
+  t.format = THREE.RGBAFormat; t.type = THREE.UnsignedByteType;
+  t.minFilter = t.magFilter = THREE.LinearFilter; t.wrapS = t.wrapT = t.wrapR = THREE.RepeatWrapping; t.generateMipmaps = false;
+  const q = pass(/* glsl */`
+    uniform float uZ; varying vec2 vUv;
+    vec3 hp(vec3 p) { p = fract(p * vec3(.1031, .103, .0973)); p += dot(p, p.yxz + 33.33); return fract((p.xxy + p.yxx) * p.zyx); }
+    // gradient noise with period P (cells), so the texture tiles
+    float pnoise(vec3 x, float P) {
+      vec3 i = floor(x), f = fract(x), u = f * f * f * (f * (f * 6. - 15.) + 10.);
+      float r = 0.;
+      float n[8];
+      for (int k = 0; k < 8; k++) {
+        vec3 o = vec3(k & 1, (k >> 1) & 1, (k >> 2) & 1), c = mod(i + o, P);
+        vec3 g = normalize(hp(c + .17) * 2. - 1.);
+        n[k] = dot(g, f - o);
+      }
+      return mix(mix(mix(n[0], n[1], u.x), mix(n[2], n[3], u.x), u.y), mix(mix(n[4], n[5], u.x), mix(n[6], n[7], u.x), u.y), u.z) * .5 + .5;
+    }
+    // Worley noise with period P (cells), inverted: 1 at the cell points
+    float worley(vec3 x, float P) {
+      vec3 i = floor(x), f = fract(x); float d = 1.;
+      for (int z = -1; z <= 1; z++) for (int y = -1; y <= 1; y++) for (int xx = -1; xx <= 1; xx++) {
+        vec3 g = vec3(xx, y, z), c = mod(i + g, P), r = g + hp(c) - f;
+        d = min(d, dot(r, r));
+      }
+      return 1. - sqrt(d);
+    }
+    float remap(float v, float a, float b, float c, float d) { return c + (v - a) / (b - a) * (d - c); }
+    void main() {
+      vec3 p = vec3(vUv, uZ);
+      // (each channel stretched to use the whole range: averaged noise is grey and flat otherwise)
+      float pf = pnoise(p * 4., 4.) * .6 + pnoise(p * 8., 8.) * .28 + pnoise(p * 16., 16.) * .12;
+      float w1 = worley(p * 4., 4.), w2 = worley(p * 8., 8.), w3 = worley(p * 16., 16.), w4 = worley(p * 32., 32.);
+      float wf = w1 * .625 + w2 * .25 + w3 * .125;
+      float pw = clamp((pf - .5) * 2.6 * .55 + (wf - .5) * 2.4 * .45 + .5, 0., 1.);
+      vec3 det = clamp((vec3(wf, w2 * .625 + w3 * .25 + w4 * .125, w3 * .625 + w4 * .375) - .5) * 2.3 + .5, 0., 1.);
+      gl_FragColor = vec4(pw, det);
+    }`, { uZ: { value: 0 } });
+  for (let z = 0; z < N; z++) {
+    q.material.uniforms.uZ.value = (z + 0.5) / N;
+    renderer.setRenderTarget(rt, z); q.render(renderer);
+  }
+  renderer.setRenderTarget(null);
+  q.material.dispose(); q.dispose();
+  NOISE3.tex = t; NOISE3.rt = rt;
+}
+
+// =====================================================================
+// Light. There is very little of it: a moon somewhere behind the storm,
+// the lamp in the lantern with its two beams turning, and the lightning.
+// Every surface and every bit of spray is lit by the same few lights,
+// through the same functions, so they all agree.
+// Units are the picture's own: about 0.02 for the tower by the faint
+// moonlight, a few units where the beam falls near the rock, hundreds
+// for the lamp itself and the lightning seen directly.
+// =====================================================================
+const L = {
+  lampP: V3(0, 32.9, 0), lampC: V3(1, 0.86, 0.62),
+  // (the turning is timed so that one beam falls full on the great wave as it stands highest)
+  beamI: 26000, beamS: 0.034, beamTilt: -0.022, beamPeriod: 12, beamPhase: 0.926, beamAng: 0,
+  beamA: [V3(1, 0, 0), V3(-1, 0, 0)],
+  flashP: V3(0, 1500, -3000), flashCP: V3(0, 1500, -3000), flashC: V3(), flashCloud: 0, flashSky: 0,
+  moonD: V3(-0.45, 0.42, -0.78).normalize(), moonC: V3(0.0075, 0.009, 0.013), ambC: V3(0.0042, 0.0055, 0.0085),
+  bolt: { on: 0, a: V3(), b: V3(), br: 0 },
+};
+// the uniforms every lit material shares (the same objects, so one update reaches them all)
+const LU = {
+  uT: { value: 0 }, uLampP: { value: L.lampP }, uLampC: { value: L.lampC },
+  uBeamA: { value: L.beamA }, uBeamI: { value: L.beamI }, uBeamS: { value: L.beamS },
+  uFlashP: { value: L.flashP }, uFlashCP: { value: L.flashCP }, uFlashC: { value: L.flashC },
+  uMoonD: { value: L.moonD }, uMoonC: { value: L.moonC }, uAmbC: { value: L.ambC },
+  uBoltA: { value: L.bolt.a }, uBoltB: { value: L.bolt.b }, uBoltBr: { value: 0 },
+  uRgL: { value: null }, uRg2L: { value: null },   // the great wave (the same objects as the sea's), for its shadow
+};
+const LIGHT_GLSL = /* glsl */`
+  uniform float uT, uBeamI, uBeamS, uBoltBr;
+  uniform vec3 uLampP, uLampC, uBeamA[2], uFlashP, uFlashCP, uFlashC, uMoonD, uMoonC, uAmbC, uBoltA, uBoltB;
+  uniform vec4 uRgL, uRg2L;
+  // the great wave standing between P and the lightning: how much of the flash still gets to P
+  float waveShadow(vec3 P, vec3 Ld) {
+    if (uRgL.w < 1.) return 1.;
+    vec2 D = uRgL.xy; float hd = dot(Ld.xz, D);
+    if (hd > -.05) return 1.;
+    float eta = dot(P.xz, vec2(-D.y, D.x)), e2 = eta * eta / (uRg2L.y * uRg2L.y), A = uRgL.w * exp(-e2 * e2);
+    float crest = uRgL.z - 12. * e2 + uRg2L.x * A * .3, dS = dot(P.xz, D) - crest;
+    if (dS <= 0.) return 1.;
+    float yAt = P.y + dS * Ld.y / -hd;
+    return smoothstep(A - 7., A + 3., yAt);
+  }
+  // how much of a beam goes out in direction d from the lamp: a bright core and a faint wide halo
+  float beamProfile(vec3 d) {
+    float c = max(dot(d, uBeamA[0]), dot(d, uBeamA[1])), a2 = 2. * (1. - c), s2 = uBeamS * uBeamS;
+    return exp(-a2 / (2. * s2)) + .035 * exp(-a2 / (30. * s2));
+  }
+  // the lamp at P: direction toward it, and the light that arrives (a little all round, the beams where they point)
+  vec3 lampLight(vec3 P, out vec3 Ld) {
+    vec3 d = uLampP - P; float l2 = max(dot(d, d), .25); Ld = d * inversesqrt(l2);
+    return uLampC * (14. + uBeamI * beamProfile(-Ld)) / l2;
+  }
+  // lightning: far away and enormous, so nearly the same everywhere in the scene
+  vec3 flashLight(vec3 P, out vec3 Ld) { Ld = normalize(uFlashP - P); return uFlashC * waveShadow(P, Ld); }
+  // the sky seen in a direction (what the sea reflects): the underside of the clouds, the haze at the
+  // horizon, a glow where the moon is behind them, and lightning when there is any
+  vec3 skyRad(vec3 d) {
+    float y = max(d.y, 0.);
+    vec3 c = mix(vec3(.007, .0085, .012), vec3(.0045, .005, .0075), smoothstep(0., .5, y));
+    c += uMoonC * (2.2 * exp(-(1. - dot(d, uMoonD)) * 9.) + .5 * exp(-(1. - dot(d, uMoonD)) * 2.));
+    vec3 fd = normalize(uFlashP - cameraPosition);
+    c += uFlashC * (.018 + .7 * exp(-(1. - dot(d, fd)) * 5.)) * smoothstep(-.05, .15, d.y);
+    // a bolt: a bright line in the sky (its points as seen from here)
+    if (uBoltBr > 0.) {
+      vec3 a = normalize(uBoltA - cameraPosition), b = normalize(uBoltB - cameraPosition), ab = b - a;
+      float t = clamp(dot(d - a, ab) / max(dot(ab, ab), 1e-6), 0., 1.);
+      float e = length(d - normalize(a + ab * t));
+      c += vec3(.75, .8, 1.) * uBoltBr * (exp(-e * e / 2e-6) * 40. + exp(-e * e / 2e-4) * 1.2);
+    }
+    return c;
+  }`;
+// the beams turn; once a frame their axes are set from the time
+function updateBeams(t) {
+  const a = (t / L.beamPeriod) * Math.PI * 2 + L.beamPhase, ce = Math.cos(L.beamTilt), se = Math.sin(L.beamTilt);
+  L.beamAng = a;
+  L.beamA[0].set(Math.cos(a) * ce, se, Math.sin(a) * ce);
+  L.beamA[1].set(-Math.cos(a) * ce, se, -Math.sin(a) * ce);
+}
+// the same on the CPU: how much beam a point receives (for the sound, the camera, the spray)
+function beamAt(p) {
+  const d = V3().subVectors(p, L.lampP), l = d.length(); d.multiplyScalar(1 / l);
+  const c = Math.max(d.dot(L.beamA[0]), d.dot(L.beamA[1])), a2 = 2 * (1 - c), s2 = L.beamS * L.beamS;
+  return Math.exp(-a2 / (2 * s2)) + 0.035 * Math.exp(-a2 / (30 * s2));
+}
+
+// =====================================================================
+// The story, 72 seconds long, over and over:
+//   0  far off, the lighthouse on its rock, the beam turning, lightning in the clouds
+//  10  closer, round toward the side the sea runs to
+//  27  low and close, the tower above, the spray going up the rock
+//  38  away again; out in the dark, unseen yet, the sea is gathering
+//  45  the camera settles downwind of the rock; the water draws back from it
+//  50  a wave stands up behind the lighthouse, higher than the lantern
+//  54  it breaks over the rock; for a moment the tower is gone in the spray
+//  58  the spray falls, the light is still turning; the camera rises and draws away
+// Every other time round, the camera goes the other way about the rock.
+// =====================================================================
+const CYC = { len: 72, hit: 54, H: 58, speed: 16 };
+// the camera: [time, angle round the rock from downwind (degrees), distance, height, height it looks at, fov]
+const CAM_POLAR = [
+  [0, 75, 340, 30, 17, 44],
+  [10, 55, 270, 22, 16, 44],
+  [19, 32, 200, 15, 17, 46],
+  [27, 10, 125, 10, 21, 50],
+  [33, -22, 72, 8, 24, 56],
+  [39, -50, 100, 12, 21, 52],
+  [45, -30, 150, 12, 24, 50],
+  [50, -38, 168, 9, 31, 54],
+  [54, -35, 162, 11, 31, 56],
+  [58, -26, 178, 22, 26, 52],
+  [65, 35, 255, 30, 19, 46],
+];
+function camKeys(cycle) {
+  const keys = [], mk = (c, t0) => CAM_POLAR.map(([t, deg, d, h, lh, fov]) => {
+    const a = WIND_A + (c % 2 ? -deg : deg) * Math.PI / 180;
+    return [t0 + t, [Math.cos(a) * d, h, Math.sin(a) * d], [0, lh, 0], fov];
+  });
+  keys.push(...mk(cycle, 0));
+  // the end of this time round flows into the start of the next
+  const nx = mk(cycle + 1, CYC.len); keys.push(nx[0], nx[1]);
+  return keys;
+}
+// smooth through keyframes at uneven times (Catmull-Rom tangents scaled by time)
+function hermite(keys, T, get) {
+  let i = 0; while (i < keys.length - 2 && T > keys[i + 1][0]) i++;
+  const k0 = keys[Math.max(0, i - 1)], k1 = keys[i], k2 = keys[i + 1], k3 = keys[Math.min(keys.length - 1, i + 2)];
+  const t1 = k1[0], t2 = k2[0], h = t2 - t1, u = clamp((T - t1) / h, 0, 1);
+  const a = get(k1), b = get(k2), pa = get(k0), pb = get(k3);
+  const out = [];
+  for (let c = 0; c < a.length; c++) {
+    const m1 = (b[c] - pa[c]) / Math.max(1e-6, t2 - k0[0]) * h, m2 = (pb[c] - a[c]) / Math.max(1e-6, k3[0] - t1) * h;
+    const u2 = u * u, u3 = u2 * u;
+    out.push((2 * u3 - 3 * u2 + 1) * a[c] + (u3 - 2 * u2 + u) * m1 + (-2 * u3 + 3 * u2) * b[c] + (u3 - u2) * m2);
+  }
+  return out;
+}
+// the great wave at story time T: where its crest is, how high, how steep and how far over it leans
+function rogueAt(T) {
+  const C = CYC;
+  ROG.s = -18 + C.speed * (T - C.hit);
+  if (T < 37 || T > 61) { ROG.A = 0; return; }
+  const rise = Math.pow(smooth(37, 52.6, T), 1.25), fall = 1 - 0.8 * smooth(52.9, 56, T), gone = 1 - smooth(56, 62, T);
+  ROG.A = C.H * rise * fall * gone;
+  ROG.wf = lerp(36, 13, smooth(43, 52.6, T)) + 14 * smooth(53, 57, T);
+  ROG.wb = lerp(85, 62, smooth(40, 52, T));
+  ROG.lean = lerp(0.15, 1.35, smooth(45, 52.8, T)) + 0.5 * smooth(52.8, 54.2, T) - 1.4 * smooth(54.2, 57, T);
+}
+
+// =====================================================================
+// The sea. A storm sea is a sum of Gerstner waves: every point of the
+// surface goes round in a small circle, so crests come to points and
+// troughs flatten, the long swell from the wind, the short chop across it.
+// The long waves move the geometry; the short ones only tilt the light.
+// The surface is a grid laid out on the screen and thrown down onto the
+// water each frame, so there is detail wherever the eye is and none
+// wasted at the horizon.
+// The great wave is one more term: a ridge of water with a steep face and
+// a long back, a trough running ahead of it that pulls the sea away from
+// the rock, rising as it comes in, leaning, and at the last curling over
+// and falling apart.
+// =====================================================================
+const WIND_A = 0.35;                              // the way the sea runs (radians, in the xz plane)
+const WIND = [Math.cos(WIND_A), Math.sin(WIND_A)];
+const OCEAN = { mesh: null, mat: null };
+const WAVES = (() => {
+  const r = mulberry32(2024), geo = [], det = [];
+  for (let i = 0; i < Q.waves; i++) {
+    const f = i / (Q.waves - 1), lam = 210 * Math.pow(7 / 210, f), k = 2 * Math.PI / lam;
+    // as in a real sea, the shorter the wave the less steep: high, sharp swells, and a lower, rougher sea
+    // riding on them that runs more ways (equally steep short waves line up into corduroy)
+    let A = 0.1 * Math.min(1, Math.pow(lam / 55, 0.55)) * (0.7 + 0.6 * r()) / k; if (lam > 150) A *= 0.7; if (lam < 70 && lam > 25) A *= 1.2;
+    const ang = WIND_A + (r() * 2 - 1) * (0.22 + 1.05 * f);
+    geo.push({ dx: Math.cos(ang), dz: Math.sin(ang), k, A, w: Math.sqrt(9.81 * k), ph: r() * 6.2832, lam });
+  }
+  // the crests pinch as far as they can without folding over
+  // (the long swell pinches most; the short waves riding on it stay rounder)
+  geo.forEach((g, i) => { g.qw = 1.25 - 0.75 * i / (geo.length - 1); });
+  const kA = geo.reduce((s, g) => s + g.k * g.A * g.qw, 0);
+  for (const g of geo) g.Q = 0.93 * g.qw / kA;
+  for (let i = 0; i < Q.detail; i++) {
+    const f = i / Math.max(1, Q.detail - 1), lam = 6.5 * Math.pow(1.1 / 6.5, f) * (0.85 + 0.3 * r()), k = 2 * Math.PI / lam;
+    // the chop runs every way: a few long sines in step would draw corduroy
+    const ang = WIND_A + (i % 2 ? 1 : -1) * (0.4 + 1.6 * r()) + (r() - 0.5) * 0.6;
+    det.push({ dx: Math.cos(ang), dz: Math.sin(ang), k, A: 0.06 / k, w: Math.sqrt(9.81 * k), ph: r() * 6.2832, lam });
+  }
+  const pack = (W, withQ) => ({
+    a: W.map((g) => new THREE.Vector4(g.dx, g.dz, g.k, g.A)),
+    b: W.map((g) => new THREE.Vector4(g.w, g.ph, withQ ? g.Q : 0, g.lam)),
+  });
+  return { geo, det, G: pack(geo, true), D: pack(det, false) };
+})();
+// the great wave, set from the story's clock each frame
+const ROG = { dir: [WIND[0], WIND[1]], s: -400, A: 0, lean: 0, wf: 30, wb: 70, lw: 150 };
+const OU = {
+  uWa: { value: WAVES.G.a }, uWb: { value: WAVES.G.b }, uDa: { value: WAVES.D.a }, uDb: { value: WAVES.D.b },
+  uRg: { value: new THREE.Vector4(WIND[0], WIND[1], -400, 0) }, uRg2: { value: new THREE.Vector4(0, 150, 30, 70) },
+  uInvVP: { value: new THREE.Matrix4() }, uGrid: { value: new THREE.Vector4(-1.3, 1.3, -3.2, 0.2) }, uFar: { value: 12000 },
+  uWind: { value: new THREE.Vector2(WIND[0], WIND[1]) },
+  uWash: { value: Array.from({ length: 8 }, () => new THREE.Vector4(0, 0, -99, 0)) },   // recent blows on the rock: x, z, time, strength
+  uRogFoam: { value: new THREE.Vector4(0, 0, -99, 0) },
+};
+LU.uRgL.value = OU.uRg.value; LU.uRg2L.value = OU.uRg2.value;
+const WAVE_GLSL = /* glsl */`
+  #define NW ${Q.waves}
+  #define ND ${Q.detail}
+  uniform vec4 uWa[NW], uWb[NW], uDa[ND], uDb[ND], uRg, uRg2;
+  // the long waves: where the surface point that rests at p is now, and how the surface is tilted there.
+  // Waves too short to be seen at this distance are let go, so the far sea does not shimmer; and for the
+  // light, waves shorter than a few pixels' worth of sea (foot: metres of sea across one pixel) are let go too,
+  // or they would draw false lines
+  vec3 swell(vec2 p, float dist, float foot, inout vec3 dX, inout vec3 dZ) {
+    vec3 P = vec3(p.x, 0., p.y);
+    for (int i = 0; i < NW; i++) {
+      vec4 a = uWa[i], b = uWb[i];
+      float fade = clamp(1.6 - dist / (b.w * 38.), 0., 1.) * (foot > 0. ? clamp(b.w / (foot * 4.) - 1., 0., 1.) : 1.);
+      if (fade <= 0.) continue;
+      float A = a.w * fade, th = a.z * dot(a.xy, p) - b.x * uT + b.y, s = sin(th), c = cos(th), QA = b.z * A;
+      P.x -= QA * a.x * s; P.z -= QA * a.y * s; P.y += A * c;
+      float kc = a.z * c * QA, ks = a.z * s * A;
+      dX += vec3(-kc * a.x * a.x, -ks * a.x, -kc * a.y * a.x);
+      dZ += vec3(-kc * a.x * a.y, -ks * a.y, -kc * a.y * a.y);
+    }
+    return P;
+  }
+  // the short waves only tilt the surface
+  // (they come in patches, as gusts and wave groups do: half of them in one pattern of patches, half in
+  // another, g, so that no long lines run through them)
+  void chop(vec2 p, float dist, float foot, vec2 g, inout vec3 dX, inout vec3 dZ) {
+    for (int i = 0; i < ND; i++) {
+      vec4 a = uDa[i], b = uDb[i];
+      float fade = clamp(1.5 - dist / (b.w * 45.), 0., 1.) * clamp(b.w / (foot * 4.) - 1., 0., 1.);
+      if (fade <= 0.) continue;
+      fade *= smoothstep(.12, .88, mod(float(i), 2.) < .5 ? g.x : g.y) * 1.7;
+      float th = a.z * dot(a.xy, p) - b.x * uT + b.y, ks = a.z * sin(th) * a.w * fade;
+      dX.y -= ks * a.x; dZ.y -= ks * a.y;
+    }
+  }
+  // the great wave at rest point p: how far along its way it pushes the water, and how high
+  vec2 rogueD(vec2 p) {
+    if (uRg.w <= 0.) return vec2(0.);
+    vec2 D = uRg.xy; float s = dot(p, D), eta = dot(p, vec2(-D.y, D.x));
+    float e2 = eta * eta / (uRg2.y * uRg2.y), xi = s - uRg.z + 12. * e2, A = uRg.w * exp(-e2 * e2) * (1. + .06 * sin(eta * .045 + 1.3) + .022 * sin(eta * .11 + .4));
+    float w = xi < 0. ? uRg2.w : uRg2.z, f = exp(-xi * xi / (w * w));
+    float q1 = (xi - uRg2.z - 30.) / 32., q2 = (xi + uRg2.w + 40.) / 50.;
+    float tr = -.24 * exp(-q1 * q1) - .1 * exp(-q2 * q2);
+    return vec2(uRg2.x * A * .42 * f * f, A * (f + tr));
+  }
+  vec3 roguePos(vec2 p) { vec2 r = rogueD(p); return vec3(uRg.x * r.x, r.y, uRg.y * r.x); }
+  void rogueDeriv(vec2 p, inout vec3 dX, inout vec3 dZ) {
+    if (uRg.w <= 0.) return;
+    const float e = .6;
+    dX += (roguePos(p + vec2(e, 0.)) - roguePos(p - vec2(e, 0.))) / (2. * e);
+    dZ += (roguePos(p + vec2(0., e)) - roguePos(p - vec2(0., e))) / (2. * e);
+  }
+  // the rock's waterline, roughly: negative inside, metres outside
+  float rockDist(vec2 p) { return (length(p / vec2(20.5, 15.8)) - 1.) * 17. + 1.6 * sin(atan(p.y, p.x) * 5. + 1.3) + 1.1 * sin(atan(p.y, p.x) * 9. + .4); }`;
+// the same sea on the CPU, for whatever must know where the water is (the spray, the camera)
+function waterAt(x, z, t, out = { y: 0, vy: 0 }) {
+  let y = 0, vy = 0;
+  for (const g of WAVES.geo) {
+    const th = g.k * (g.dx * x + g.dz * z) - g.w * t + g.ph, s = Math.sin(th), c = Math.cos(th);
+    y += g.A * c; vy += g.A * g.w * s;
+  }
+  if (ROG.A > 0) {
+    const D = ROG.dir, s = x * D[0] + z * D[1], eta = -x * D[1] + z * D[0], e2 = eta * eta / (ROG.lw * ROG.lw), xi = s - ROG.s + 12 * e2, A = ROG.A * Math.exp(-e2 * e2) * (1 + 0.06 * Math.sin(eta * 0.045 + 1.3) + 0.022 * Math.sin(eta * 0.11 + 0.4));
+    const w = xi < 0 ? ROG.wb : ROG.wf, f = Math.exp(-xi * xi / (w * w)), q1 = (xi - ROG.wf - 30) / 32, q2 = (xi + ROG.wb + 40) / 50;
+    y += A * (f - 0.24 * Math.exp(-q1 * q1) - 0.1 * Math.exp(-q2 * q2));
+  }
+  out.y = y; out.vy = vy; return out;
+}
+
+function buildOcean() {
+  const nx = Q.gridX, ny = Q.gridY, g = new THREE.BufferGeometry(), uv = new Float32Array(nx * ny * 2);
+  for (let j = 0, k = 0; j < ny; j++) for (let i = 0; i < nx; i++, k += 2) { uv[k] = i / (nx - 1); uv[k + 1] = j / (ny - 1); }
+  const idx = new Uint32Array((nx - 1) * (ny - 1) * 6);
+  for (let j = 0, k = 0; j < ny - 1; j++) for (let i = 0; i < nx - 1; i++) {
+    const a = j * nx + i, b = a + 1, c = a + nx, d = c + 1;
+    idx[k++] = a; idx[k++] = b; idx[k++] = d; idx[k++] = a; idx[k++] = d; idx[k++] = c;
+  }
+  g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(nx * ny * 3), 3));
+  g.setAttribute('aG', new THREE.BufferAttribute(uv, 2));
+  g.setIndex(new THREE.BufferAttribute(idx, 1));
+  const mat = new THREE.ShaderMaterial({
+    uniforms: { ...LU, ...OU }, side: THREE.DoubleSide,
+    vertexShader: /* glsl */`
+      ${LIGHT_GLSL}
+      ${WAVE_GLSL}
+      uniform mat4 uInvVP; uniform vec4 uGrid; uniform float uFar;
+      attribute vec2 aG;
+      varying vec3 vW; varying vec2 vB; varying float vLift, vRog;
+      void main() {
+      #ifdef PATCH
+        // the great wave's own patch, laid out in its frame: dense about the crest, sparse toward its edges
+        float v = aG.x * 2. - 1., w = aG.y * 2. - 1.;
+        float xi = -10. + (v < 0. ? 215. : 135.) * sinh(2.6 * v) / 6.695, eta = 245. * sinh(2. * w) / 3.627;
+        vec2 base = uRg.xy * (uRg.z + xi) + vec2(-uRg.y, uRg.x) * eta;
+      #else
+        // the ray through this grid point, down to the sea's rest level (or out toward the horizon)
+        // (a few rows reach far below the picture, so that a crest right under the camera never leaves a gap;
+        // the rest are spread over what is seen)
+        float yb = min(-1.05, uGrid.w - .1), gy = aG.y < .14 ? mix(uGrid.z, yb, aG.y / .14) : mix(yb, uGrid.w, (aG.y - .14) / .86);
+        // (and those rows reach wider: water close under the camera, lifted by a crest, closes in toward the middle)
+        vec2 ndc = vec2(mix(uGrid.x, uGrid.y, aG.x) * (1. + .8 * max(0., -.6 - gy)), gy);
+        vec4 a = uInvVP * vec4(ndc, -1., 1.), b = uInvVP * vec4(ndc, 1., 1.);
+        vec3 o = a.xyz / a.w, d = normalize(b.xyz / b.w - o);
+        float hz = max(length(d.xz), 1e-4), t = d.y < -1e-4 ? min(-o.y / d.y, uFar / hz) : uFar / hz;
+        vec2 base = o.xz + d.xz * t;
+      #endif
+        float dist = length(base - cameraPosition.xz);
+        vec3 dX = vec3(1, 0, 0), dZ = vec3(0, 0, 1);
+        vec3 S = swell(base, dist, 0., dX, dZ), R = roguePos(base);
+        float calm = 1. - .75 * smoothstep(4., 18., R.y);
+        S.y *= calm; S.xz = base + (S.xz - base) * calm;
+        vec3 P = S + R;
+        vW = P; vB = base; vLift = S.y; vRog = R.y;
+        gl_Position = projectionMatrix * viewMatrix * vec4(P, 1.);
+      }`,
+    fragmentShader: /* glsl */`
+      ${NOISE_GLSL}
+      ${LIGHT_GLSL}
+      ${WAVE_GLSL}
+      uniform vec2 uWind; uniform vec4 uWash[8], uRogFoam;
+      varying vec3 vW; varying vec2 vB; varying float vLift, vRog;
+      void main() {
+      #ifndef PATCH
+        // where the great wave's own patch lies, this grid steps aside
+        if (uRg.w > .5) { float xi = dot(vB, uRg.xy) - uRg.z, eta = dot(vB, vec2(-uRg.y, uRg.x)); if (xi > -213. && xi < 123. && abs(eta) < 233.) discard; }
+      #endif
+        vec3 Vv = vW - cameraPosition; float dist = length(Vv); vec3 V = Vv / dist;
+        // the slope here, from every wave the eye can resolve at this distance
+        vec3 dX = vec3(1, 0, 0), dZ = vec3(0, 0, 1);
+        float foot = max(length(fwidth(vB)), 1e-3);
+        vec2 gp = vec2(vnoise(vB * .03 + uT * .05), vnoise(vB * .03 + vec2(31.7, 11.3) - uT * .04));
+        swell(vB, dist, foot, dX, dZ); chop(vB, dist, foot, gp, dX, dZ);
+        // (the folding that makes foam is the wind sea's; the great wave's face is solid water until its lip breaks)
+        float J = dX.x * dZ.z - dX.z * dZ.x;
+        rogueDeriv(vB, dX, dZ);
+        // the wind's chop and the rain beating on it: a rough, broken surface with no lines in it, the
+        // bumps a little longer across the wind than along it, fading with distance
+        float rf = clamp(1. - dist / 240., 0., 1.);
+        if (rf > 0.) {
+          vec2 wp = vec2(-uWind.y, uWind.x);
+          for (int o = 0; o < 3; o++) {
+            float sc = o == 0 ? .5 : o == 1 ? 1.35 : 3.3, am = o == 0 ? .5 : o == 1 ? .25 : .1;
+            vec2 q = vec2(dot(vB, uWind), dot(vB, wp) * .6) * sc + uT * (o == 0 ? vec2(.5, .15) : o == 1 ? vec2(-.4, .9) : vec2(1.1, -.5)) + float(o) * 17.3;
+            float n0 = vnoise(q), nx = vnoise(q + vec2(.05, 0.)), nz = vnoise(q + vec2(0., .05));
+            vec2 g = vec2(nx - n0, nz - n0) / .05 * am * sc * .3 * rf, gw = g.x * uWind + g.y * .6 * wp;
+            dX.y += gw.x; dZ.y += gw.y;
+          }
+        }
+        vec3 N = normalize(cross(dZ, dX));
+        if (!gl_FrontFacing) N = -N;
+        if (dot(N, -V) < 0.) N = normalize(N + V * (dot(N, -V) - .02));
+        // the light: the sky and the lamp mirrored in the surface, a little scattered up from inside the water
+        vec3 R = reflect(V, N); R.y = abs(R.y);
+        float cv = clamp(dot(-V, N), 0., 1.), F = .02 + .98 * pow(1. - cv, 5.);
+        vec3 Ll, Lf, El = lampLight(vW, Ll), Ef = flashLight(vW, Lf);
+        vec3 refl = skyRad(R) + El * pow(max(dot(R, Ll), 0.), 1400.) * 260. + Ef * pow(max(dot(R, Lf), 0.), 90.) * 1.5;
+        vec3 lampD = El * max(dot(N, Ll), 0.), diffL = uAmbC * (.6 + .4 * N.y) + uMoonC * max(dot(N, uMoonD), 0.) + lampD + Ef * max(dot(N, Lf), .04);
+        // a crest is thin enough to glow green when there is light behind it
+        float crest = clamp((vLift - 1.5) / 7., 0., 1.) + (uRg.w > 0. ? smoothstep(7., 1.5, uRg.w - vRog) * smoothstep(.6, 1.3, uRg2.x) * 1.5 : 0.);
+        vec3 sss = vec3(.05, .34, .3) * crest * (El * pow(max(dot(V, Ll), 0.), 3.) + Ef * pow(max(dot(V, Lf), 0.), 2.) * .08);
+        // the top of the great wave is thin enough to see the sky through it, green with the water it passes
+        if (uRg.w > 0.) {
+          float thin = smoothstep(8., 1., uRg.w - vRog) * smoothstep(12., 26., uRg.w) * (.35 + .65 * fbm2(vec2(dot(vB, vec2(-uRg.y, uRg.x)) * .05, uT * .2)));
+          sss += vec3(.42, .76, .66) * skyRad(V) * thin * .5;
+        }
+        // (under the lamp's strong light the churned water looks greyer, full of bubbles)
+        vec3 col = refl * F + (vec3(.0055, .0125, .015) * (diffL - lampD) * 1.3 + vec3(.009, .0115, .0125) * lampD * 1.3 + sss) * (1. - F);
+        // foam: how much of the surface should be white here (crests folding, streaks drawn out by the wind,
+        // the wash round the rock, the great wave's white water), and a pattern that it reveals, so that thin
+        // foam is torn lace and thick foam is a sheet
+        vec2 wv = vec2(dot(vB, uWind), dot(vB, vec2(-uWind.y, uWind.x)));
+        float pat = fbm2(vB * .16 + vec2(uT * .03, 0.)) * .55 + (1. - worley2(vB * .55 + vec2(0., uT * .05)).x) * .3 + vnoise(vB * 2.4) * .15;
+        float calmF = 1. - .75 * smoothstep(3., 14., vRog);
+        float cov = (smoothstep(1.06, .5, J) * .85 + smoothstep(2.5, 7., vLift) * .3) * calmF;
+        // the great wave: white where its lip curls over and breaks, torn streaks running down its face
+        if (uRg.w > 0.) {
+          // (the lip is the last few metres of the crest, and only once it starts to break)
+          float hf = clamp(vRog / max(uRg.w, 1.), 0., 1.), top = uRg.w - vRog, lip = smoothstep(5., 1.2, top) * smoothstep(.85, 1.35, uRg2.x);
+          float face = smoothstep(.08, .35, hf) * smoothstep(.9, .55, hf) * smoothstep(.58, .85, fbm2(vec2(dot(vB, vec2(-uRg.y, uRg.x)) * .16, vRog * .035 - uT * .3)));
+          cov += lip * .95 + face * .42;
+        }
+        cov += smoothstep(.55, .8, fbm2(vec2(wv.x * .03, wv.y * .45) + vec2(-uT * .02, 0.))) * .4 * calmF;
+        float rd = rockDist(vB);
+        cov += exp(-max(rd, 0.) / 8.) * .8 * smoothstep(-4., 0., rd);
+        for (int i = 0; i < 8; i++) {
+          vec4 w = uWash[i]; float age = uT - w.z; if (age < 0. || age > 9.) continue;
+          float r = length(vB - w.xy), front = 4. + age * 5.;
+          cov += w.w * exp(-age / 3.5) * smoothstep(front + 6., front - 2., r);
+        }
+        if (uRogFoam.w > 0.) { float age = uT - uRogFoam.z, r = length(vB - uRogFoam.xy); cov += uRogFoam.w * smoothstep(30. + age * 14., age * 9., r) * exp(-max(age - 4., 0.) / 6.); }
+        float foam = smoothstep(1. - cov, 1.25 - cov, pat) * clamp(1.2 - dist / 2600., 0., 1.);
+        col = mix(col, vec3(.8, .86, .9) * diffL + El * pow(max(dot(R, Ll), 0.), 30.) * .2, foam);
+        gl_FragColor = vec4(col, 1.);
+      }`,
+  });
+  const mesh = new THREE.Mesh(g, mat); mesh.frustumCulled = false; mesh.renderOrder = 1;
+  scene.add(mesh);
+  OCEAN.mesh = mesh; OCEAN.mat = mat;
+  // the great wave's patch: the same sea, a grid of its own that travels with the wave
+  const px = LOW ? 200 : 380, py = LOW ? 120 : 220, pg = new THREE.BufferGeometry(), pu = new Float32Array(px * py * 2);
+  for (let j = 0, k = 0; j < py; j++) for (let i = 0; i < px; i++, k += 2) { pu[k] = i / (px - 1); pu[k + 1] = j / (py - 1); }
+  const pidx = new Uint32Array((px - 1) * (py - 1) * 6);
+  for (let j = 0, k = 0; j < py - 1; j++) for (let i = 0; i < px - 1; i++) {
+    const a = j * px + i, b = a + 1, c = a + px, d = c + 1;
+    pidx[k++] = a; pidx[k++] = d; pidx[k++] = b; pidx[k++] = a; pidx[k++] = c; pidx[k++] = d;
+  }
+  pg.setAttribute('position', new THREE.BufferAttribute(new Float32Array(px * py * 3), 3));
+  pg.setAttribute('aG', new THREE.BufferAttribute(pu, 2));
+  pg.setIndex(new THREE.BufferAttribute(pidx, 1));
+  const pmat = mat.clone(); pmat.uniforms = mat.uniforms; pmat.defines = { PATCH: 1 };
+  const patch = new THREE.Mesh(pg, pmat); patch.frustumCulled = false; patch.renderOrder = 1; patch.visible = false;
+  scene.add(patch); OCEAN.patch = patch;
+}
+// once a frame: the grid follows the camera, and the great wave is wherever the story has it
+const _ivp = new THREE.Matrix4(), _hz = V3();
+function updateOcean() {
+  _ivp.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse).invert();
+  OU.uInvVP.value.copy(_ivp);
+  // rows from below the bottom of the picture (for waves rising into it) up to a little past the horizon
+  const f = camera.getWorldDirection(_hz); f.y = 0; f.normalize();
+  _hz.set(camera.position.x + f.x * 1e5, 0, camera.position.z + f.z * 1e5).project(camera);
+  // (wider than the picture, more so when it is narrow: the sea's sideways sway can pull the near water in from beyond its edges)
+  const X = 1.25 + 0.25 / Math.min(1, camera.aspect);
+  OU.uGrid.value.set(-X, X, -6, clamp(_hz.y + 0.06, -1.2, 1.6));
+  OU.uRg.value.set(ROG.dir[0], ROG.dir[1], ROG.s, ROG.A);
+  OU.uRg2.value.set(ROG.lean, ROG.lw, ROG.wf, ROG.wb);
+  OCEAN.patch.visible = ROG.A > 0.5;
+}
+
+// =====================================================================
+// The rock and the lighthouse. The rock is a granite hump worn by the
+// sea: an ellipsoid pushed about by noise, cliffed at the water, weed
+// black below the high-water line, flattened on top where the tower was
+// built. The tower is stone painted white, flared at the foot, darkened
+// and streaked by spray, with a corbelled gallery, a black lantern, a red
+// dome, and two windows lit where the keeper lives. In the lantern the
+// lens turns: two bullseye panels, one for each beam.
+// =====================================================================
+// value noise in JS, for shaping the rock
+const JN = (() => {
+  const h = (x, y, z) => { let n = Math.imul(x, 374761393) ^ Math.imul(y, 668265263) ^ Math.imul(z, 1274126177); n = Math.imul(n ^ (n >>> 13), 1103515245); return ((n ^ (n >>> 16)) >>> 0) / 4294967296; };
+  const n3 = (x, y, z) => {
+    const ix = Math.floor(x), iy = Math.floor(y), iz = Math.floor(z), fx = x - ix, fy = y - iy, fz = z - iz;
+    const u = fx * fx * (3 - 2 * fx), v = fy * fy * (3 - 2 * fy), w = fz * fz * (3 - 2 * fz);
+    const L = (a, b, t) => a + (b - a) * t;
+    return L(L(L(h(ix, iy, iz), h(ix + 1, iy, iz), u), L(h(ix, iy + 1, iz), h(ix + 1, iy + 1, iz), u), v),
+      L(L(h(ix, iy, iz + 1), h(ix + 1, iy, iz + 1), u), L(h(ix, iy + 1, iz + 1), h(ix + 1, iy + 1, iz + 1), u), v), w);
+  };
+  const fbm = (x, y, z, o = 5) => { let s = 0, a = 0.5; for (let i = 0; i < o; i++) { s += a * n3(x, y, z); x = x * 2.03 + 7.1; y = y * 2.03 + 1.3; z = z * 2.03 + 3.7; a *= 0.5; } return s; };
+  const ridged = (x, y, z, o = 4) => { let s = 0, a = 0.5; for (let i = 0; i < o; i++) { const n = 1 - Math.abs(n3(x, y, z) * 2 - 1); s += a * n * n; x = x * 2.1 + 3.3; y = y * 2.1 + 9.1; z = z * 2.1 + 1.9; a *= 0.5; } return s; };
+  return { n3, fbm, ridged };
+})();
+const TOWER = { baseY: 7.6, topY: 28.6, r0: 4.4, r1: 3.15, door: WIND_A };
+const ISLAND = { group: new THREE.Group() };
+const SURF_GLSL = /* glsl */`
+  // a surface lit by everything there is: moon and sky, the lamp and its beams, the lightning
+  vec3 shade(vec3 P, vec3 N, vec3 V, vec3 alb, float rough, float wet) {
+    vec3 Ll, Lf, El = lampLight(P, Ll), Ef = flashLight(P, Lf);
+    float sp = 2. / (rough * rough), fr = .04 + .96 * pow(1. - clamp(dot(N, -V), 0., 1.), 5.);
+    float dl = max(dot(N, Ll), 0.), df = max(dot(N, Lf), 0.), dm = max(dot(N, uMoonD), 0.);
+    vec3 c = alb * (uAmbC * (.55 + .45 * N.y) + uMoonC * dm + El * dl + Ef * df);
+    vec3 s = El * dl * pow(max(dot(N, normalize(Ll - V)), 0.), sp) + Ef * df * pow(max(dot(N, normalize(Lf - V)), 0.), sp) + uMoonC * dm * pow(max(dot(N, normalize(uMoonD - V)), 0.), sp);
+    return c + s * (sp + 2.) / 8. * fr * wet;
+  }`;
+function buildRock() {
+  const g = new THREE.SphereGeometry(1, LOW ? 160 : 240, LOW ? 80 : 120), p = g.attributes.position;
+  const v = V3();
+  for (let i = 0; i < p.count; i++) {
+    v.fromBufferAttribute(p, i);
+    const u = v.clone();
+    // an ellipsoid, pushed out and in by noise: big lumps, then ridges and boulders
+    const big = JN.fbm(u.x * 1.6 + 3, u.y * 1.6, u.z * 1.6) - 0.5, rid = JN.ridged(u.x * 3.4, u.y * 3.4 + 2, u.z * 3.4);
+    const sc = 1 + big * 0.32 + (rid - 0.3) * 0.12;
+    let x = u.x * 21 * sc, y = u.y * 11 * sc - 3.4, z = u.z * 16 * sc;
+    // the waterline is cut into cliffs; above them the rock slopes up to the top
+    const r = Math.hypot(x, z);
+    if (y > 7.0) {
+      // the flat where the tower stands, and a rough top elsewhere
+      const plat = smooth(9.5, 6.5, r);
+      y = lerp(Math.min(y, 9.4 + JN.fbm(x * 0.3, 0, z * 0.3) * 1.2), 7.45 + JN.n3(x * 0.8, 0, z * 0.8) * 0.25, plat);
+    }
+    if (y > -1 && y < 6) { const k = smooth(-1, 2.5, y) * smooth(6, 3.5, y); x *= 1 + 0.05 * k * (JN.n3(x * 0.2, y * 0.6, z * 0.2) - 0.3); z *= 1 + 0.05 * k * (JN.n3(z * 0.2, y * 0.6, x * 0.2) - 0.3); }
+    p.setXYZ(i, x, y, z);
+  }
+  g.computeVertexNormals();
+  const mat = new THREE.ShaderMaterial({
+    uniforms: { ...LU },
+    vertexShader: 'varying vec3 vW, vN; void main(){ vW = (modelMatrix * vec4(position, 1.)).xyz; vN = normalize(mat3(modelMatrix) * normal); gl_Position = projectionMatrix * viewMatrix * vec4(vW, 1.); }',
+    fragmentShader: /* glsl */`
+      ${NOISE_GLSL}
+      ${LIGHT_GLSL}
+      ${SURF_GLSL}
+      varying vec3 vW, vN;
+      void main() {
+        vec3 V = normalize(vW - cameraPosition), N = normalize(vN);
+        // grain and cracks: the normal tipped by noise
+        float n0 = vnoise3(vW * 1.7), e = .06;
+        vec3 gr = vec3(vnoise3(vW * 1.7 + vec3(e, 0, 0)), vnoise3(vW * 1.7 + vec3(0, e, 0)), vnoise3(vW * 1.7 + vec3(0, 0, e))) - n0;
+        float n1 = fbm3(vW * .28), n2 = vnoise3(vW * 6.);
+        N = normalize(N - (gr / e - N * dot(gr / e, N)) * .16);
+        // granite, darker and wet toward the sea, black weed below the high-water line, pale lichen up top
+        vec3 alb = mix(vec3(.055, .052, .05), vec3(.13, .12, .11), n1) * (.8 + .4 * n2);
+        float weed = smoothstep(4.2, 1.8, vW.y + (n1 - .5) * 3.);
+        alb = mix(alb, vec3(.018, .026, .02), weed);
+        alb = mix(alb, vec3(.2, .2, .17), smoothstep(.6, .75, n1) * smoothstep(5., 8., vW.y) * .5);
+        float wet = mix(.55, 1., weed);
+        vec3 col = shade(vW, N, V, alb, mix(.32, .18, weed), wet);
+        gl_FragColor = vec4(col, 1.);
+      }`,
+  });
+  const m = new THREE.Mesh(g, mat); m.renderOrder = 0;
+  ISLAND.group.add(m); ISLAND.rock = m;
+}
+function buildTower() {
+  const G = ISLAND.group, T = TOWER;
+  const lathe = (pts, seg = 64) => new THREE.LatheGeometry(pts.map(([r, y]) => new THREE.Vector2(r, y)), seg);
+  // the stone: courses and joints, white paint worn and streaked, a dark tide of spray at the foot, the windows
+  const stone = new THREE.ShaderMaterial({
+    uniforms: { ...LU, uDoor: { value: T.door } },
+    vertexShader: 'varying vec3 vW, vN, vL; void main(){ vL = position; vW = (modelMatrix * vec4(position, 1.)).xyz; vN = normalize(mat3(modelMatrix) * normal); gl_Position = projectionMatrix * viewMatrix * vec4(vW, 1.); }',
+    fragmentShader: /* glsl */`
+      ${NOISE_GLSL}
+      ${LIGHT_GLSL}
+      ${SURF_GLSL}
+      uniform float uDoor;
+      varying vec3 vW, vN, vL;
+      // a window: arc distance and height from its centre; returns 1 inside the opening, and its frame
+      float win(float a, float y, float r, float wa, float wy, float w, float h) {
+        float da = mod(a - wa + 3.14159, 6.28318) - 3.14159, x = da * r, yy = y - wy;
+        float top = yy - (h * .5 - w * .5);
+        float inside = yy < h * .5 - w * .5 ? step(abs(x), w * .5) * step(-h * .5, yy) : step(length(vec2(x, top)), w * .5);
+        return inside;
+      }
+      void main() {
+        vec3 V = normalize(vW - cameraPosition), N = normalize(vN);
+        float a = atan(vL.z, vL.x), r = length(vL.xz), y = vW.y;
+        // courses of stone, joints staggered
+        float course = floor(y / .56), cy = fract(y / .56), ax = a * r / 1.1 + course * .5, cx = fract(ax);
+        float joint = max(smoothstep(.06, .0, cy), smoothstep(.05, .0, min(cx, 1. - cx)));
+        float n = fbm3(vec3(a * 6., y * .6, 0.)), streak = fbm2(vec2(a * 22., y * .07));
+        vec3 alb = vec3(.74, .73, .7) * (.92 + .1 * h12(vec2(floor(ax), course)));
+        alb = mix(alb, vec3(.42, .41, .39), joint * .5);
+        // weathering: streaks down from the gallery, salt and spray darkening the foot
+        alb *= 1. - .32 * smoothstep(.55, .85, streak) * smoothstep(9., 27., y);
+        alb = mix(alb, vec3(.16, .17, .15), smoothstep(16., 9., y + n * 4.) * .75);
+        // the door, on the side away from the sea, and the windows up the stair
+        vec3 emit = vec3(0.);
+        float door = win(a, y, r, uDoor, 10.35, 1.25, 2.4);
+        alb = mix(alb, vec3(.02, .018, .016), door);
+        float w1 = win(a, y, r, uDoor + .6, 14.2, .62, 1.15), w2 = win(a, y, r, uDoor + 2.9, 18.6, .62, 1.15);
+        float w3 = win(a, y, r, uDoor - .7, 22.9, .62, 1.15), w4 = win(a, y, r, uDoor + 1.9, 26.1, .55, 1.);
+        float lit = max(w1, w3), dark = max(w2, w4);
+        alb = mix(alb, vec3(.01, .012, .015), dark);
+        float mull = step(abs(mod(a - uDoor + 3.14159, 6.28318) - 3.14159 - .6) * r, .04) + step(abs(fract(y * 1.8) - .5), .04);
+        emit += lit * vec3(1., .58, .26) * (1.6 + .6 * vnoise(vec2(uT * 3., y))) * (1. - .8 * clamp(mull, 0., 1.));
+        alb = mix(alb, vec3(.03), lit);
+        vec3 col = shade(vW, N, V, alb, .42, .55) + emit;
+        gl_FragColor = vec4(col, 1.);
+      }`,
+  });
+  const iron = new THREE.ShaderMaterial({
+    uniforms: { ...LU, uAlb: { value: new THREE.Color(0.035, 0.036, 0.04) }, uRough: { value: 0.3 } },
+    vertexShader: 'varying vec3 vW, vN; void main(){ vW = (modelMatrix * vec4(position, 1.)).xyz; vN = normalize(mat3(modelMatrix) * normal); gl_Position = projectionMatrix * viewMatrix * vec4(vW, 1.); }',
+    fragmentShader: /* glsl */`
+      ${LIGHT_GLSL}
+      ${SURF_GLSL}
+      uniform vec3 uAlb; uniform float uRough;
+      varying vec3 vW, vN;
+      void main() { vec3 V = normalize(vW - cameraPosition), N = normalize(vN); if (dot(N, V) > 0.) N = -N; gl_FragColor = vec4(shade(vW, N, V, uAlb, uRough, 1.), 1.); }`,
+  });
+  const red = iron.clone(); red.uniforms = { ...LU, uAlb: { value: new THREE.Color(0.2, 0.025, 0.02) }, uRough: { value: 0.28 } };
+  const add = (geo, mat, y = 0) => { const m = new THREE.Mesh(geo, mat); m.position.y = y; G.add(m); return m; };
+  // the foot, sunk into the rock, and the tower, flaring to it
+  const prof = [[5.7, 5.8], [5.6, 8.2], [5.25, 8.5], [5.0, 9.2]];
+  for (let i = 0; i <= 40; i++) { const t = i / 40, y = 9.2 + (T.topY - 9.2) * t; prof.push([T.r1 + (4.55 - T.r1) * Math.pow(1 - t, 1.7), y]); }
+  // the corbels under the gallery, the gallery floor
+  prof.push([3.35, 28.9], [3.7, 29.25], [4.05, 29.55], [4.3, 29.62], [4.32, 30.0], [2.4, 30.02]);
+  add(lathe(prof, 72), stone);
+  // the gallery rail
+  for (let k = 0; k < 28; k++) { const a = k / 28 * Math.PI * 2, m = add(new THREE.CylinderGeometry(0.035, 0.035, 1.05, 6), iron, 30.52); m.position.x = Math.cos(a) * 4.12; m.position.z = Math.sin(a) * 4.12; }
+  for (const y of [31.05, 30.55]) add(new THREE.TorusGeometry(4.12, 0.04, 6, 96), iron, y).rotation.x = Math.PI / 2;
+  // the lantern: an iron base, the glazing with its bars, the dome, the vent and the rod
+  add(new THREE.CylinderGeometry(2.4, 2.45, 1.1, 36), iron, 30.55);
+  for (let k = 0; k < 12; k++) { const a = (k + 0.5) / 12 * Math.PI * 2, m = add(new THREE.BoxGeometry(0.09, 3.2, 0.12), iron, 32.7); m.position.x = Math.cos(a) * 2.28; m.position.z = Math.sin(a) * 2.28; m.rotation.y = -a; }
+  for (const y of [31.1, 32.7, 34.3]) add(new THREE.TorusGeometry(2.3, 0.05, 6, 48), iron, y).rotation.x = Math.PI / 2;
+  const dome = add(new THREE.SphereGeometry(2.5, 36, 12, 0, Math.PI * 2, 0, Math.PI / 2), red, 34.3); dome.scale.y = 0.72;
+  add(new THREE.CylinderGeometry(0.22, 0.32, 0.5, 16), iron, 36.2);
+  add(new THREE.SphereGeometry(0.34, 16, 10), iron, 36.7);
+  add(new THREE.CylinderGeometry(0.025, 0.04, 2.0, 6), iron, 38.0);
+  // the glass: it mirrors the night and shows the light inside
+  const glass = new THREE.ShaderMaterial({
+    uniforms: { ...LU }, transparent: true, depthWrite: false, side: THREE.DoubleSide,
+    blending: THREE.CustomBlending, blendSrc: THREE.OneFactor, blendDst: THREE.OneMinusSrcAlphaFactor,
+    vertexShader: 'varying vec3 vW, vN; void main(){ vW = (modelMatrix * vec4(position, 1.)).xyz; vN = normalize(mat3(modelMatrix) * normal); gl_Position = projectionMatrix * viewMatrix * vec4(vW, 1.); }',
+    fragmentShader: /* glsl */`
+      ${LIGHT_GLSL}
+      varying vec3 vW, vN;
+      void main() {
+        vec3 V = normalize(vW - cameraPosition), N = normalize(vN); if (dot(N, V) > 0.) N = -N;
+        float F = .06 + .94 * pow(1. - clamp(dot(N, -V), 0., 1.), 5.);
+        vec3 col = skyRad(reflect(V, N)) * F + uLampC * 1.2 * (1. - F);
+        gl_FragColor = vec4(col, .25 + .6 * F);
+      }`,
+  });
+  const gl = add(new THREE.CylinderGeometry(2.25, 2.25, 3.2, 12, 1, true), glass, 32.7); gl.renderOrder = 5;
+  // the lens: two bullseye panels that turn with the beams, blazing when one faces you
+  const lens = new THREE.ShaderMaterial({
+    uniforms: { ...LU },
+    vertexShader: 'varying vec3 vW, vN; void main(){ vW = (modelMatrix * vec4(position, 1.)).xyz; vN = normalize(mat3(modelMatrix) * normal); gl_Position = projectionMatrix * viewMatrix * vec4(vW, 1.); }',
+    fragmentShader: /* glsl */`
+      ${LIGHT_GLSL}
+      varying vec3 vW, vN;
+      void main() {
+        vec3 V = normalize(vW - cameraPosition), N = normalize(vN);
+        float face = max(dot(N, uBeamA[0]), dot(N, uBeamA[1])), rings = .75 + .25 * sin(length(vW - uLampP) * 40.);
+        float toEye = beamProfile(-V);
+        vec3 col = uLampC * (6. + 40. * smoothstep(.7, 1., face) * rings + 2500. * toEye);
+        gl_FragColor = vec4(col, 1.);
+      }`,
+  });
+  add(new THREE.CylinderGeometry(0.85, 0.85, 1.7, 24, 1, true), lens, L.lampP.y);
+  add(new THREE.SphereGeometry(0.22, 12, 8), new THREE.MeshBasicMaterial({ color: new THREE.Color(1, 0.9, 0.7).multiplyScalar(120) }), L.lampP.y);
+  ISLAND.group.renderOrder = 0;
+}
+function buildIsland() { buildRock(); buildTower(); scene.add(ISLAND.group); }
+
+// =====================================================================
+// The air. Two raymarches and a composite.
+// The clouds: a storm deck from 650 m up, towers of it reaching three
+// kilometres, built from the 3D noise (billows carved by cells, edges worn
+// away). By night they are barely there: a little moonlight soaking down
+// through them, darkest at their bellies. A flash inside them lights them
+// from within, falling off through the cloud around the flash, a little
+// shadowed by whatever cloud lies toward it. They are marched at a third of
+// the size with the steps jittered, and each frame is blended into the
+// last (turned for the camera's motion), except when the light changes
+// fast, so a flash is never late.
+// The near air: rain and a mist that thickens toward the water, thicker
+// still in the spray around the rock. The lamp's glow in it has a closed
+// form; each beam is a cone, the eye ray is clipped to it and sampled with
+// steps spread evenly in the angle seen from the lamp, so the 1/r² of the
+// light cancels and the shaft comes out clean.
+// The composite puts the clouds in the sky, then the air over everything,
+// widening the half-size air back to full size with an eye on depth, so it
+// does not bleed across the edge of the tower.
+// =====================================================================
+const AIR = { mistK: 0.004, mistH: 12, rainK: 0.0004, spray: 0, sprayP: V3(-14, 12, -6), flashChange: 0, lastFlash: 0 };
+const AU = {
+  uInvVP: { value: new THREE.Matrix4() }, uPrevVP: { value: new THREE.Matrix4() }, uCam: { value: V3() }, uFrame: { value: 0 },
+  uNear: { value: 0.4 }, uFar: { value: 15000 }, tDist: { value: null }, tDepth: { value: null }, tNoise: { value: null }, tPrev: { value: null },
+  uBlend: { value: 0.15 }, uWindC: { value: new THREE.Vector2(WIND[0], WIND[1]) }, uFlashCloud: { value: 0 },
+  uMist: { value: new THREE.Vector3(AIR.mistK, AIR.mistH, AIR.rainK) }, uSpray: { value: new THREE.Vector4(-14, 12, -6, 0) }, uSteps: { value: Q.cloudSteps },
+};
+const RAY_GLSL = /* glsl */`
+  uniform mat4 uInvVP; uniform vec3 uCam; uniform float uNear, uFar; uniform sampler2D tDist;
+  vec3 rayDir(vec2 uv) { vec4 a = uInvVP * vec4(uv * 2. - 1., -1., 1.), b = uInvVP * vec4(uv * 2. - 1., 1., 1.); return normalize(b.xyz / b.w - a.xyz / a.w); }
+  // distance along the eye ray to whatever solid thing is at uv (60 km for the sky)
+  float sceneDist(vec2 uv, vec3 dir) { return texture2D(tDist, uv).r; }
+  float ign(vec2 p) { return fract(52.9829189 * fract(dot(p, vec2(.06711056, .00583715)))); }
+  float hg(float c, float g) { float g2 = g * g; return (1. - g2) / (12.566 * pow(1. + g2 - 2. * g * c, 1.5)); }
+  // the stretch of the ray o + t d inside the cone (apex, axis, cos of the half-angle): only the nappe the axis points into
+  vec2 coneHit(vec3 o, vec3 d, vec3 apex, vec3 ax, float ca) {
+    vec3 co = o - apex; float da = dot(d, ax), oa = dot(co, ax), c2 = ca * ca;
+    float A = da * da - c2, B = 2. * (da * oa - c2 * dot(d, co)), C = oa * oa - c2 * dot(co, co);
+    if (abs(A) < 1e-6) A = 1e-6;
+    float disc = B * B - 4. * A * C;
+    // the side of the apex the axis points into, as a half-line of t
+    float h0 = -1e9, h1 = 1e9;
+    if (abs(da) > 1e-6) { if (da > 0.) h0 = -oa / da; else h1 = -oa / da; } else if (oa < 0.) return vec2(1., 0.);
+    vec2 r;
+    if (A < 0.) {
+      if (disc <= 0.) return vec2(1., 0.);
+      float s = sqrt(disc), r0 = (-B - s) / (2. * A), r1 = (-B + s) / (2. * A);
+      r = vec2(min(r0, r1), max(r0, r1));
+    } else {
+      if (disc <= 0.) r = vec2(-1e9, 1e9);
+      else { float s = sqrt(disc), r0 = (-B - s) / (2. * A), r1 = (-B + s) / (2. * A); r = da > 0. ? vec2(r1, 1e9) : vec2(-1e9, r0); }
+    }
+    return vec2(max(r.x, h0), min(r.y, h1));
+  }`;
+const CLOUD = { base: 380, top: 3200 };
+const SKY = {};
+function buildSky() {
+  SKY.dist = pass(/* glsl */`
+    uniform sampler2D tDepth; uniform mat4 uInvVP; uniform vec3 uCam; varying vec2 vUv;
+    void main() {
+      float d = texture2D(tDepth, vUv).r;
+      if (d >= .99999) { gl_FragColor = vec4(6e4); return; }
+      vec4 p = uInvVP * vec4(vUv * 2. - 1., d * 2. - 1., 1.);
+      gl_FragColor = vec4(length(p.xyz / p.w - uCam));
+    }`, { ...AU });
+  SKY.cloud = pass(/* glsl */`
+    ${NOISE_GLSL}
+    ${LIGHT_GLSL}
+    ${RAY_GLSL}
+    uniform highp sampler3D tNoise; uniform sampler2D tPrev; uniform mat4 uPrevVP; uniform float uFrame, uBlend, uFlashCloud, uSteps; uniform vec2 uWindC;
+    varying vec2 vUv;
+    float remap(float v, float a, float b, float c, float d) { return c + (v - a) / (b - a) * (d - c); }
+    // the storm: mostly overcast, with towers where the weather is worst
+    float density(vec3 p, bool fine) {
+      vec3 q = p + vec3(uWindC.x, 0., uWindC.y) * uT * 7.;
+      vec4 wn = texture(tNoise, vec3(q.xz * .00005, .37));
+      // the weather: how much sky is cloud here, how high it towers, and where its belly hangs
+      float cov = clamp(.6 + (wn.r - .5) * 1.1, .35, .92), top = mix(1300., 3400., smoothstep(.5, .85, wn.g));
+      float base = ${CLOUD.base.toFixed(1)} + 180. * wn.b;
+      float h = (p.y - base) / (top - base);
+      if (h < 0. || h > 1.) return 0.;
+      float hgr = smoothstep(0., .07, h) * smoothstep(1., .55, h);
+      vec4 n = texture(tNoise, q * .00038);
+      float sh = smoothstep(1. - cov - .08, 1. - cov + .22, n.r * hgr + (n.g - .5) * .12);
+      if (sh <= 0.) return 0.;
+      // the edges worn away by finer billows, more at the belly than in the towers
+      if (fine) { vec4 d = texture(tNoise, q * .0015 + vec3(0., uT * .005, 0.)); sh = clamp((sh - (d.g * .65 + d.b * .35) * .42 * (1.2 - h)) / .62, 0., 1.); }
+      return sh;
+    }
+    void main() {
+      vec3 dir = rayDir(vUv);
+      vec4 cur = vec4(0., 0., 0., 1.);
+      if (dir.y > .002) {
+        float t0 = (${CLOUD.base.toFixed(1)} - uCam.y) / dir.y, t1 = min((3400. - uCam.y) / dir.y, t0 + 9000.);
+        float n = uSteps, dt = (t1 - t0) / n, j = ign(gl_FragCoord.xy + mod(uFrame, 32.) * 5.588);
+        vec3 fd = uFlashCP; float T = 1.; vec3 Ls = vec3(0.);
+        float cm = dot(dir, uMoonD);
+        for (int i = 0; i < 64; i++) {
+          if (float(i) >= n || T < .02) break;
+          float t = t0 + (float(i) + j) * dt; vec3 p = uCam + dir * t;
+          float rho = density(p, true);
+          if (rho <= .002) continue;
+          float h = clamp((p.y - ${CLOUD.base.toFixed(1)}) / 2500., 0., 1.);
+          // moonlight soaking down through the tops (darker where more cloud lies toward the moon), a little sky light all round
+          float shm = density(p + uMoonD * 140., false);
+          vec3 S = uAmbC * (.18 + 1.3 * h) + uMoonC * (.2 + 4.5 * h) * exp(-shm * 4.) * (.35 + hg(cm, .65) * 3.5) + uMoonC * .45 * (1. - rho) * exp(-shm * 2.);
+          // a flash in the cloud: bright close to it, a wide glow further off, darker behind more cloud
+          if (uFlashCloud > 0.) {
+            vec3 v = fd - p; float d = length(v);
+            float sh = density(p + v / d * min(d, 160.), false);
+            // (light scattered over and over inside a cloud spreads a kilometre or more: a hot core, a wide glow, a faint halo across the deck)
+            S += uFlashC * uFlashCloud * (6. * exp(-d / 220.) + 1.1 * exp(-d / 800.) + .12 * exp(-d / 2600.)) * exp(-sh * 1.4);
+          }
+          float sig = rho * .045, a = exp(-sig * dt);
+          Ls += T * S * (1. - a);
+          T *= a;
+        }
+        // far away the storm thickens: the clouds fade into the haze
+        float far = exp(-t0 * .00012);
+        cur = vec4(Ls * far, 1. - (1. - T) * far);
+      }
+      // last frame's sky, turned for the camera; a fast change of light takes this frame alone
+      vec4 pp = uPrevVP * vec4(uCam + dir * 1e4, 1.); vec2 puv = pp.xy / pp.w * .5 + .5;
+      vec4 prev = texture2D(tPrev, puv);
+      float ok = step(0., puv.x) * step(puv.x, 1.) * step(0., puv.y) * step(puv.y, 1.);
+      gl_FragColor = mix(cur, prev, (1. - uBlend) * ok);
+    }`, { ...LU, ...AU });
+  SKY.fog = pass(/* glsl */`
+    ${NOISE_GLSL}
+    ${LIGHT_GLSL}
+    ${RAY_GLSL}
+    uniform vec3 uMist; uniform vec4 uSpray; uniform float uFrame; uniform vec2 uWindC;
+    varying vec2 vUv;
+    // the rain comes in curtains, heavier and lighter, marching with the wind
+    float curtain(vec2 xz) { vec2 q = xz * .0052 - uWindC * uT * .05; return .35 + 1.5 * smoothstep(.32, .82, vnoise(q) * .62 + vnoise(q * 2.4 + 7.1) * .38); }
+    // how thick the air is at p: rain under the clouds, the mist low over the water, the spray around the rock
+    float sigAt(vec3 p) {
+      vec3 s = p - uSpray.xyz; s.y *= 1.6;
+      return uMist.z * curtain(p.xz) * step(p.y, ${CLOUD.base.toFixed(1)}) + uMist.x * exp(-max(p.y, 0.) / uMist.y) + uSpray.w * exp(-dot(s, s) / 1500.);
+    }
+    float rainF = 1.;
+    // the optical depth from the eye out to distance t (rain and mist; the spray cloud is only counted where the beam is)
+    float tau(vec3 dir, float t) {
+      float y0 = max(uCam.y, 0.), dy = dir.y, m = abs(dy) < 1e-4 ? exp(-y0 / uMist.y) * t : uMist.y / dy * exp(-y0 / uMist.y) * (1. - exp(-dy * t / uMist.y));
+      float tr = dy > 1e-4 ? min(t, (${CLOUD.base.toFixed(1)} - uCam.y) / dy) : t;
+      return uMist.z * tr * rainF + uMist.x * m;
+    }
+    float erf_(float x) { float t = 1. / (1. + .3275911 * abs(x)); return sign(x) * (1. - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - .284496736) * t + .254829592) * t * exp(-x * x)); }
+    // a beam seen along the eye ray, in closed form. Measured by the angle th seen from the lamp, the ray's
+    // points run across the beam, the 1/r² of the light cancels, and the beam's own gaussian profile becomes a
+    // gaussian in th, whose integral over the visible stretch is a difference of erfs. The air, the phase and
+    // the fading on the way back to the eye are taken where the ray is brightest.
+    vec3 beamIn(vec3 dir, float tmax, vec3 ax) {
+      vec3 co = uCam - uLampP; float D0 = -dot(co, dir); vec3 f = co + dir * D0; float Dp = max(length(f), .05); vec3 n = f / Dp;
+      float na = dot(n, ax), da = dot(dir, ax), R = length(vec2(na, da));
+      if (R < .9) return vec3(0.);
+      float tha = atan(da, na), th0 = atan(-D0 / Dp), th1 = atan((tmax - D0) / Dp);
+      if (tha < -1.55 || tha > 1.55) return vec3(0.);
+      float s2 = uBeamS * uBeamS, G = 0.;
+      for (int c = 0; c < 2; c++) {
+        float v = c == 0 ? s2 : 15. * s2, w = c == 0 ? 1. : .035, st = sqrt(v / R);
+        G += w * exp(-(1. - R) / v) * 2.5066 * st * .5 * (erf_((th1 - tha) / (1.4142 * st)) - erf_((th0 - tha) / (1.4142 * st)));
+      }
+      if (G < 1e-7) return vec3(0.);
+      float ta = D0 + Dp * tan(clamp(tha, th0, th1)); vec3 p = uCam + dir * ta, ld = normalize(p - uLampP);
+      return uLampC * uBeamI * G / Dp * sigAt(p) * hg(dot(ld, -dir), .55) * exp(-tau(dir, ta));
+    }
+    void main() {
+      vec3 dir = rayDir(vUv);
+      float tmax = min(sceneDist(vUv, dir), 12000.);
+      // how heavy the rain is along this ray, from a few looks at the curtains it passes
+      float tr = dir.y > 1e-4 ? min(tmax, (${CLOUD.base.toFixed(1)} - uCam.y) / dir.y) : tmax, wsum = 0., csum = 0.;
+      for (int i = 0; i < 6; i++) { float d = min(tr, 30. * pow(2.1, float(i))), w = d; vec3 p = uCam + dir * d; csum += curtain(p.xz) * w; wsum += w; }
+      rainF = csum / max(wsum, 1.);
+      float T = exp(-tau(dir, tmax));
+      // the air lit by the night all round, and by the lightning
+      vec3 col = (uAmbC * .38 + uMoonC * .22) * (1. - T);
+      vec3 fdir = normalize(uFlashP - uCam);
+      col += uFlashC * (.012 + .16 * hg(dot(dir, fdir), .55)) * (1. - T) * mix(waveShadow(uCam, fdir), 1., smoothstep(-.02, .2, dir.y));
+      // the glow round the lantern (closed form for a point light in even air)
+      vec3 lo = uLampP - uCam; float tc = dot(lo, dir), hh = max(length(lo - dir * tc), .3);
+      col += uLampC * 14. * sigAt(uLampP) * 1.4 / hh * (atan((tmax - tc) / hh) - atan(-tc / hh)) * exp(-tau(dir, clamp(tc, 0., tmax))) * .08;
+      col += beamIn(dir, tmax, uBeamA[0]) + beamIn(dir, tmax, uBeamA[1]);
+      gl_FragColor = vec4(col, T);
+    }`, { ...LU, ...AU });
+  SKY.comp = pass(/* glsl */`
+    ${LIGHT_GLSL}
+    ${RAY_GLSL}
+    uniform sampler2D tScene, tCloud, tFog; uniform vec2 uFogTexel;
+    varying vec2 vUv;
+    void main() {
+      vec3 dir = rayDir(vUv);
+      vec3 col = texture2D(tScene, vUv).rgb;
+      float dist = sceneDist(vUv, dir);
+      if (dist > 5e4) {
+        // the sky: the night beyond the clouds (where the moon is), then the clouds over it
+        float cm = dot(dir, uMoonD);
+        vec3 bg = vec3(.0035, .0045, .007) + uMoonC * (exp(-(1. - cm) * 700.) * 9. + exp(-(1. - cm) * 40.) * 2.5 + exp(-(1. - cm) * 4.) * .4);
+        bg = mix(vec3(.007, .0085, .012), bg, smoothstep(-.02, .12, dir.y));
+        vec4 c = texture2D(tCloud, vUv);
+        col = c.rgb + bg * c.a;
+      }
+      // the half-size air, widened with an eye on depth (a neighbour at a very different distance counts for little)
+      vec2 f = vUv / uFogTexel - .5, i0 = floor(f), w = f - i0;
+      vec4 acc = vec4(0.); float ws = 0.;
+      for (int k = 0; k < 4; k++) {
+        vec2 o = vec2(k & 1, k >> 1), uv = (i0 + o + .5) * uFogTexel;
+        float bw = (o.x > .5 ? w.x : 1. - w.x) * (o.y > .5 ? w.y : 1. - w.y);
+        float dn = sceneDist(uv, dir), rel = abs(min(dn, 9000.) - min(dist, 9000.)) / max(min(dist, 9000.), 1.);
+        float wk = bw / (.02 + rel * 8.) + 1e-5;
+        acc += texture2D(tFog, uv) * wk; ws += wk;
+      }
+      vec4 fg = acc / ws;
+      gl_FragColor = vec4(col * fg.a + fg.rgb, 1.);
+    }`, { ...LU, ...AU, tScene: { value: null }, tCloud: { value: null }, tFog: { value: null }, uFogTexel: { value: new THREE.Vector2() } });
+}
+const _vp = new THREE.Matrix4(), _prevVP = new THREE.Matrix4();
+let _hasPrev = false;
+function renderAir() {
+  _vp.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+  AU.uInvVP.value.copy(_vp).invert(); AU.uCam.value.copy(camera.position);
+  AU.uPrevVP.value.copy(_hasPrev ? _prevVP : _vp);
+  AU.tDepth.value = RT.depth; AU.tDist.value = RT.dist.texture; AU.tNoise.value = NOISE3.tex;
+  renderer.setRenderTarget(RT.dist); SKY.dist.render(renderer);
+  AU.uFrame.value = (AU.uFrame.value + 1) % 1024;
+  AU.uMist.value.set(AIR.mistK, AIR.mistH, AIR.rainK); AU.uSpray.value.set(AIR.sprayP.x, AIR.sprayP.y, AIR.sprayP.z, AIR.spray);
+  // a flash changes the light faster than the clouds can be built up over frames: then each frame stands alone
+  AU.uBlend.value = RT.fresh ? 1 : clamp(0.12 + AIR.flashChange * 3, 0.12, 0.6);
+  const src = RT.cloud[RT.ping], dst = RT.cloud[1 - RT.ping];
+  SKY.cloud.material.uniforms.tPrev.value = src.texture;
+  renderer.setRenderTarget(dst); SKY.cloud.render(renderer);
+  RT.ping = 1 - RT.ping; RT.fresh = false;
+  renderer.setRenderTarget(RT.fog); SKY.fog.render(renderer);
+  const cu = SKY.comp.material.uniforms;
+  cu.tScene.value = RT.scene.texture; cu.tCloud.value = dst.texture; cu.tFog.value = RT.fog.texture; cu.uFogTexel.value.set(1 / RT.fog.width, 1 / RT.fog.height);
+  renderer.setRenderTarget(RT.comp); renderer.clear(true, false, false); SKY.comp.render(renderer);
+  _prevVP.copy(_vp); _hasPrev = true;
+}
+
+// =====================================================================
+// Lightning. Most of it stays in the clouds: a flicker that lights the
+// deck from inside, here and there over the sea. Now and then a bolt comes
+// down to the water: grown from the cloud base by splitting each piece of
+// the channel at its middle and pushing the middle aside, again and again,
+// with branches sprouting on the way down. It strikes in pulses (a first
+// stroke and two to four returns along the same channel, the branches
+// mostly only in the first), and every pulse lights the scene, the clouds,
+// the air and its own reflection in the sea.
+// Each time round has its own storm, seeded by the cycle; one bolt is
+// always kept for the moment the great wave stands highest, behind it.
+// =====================================================================
+const BOLT = { maxSeg: 900, mesh: null, n: 0, events: [], cycle: -1, cur: null };
+function growBolt(r, top, bottom) {
+  const segs = [];
+  const V = (a) => V3(a[0], a[1], a[2]);
+  function grow(a, b, w, br, gen, levels) {
+    let pts = [a.clone(), b.clone()];
+    for (let lv = 0; lv < levels; lv++) {
+      const np = [pts[0]];
+      for (let i = 0; i < pts.length - 1; i++) {
+        const p = pts[i], q = pts[i + 1], d = V3().subVectors(q, p), len = d.length();
+        const side = V3(r() - 0.5, (r() - 0.5) * 0.3, r() - 0.5).cross(d).normalize();
+        np.push(V3().addVectors(p, q).multiplyScalar(0.5).addScaledVector(side, len * 0.3 * (r() * 2 - 1)), q);
+      }
+      pts = np;
+    }
+    for (let i = 0; i < pts.length - 1; i++) {
+      if (segs.length >= BOLT.maxSeg) return;
+      const k = i / (pts.length - 1);
+      segs.push({ a: pts[i], b: pts[i + 1], w: w * (1 - 0.35 * k), br: br * (1 - 0.3 * k), gen });
+      // a branch, leaning out and down, shorter and fainter, and fewer as they go
+      if (gen < 3 && r() < (gen === 0 ? 0.055 : 0.03) && pts[i].y > 60) {
+        const d = V3().subVectors(pts[i + 1], pts[i]).normalize();
+        const out = V3(r() - 0.5, 0, r() - 0.5).normalize();
+        d.addScaledVector(out, 0.7 + r() * 0.8).normalize(); if (d.y > -0.25) d.y = -0.25 - r() * 0.4; d.normalize();
+        const L = pts[i].y * (0.18 + 0.4 * r());
+        grow(pts[i], V3().copy(pts[i]).addScaledVector(d, L), w * 0.55, br * 0.42, gen + 1, Math.max(3, levels - 2));
+      }
+    }
+  }
+  grow(top, bottom, 2.6, 1, 0, 7);
+  return segs;
+}
+function buildLightning() {
+  const N = BOLT.maxSeg, g = new THREE.BufferGeometry();
+  const pos = new Float32Array(N * 4 * 3), oth = new Float32Array(N * 4 * 3), side = new Float32Array(N * 4), wbr = new Float32Array(N * 4 * 3), idx = new Uint32Array(N * 6);
+  for (let s = 0; s < N; s++) { const v = s * 4; idx.set([v, v + 1, v + 3, v, v + 3, v + 2], s * 6); }
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3).setUsage(THREE.DynamicDrawUsage));
+  g.setAttribute('aOther', new THREE.BufferAttribute(oth, 3).setUsage(THREE.DynamicDrawUsage));
+  g.setAttribute('aSide', new THREE.BufferAttribute(side, 1));
+  g.setAttribute('aWbr', new THREE.BufferAttribute(wbr, 3).setUsage(THREE.DynamicDrawUsage));
+  g.setIndex(new THREE.BufferAttribute(idx, 1));
+  // which side of the channel a corner is on (-1 or 1), doubled at the far end of the piece
+  for (let s = 0; s < N; s++) for (let k = 0; k < 4; k++) side[s * 4 + k] = (k & 1 ? 1 : -1) * (k < 2 ? 1 : 2);
+  const mat = new THREE.ShaderMaterial({
+    uniforms: { ...LU, uRes: { value: new THREE.Vector2(1, 1) }, uPulse: { value: new THREE.Vector3() }, uRainK: { value: 0.00085 } },
+    transparent: true, depthWrite: false, depthTest: true, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
+    vertexShader: /* glsl */`
+      uniform vec2 uRes; uniform vec3 uPulse; uniform float uRainK;
+      attribute vec3 aOther, aWbr; attribute float aSide;
+      varying float vS, vBr;
+      void main() {
+        vec4 a = projectionMatrix * viewMatrix * vec4(position, 1.), b = projectionMatrix * viewMatrix * vec4(aOther, 1.);
+        vec2 sa = a.xy / a.w * uRes, sb = b.xy / b.w * uRes, d = normalize(sb - sa + 1e-5), n = vec2(-d.y, d.x);
+        float dist = length(position - cameraPosition);
+        // a channel a few metres wide, never thinner than a few pixels (the glow takes the rest)
+        float px = max(aWbr.x / dist * uRes.y * 1.6, 1.2) + 5.;
+        // out to the sides by the width, and a pixel and a half past its end, so pieces meet without gaps
+        // (at the far end the direction is taken back toward the near end, so the side flips with it)
+        float sd = sign(aSide), fl = abs(aSide) > 1.5 ? -1. : 1.;
+        a.xy += (n * sd * fl * px - d * 1.5) / uRes * a.w;
+        gl_Position = a;
+        vS = sd;
+        // the main channel shines in every pulse, the branches mostly in the first; the rain between dims it
+        float pulse = aWbr.z < .5 ? uPulse.x : uPulse.y;
+        vBr = aWbr.y * pulse * exp(-dist * uRainK * .6);
+      }`,
+    fragmentShader: /* glsl */`
+      varying float vS, vBr;
+      void main() {
+        float x = abs(vS), core = exp(-x * x * 40.) * 9., glow = exp(-x * x * 6.) * .9;
+        gl_FragColor = vec4(vec3(.82, .86, 1.) * vBr * (core + glow), 1.);
+      }`,
+  });
+  const m = new THREE.Mesh(g, mat); m.frustumCulled = false; m.renderOrder = 20; m.visible = false;
+  overScene.add(m); BOLT.mesh = m; BOLT.mat = mat;
+}
+function setBolt(segs) {
+  const g = BOLT.mesh.geometry, P = g.attributes.position.array, O = g.attributes.aOther.array, W = g.attributes.aWbr.array;
+  const n = Math.min(segs.length, BOLT.maxSeg);
+  for (let s = 0; s < n; s++) {
+    const S = segs[s];
+    for (let k = 0; k < 4; k++) {
+      const e = k < 2 ? S.a : S.b, o = k < 2 ? S.b : S.a, i = (s * 4 + k) * 3;
+      P[i] = e.x; P[i + 1] = e.y; P[i + 2] = e.z; O[i] = o.x; O[i + 1] = o.y; O[i + 2] = o.z;
+      W[i] = S.w; W[i + 1] = S.br; W[i + 2] = S.gen > 0 ? 1 : 0;
+    }
+  }
+  g.setDrawRange(0, n * 6);
+  g.attributes.position.needsUpdate = g.attributes.aOther.needsUpdate = g.attributes.aWbr.needsUpdate = true;
+  BOLT.n = n;
+}
+// this time round's storm: flickers in the clouds, and the bolts, each with its pulses
+function planStorm(cycle) {
+  const r = mulberry32(9000 + cycle * 97), E = [];
+  const pulses = (n, spread) => { const p = []; let t = 0; for (let i = 0; i < n; i++) { p.push([t, i === 0 ? 1 : 0.45 + 0.5 * r()]); t += 0.04 + r() * spread; } return p; };
+  // where the camera looks at a moment, so the storm happens where it can be seen
+  const viewAz = (T) => { const K = camKeys(cycle), p = hermite(K, T, (k) => k[1]); return Math.atan2(-p[2], -p[0]); };
+  // sheet lightning in the clouds
+  for (let T = 1.5 + r() * 3; T < CYC.len - 1; T += 3.2 + r() * 5.5) {
+    const az = viewAz(T) + (r() * 2 - 1) * 0.9, d = 1800 + r() * 4500;
+    E.push({ T, kind: 'cloud', p: V3(Math.cos(az) * d, 800 + r() * 700, Math.sin(az) * d), pulses: pulses(2 + Math.floor(r() * 4), 0.18), amp: 0.6 + r() * 0.8, d });
+  }
+  // the bolts: one far off early, one in the close pass, one behind the great wave, and one more somewhere
+  const strike = (T, az, d) => {
+    const top = V3(Math.cos(az) * d, 820 + r() * 250, Math.sin(az) * d), bot = V3(top.x + (r() - 0.5) * 500, 0, top.z + (r() - 0.5) * 500);
+    E.push({ T, kind: 'bolt', p: top, bot, seed: Math.floor(r() * 1e9), pulses: pulses(3 + Math.floor(r() * 3), 0.09), amp: 1, d: Math.hypot(top.x, top.z) });
+  };
+  strike(15 + r() * 3, viewAz(16) + (r() - 0.5) * 0.5, 2600 + r() * 1500);
+  strike(31 + r() * 3, viewAz(32) + (r() - 0.5) * 0.4, 1500 + r() * 900);
+  // the climax: upwind of the rock, so the wave stands against it
+  strike(51.75, WIND_A + Math.PI + (r() - 0.5) * 0.25, 1700 + r() * 500);
+  strike(62 + r() * 6, viewAz(64) + (r() - 0.5) * 0.7, 2200 + r() * 2000);
+  E.sort((a, b) => a.T - b.T);
+  return E;
+}
+// the light of the storm at story time T
+function updateLightning(T, cycle) {
+  if (BOLT.cycle !== cycle) { BOLT.cycle = cycle; BOLT.events = planStorm(cycle); BOLT.cur = null; }
+  let best = null, bi = 0, sceneI = 0, cloudI = 0;
+  for (const e of BOLT.events) {
+    const a = T - e.T; if (a < -0.01 || a > 1.6) continue;
+    let I = 0, Ib = 0;
+    for (const [pt, amp] of e.pulses) { const x = a - pt; if (x >= 0) { const v = amp * Math.exp(-x / 0.045); I += v; if (pt === 0) Ib += v; } }
+    I += 0.06 * Math.exp(-a / 0.5) * (a >= 0 ? 1 : 0);
+    const near = e.kind === 'bolt' ? 1.6 * Math.pow(1800 / e.d, 2) : 0.35 * Math.pow(2200 / e.d, 2) * e.amp;
+    const s = I * near;
+    if (s > sceneI) { sceneI = s; cloudI = I * (e.kind === 'bolt' ? 16 : 22 * e.amp); best = e; bi = Ib; }
+  }
+  L.flashC.set(0.75, 0.8, 1).multiplyScalar(sceneI);
+  AU.uFlashCloud.value = cloudI / Math.max(sceneI, 1e-4) * 0.01;
+  // the light is set as colour times strength for the scene; the clouds take their own share of it.
+  // A bolt lights the scene from the middle of its channel, the clouds from its top
+  if (best) { L.flashCP.copy(best.p); if (best.kind === 'bolt') L.flashP.lerpVectors(best.p, best.bot, 0.6); else L.flashP.copy(best.p); }
+  AIR.flashChange = Math.abs(sceneI - AIR.lastFlash) * 4; AIR.lastFlash = sceneI;
+  // the bolt itself, while it lasts
+  const show = best && best.kind === 'bolt';
+  if (show && BOLT.cur !== best) { BOLT.cur = best; setBolt(growBolt(mulberry32(best.seed), best.p, best.bot)); }
+  BOLT.mesh.visible = !!show && sceneI > 0.002;
+  if (show) {
+    const a = T - best.T;
+    BOLT.mat.uniforms.uPulse.value.set(sceneI / (1.6 * Math.pow(1800 / best.d, 2)) * 5, bi * 5, 0);
+    L.bolt.a.copy(best.p); L.bolt.b.copy(best.bot); LU.uBoltBr.value = sceneI * 6;
+  } else LU.uBoltBr.value = 0;
+  BOLT.mat.uniforms.uRes.value.set(RT.W, RT.H);
+}
+
+// =====================================================================
+// Rain and spray. The rain is streaks in a box that travels with the
+// camera, slanted by the wind, dark until a light finds them: the beam
+// turns them to bright needles, the lightning to a white curtain.
+// The spray is thrown wherever a wave strikes the rock. The rock's
+// waterline is watched at a ring of points; when a crest climbs one hard,
+// a burst is written into a small table (where, when, which way, how hard)
+// and the particles of that burst fly from it on closed-form paths (drag,
+// gravity, the wind), so they need no memory from frame to frame. The
+// great wave's burst is its own, far bigger, sweeping along the rock as the
+// wave wraps round it and climbing past the lantern.
+// =====================================================================
+const SPRAY = { E: 32, next: 0, tex: null, ring: [], wash: [], mat: null, climaxMat: null, audioQ: [], sets: [28.6, 31.3, 33.9, 36.4], lastT: 0 };
+const PART_GLSL = /* glsl */`
+  // light reaching a droplet, seen from the eye: water throws light forward, so a droplet between the
+  // eye and the lamp shines brightest
+  vec3 dropLight(vec3 p, vec3 V, float amb) {
+    vec3 Ll, Lf, El = lampLight(p, Ll), Ef = flashLight(p, Lf);
+    El = El / (1. + dot(El, vec3(.33)) * .35);
+    float fw = max(dot(V, Ll), 0.), fl = .25 + 2.4 * pow(fw, 8.) + .5 * fw * fw;
+    return El * fl * .6 + Ef * (.5 + .8 * pow(max(dot(V, Lf), 0.), 3.)) + (uAmbC * 1.6 + uMoonC) * amb;
+  }`;
+function buildRain() {
+  const n = Q.rain, g = new THREE.InstancedBufferGeometry(), r = mulberry32(55);
+  g.setAttribute('position', new THREE.BufferAttribute(new Float32Array([0, -1, 0, 0, 1, 0, 1, -1, 0, 1, 1, 0]), 3));
+  g.setIndex([0, 2, 1, 1, 2, 3]);
+  const seed = new Float32Array(n * 4);
+  for (let i = 0; i < n; i++) seed.set([r(), r(), r(), r()], i * 4);
+  g.setAttribute('aSeed', new THREE.InstancedBufferAttribute(seed, 4));
+  g.instanceCount = n;
+  const mat = new THREE.ShaderMaterial({
+    uniforms: { ...LU, uWindR: { value: new THREE.Vector3(WIND[0] * 8, -11, WIND[1] * 8) }, uBox: { value: new THREE.Vector3(70, 46, 70) }, uRes: { value: new THREE.Vector2() } },
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+    vertexShader: /* glsl */`
+      ${LIGHT_GLSL}
+      ${PART_GLSL}
+      uniform vec3 uWindR, uBox; uniform vec2 uRes;
+      attribute vec4 aSeed;
+      varying float vA; varying vec3 vC;
+      void main() {
+        // where this drop is: falling with the wind, wrapped into a box round the camera
+        vec3 v = uWindR * (.85 + .3 * aSeed.w);
+        vec3 p = aSeed.xyz * uBox + v * uT;
+        p = cameraPosition + mod(p - cameraPosition + uBox * .5, uBox) - uBox * .5;
+        vec3 q = p - v * .03;   // a thirtieth of a second of fall: the streak the eye sees
+        vec4 a = projectionMatrix * viewMatrix * vec4(p, 1.), b = projectionMatrix * viewMatrix * vec4(q, 1.);
+        vec2 sa = a.xy / a.w * uRes, sb = b.xy / b.w * uRes, d = normalize(sb - sa + 1e-4), nn = vec2(-d.y, d.x);
+        vec4 c = position.x < .5 ? a : b;
+        c.xy += nn * position.y * .75 / uRes * c.w;
+        gl_Position = c;
+        vec3 V = normalize(p - cameraPosition); float dist = length(p - cameraPosition);
+        vA = smoothstep(1.5, 5., dist) * smoothstep(uBox.x * .5, uBox.x * .3, dist) * (.15 + .85 * aSeed.y * aSeed.y);
+        vC = dropLight(p, V, .3) * .22;
+      }`,
+    fragmentShader: 'varying float vA; varying vec3 vC; void main(){ gl_FragColor = vec4(vC * vA, 1.); }',
+  });
+  const m = new THREE.Mesh(g, mat); m.frustumCulled = false; m.renderOrder = 15;
+  overScene.add(m); SPRAY.rainMat = mat;
+}
+// the spray: one sprite per droplet cloud, flying from its burst
+const SPRAY_VS = /* glsl */`
+  ${LIGHT_GLSL}
+  ${PART_GLSL}
+  uniform sampler2D tEv; uniform float uRainK; uniform vec2 uWindS;
+  attribute vec4 aSeed;
+  varying vec2 vQ; varying float vA; varying vec3 vC; varying float vR;
+  vec3 hash3(float n) { return fract(sin(vec3(n, n + 1.31, n + 2.77) * vec3(43758.55, 22578.15, 19642.35))); }
+  void main() {
+    BURST
+    float k = DRAG, E = (1. - exp(-k * age)) / k;
+    // thrown, slowed by the air, pulled down and carried off by the wind
+    vec3 p = p0 + v * E + vec3(uWindS.x * 9., -9.8, uWindS.y * 9.) * (age - E) / k;
+    p.y = max(p.y, -.5);
+    float life = age / lifeT, size = sz0 * (1. + 2.4 * sqrt(life));
+    vec3 V = normalize(p - cameraPosition);
+    vec3 right = normalize(cross(V, vec3(0., 1., 0.))), up = cross(right, V);
+    vec3 w = p + (right * position.x + up * position.y) * size;
+    gl_Position = projectionMatrix * viewMatrix * vec4(w, 1.);
+    vQ = position.xy; vR = aSeed.w;
+    float dist = length(p - cameraPosition);
+    vA = alpha0 * (1. - life) * (1. - life) * smoothstep(0., .08, life) * smoothstep(2., 8., dist) * exp(-dist * uRainK);
+    if (age < 0. || life > 1.) { gl_Position = vec4(2., 2., 2., 1.); vA = 0.; }
+    vC = dropLight(p, V, 2.2) * 1.4;
+  }`;
+const SPRAY_FS = /* glsl */`
+  varying vec2 vQ; varying float vA; varying vec3 vC; varying float vR;
+  float h(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+  void main() {
+    float r = length(vQ); if (r > 1.) discard;
+    // water thrown into the air: lumps and tatters, not a round puff
+    vec2 q = vQ * 2.2 + vR * 41.;
+    float n = 0.; float am = .5;
+    for (int i = 0; i < 3; i++) { vec2 i0 = floor(q), f = fract(q); f = f * f * (3. - 2. * f);
+      n += am * mix(mix(h(i0), h(i0 + vec2(1, 0)), f.x), mix(h(i0 + vec2(0, 1)), h(i0 + vec2(1, 1)), f.x), f.y); q *= 2.1; am *= .5; }
+    float a = smoothstep(.15, .55, n * 1.15 - r * .75) * vA;
+    gl_FragColor = vec4(vC * a, a * .55);
+  }`;
+function sprayMaterial(burst, drag) {
+  return new THREE.ShaderMaterial({
+    uniforms: { ...LU, tEv: { value: SPRAY.tex }, uRainK: { value: 0.00085 }, uWindS: { value: new THREE.Vector2(WIND[0], WIND[1]) }, uHit: { value: new THREE.Vector4(0, 0, -99, 0) } },
+    transparent: true, depthWrite: false,
+    blending: THREE.CustomBlending, blendSrc: THREE.OneFactor, blendDst: THREE.OneMinusSrcAlphaFactor,
+    vertexShader: SPRAY_VS.replace('BURST', burst).replace('DRAG', drag), fragmentShader: SPRAY_FS,
+  });
+}
+function sprites(n, seedBase) {
+  const g = new THREE.InstancedBufferGeometry(), r = mulberry32(seedBase);
+  g.setAttribute('position', new THREE.BufferAttribute(new Float32Array([-1, -1, 0, 1, -1, 0, -1, 1, 0, 1, 1, 0]), 3));
+  g.setIndex([0, 1, 2, 2, 1, 3]);
+  const s = new Float32Array(n * 4);
+  for (let i = 0; i < n; i++) s.set([i, r(), r(), r()], i * 4);
+  g.setAttribute('aSeed', new THREE.InstancedBufferAttribute(s, 4));
+  g.instanceCount = n;
+  return g;
+}
+function buildSpray() {
+  const E = SPRAY.E, data = new Float32Array(E * 2 * 4);
+  for (let e = 0; e < E; e++) data[e * 8 + 3] = -999;
+  SPRAY.tex = new THREE.DataTexture(data, E * 2, 1, THREE.RGBAFormat, THREE.FloatType);
+  SPRAY.tex.needsUpdate = true;
+  // the ordinary bursts: each droplet cloud belongs to one burst in the table
+  const m1 = new THREE.Mesh(sprites(Q.spray, 7), sprayMaterial(/* glsl */`
+    int e = int(mod(aSeed.x, ${E}.));
+    vec4 A = texelFetch(tEv, ivec2(e * 2, 0), 0), B = texelFetch(tEv, ivec2(e * 2 + 1, 0), 0);
+    vec3 rnd = hash3(aSeed.x * .7311 + B.w);
+    float age = uT - A.w - rnd.x * .25, lifeT = 2.2 + 2.5 * aSeed.y;
+    vec2 out2 = B.xy; float s = B.z;
+    vec3 p0 = A.xyz + vec3(out2.x, 0., out2.y) * (rnd.y * 3. - 1.) + vec3(-out2.y, 0., out2.x) * (rnd.z - .5) * 9.;
+    vec3 v = vec3(out2.x, 0., out2.y) * (2. + 7. * aSeed.z) * s + vec3(0., (5. + 15. * aSeed.y * aSeed.y) * s * (1. + 2.5 * max(0., s - .7)), 0.) + (hash3(aSeed.x * 1.913) - .5) * 5. * s;
+    float sz0 = .5 + 1.4 * aSeed.z, alpha0 = .55;`, '1.6'));
+  m1.frustumCulled = false; m1.renderOrder = 16; overScene.add(m1); SPRAY.mat = m1.material;
+  // the great wave's burst: a wall of white water along the rock, a column going up the tower
+  const m2 = new THREE.Mesh(sprites(Q.climax, 8), sprayMaterial(/* glsl */`
+    vec3 rnd = hash3(aSeed.x * .5113);
+    vec2 D = uRg.xy; vec2 Dp = vec2(-D.y, D.x);
+    float u = rnd.x * 2. - 1., col = step(.72, aSeed.y);
+    // along the face of the rock the wave meets: the middle first, the ends a moment later
+    vec2 at = -D * (17. - 5. * u * u) + Dp * u * 30.;
+    float age = uT - (uHit.z - 1. + abs(u) * .8 + rnd.y * .35), lifeT = 5. + 4. * aSeed.z;
+    vec3 p0 = vec3(at.x, 2. + 8. * rnd.z, at.y);
+    if (col > .5) p0 = vec3(-D.x * 5. + Dp.x * (rnd.x - .5) * 6., 6. + 10. * rnd.z, -D.y * 5. + Dp.y * (rnd.x - .5) * 6.);
+    vec3 v = vec3(D.x, 0., D.y) * (5. + 14. * aSeed.z) + vec3(Dp.x, 0., Dp.y) * u * 12. + vec3(0., 18. + 30. * (1. - u * u) * (.45 + .55 * aSeed.y) + col * 16., 0.) + (hash3(aSeed.x * 2.71) - .5) * 10.;
+    float sz0 = 1. + 2.6 * aSeed.z, alpha0 = .8 * uHit.w;`, '0.85'));
+  m2.material.vertexShader = m2.material.vertexShader.replace('uniform sampler2D tEv;', 'uniform sampler2D tEv; uniform vec4 uRg, uHit;');
+  m2.material.uniforms.uRg = OU.uRg;
+  m2.frustumCulled = false; m2.renderOrder = 17; overScene.add(m2); SPRAY.climaxMat = m2.material;
+  // spindrift: as the great wave breaks, the wind tears spray off its lip in a smoking veil.
+  // Each cloud of it left the crest a moment ago, where the crest was then (it runs at the wave's speed)
+  const m3 = new THREE.Mesh(sprites(Math.round(Q.climax * 1.2), 9), sprayMaterial(/* glsl */`
+    vec3 rnd = hash3(aSeed.x * .3711);
+    vec2 D = uRg.xy, Dp = vec2(-D.y, D.x);
+    float lifeT = 1.3 + 1.3 * aSeed.y, age = mod(uT + aSeed.z * 17.3, lifeT);
+    float eta = (rnd.x * 2. - 1.) * uRg2.y * 1.05, e2 = eta * eta / (uRg2.y * uRg2.y), lat = exp(-e2 * e2);
+    float A = uRg.w * lat, sc = uRg.z - 12. * e2 - 16. * age + uRg2.x * A * .42;
+    vec2 xz = D * sc + Dp * eta;
+    vec3 p0 = vec3(xz.x, A * .97, xz.y);
+    vec3 v = vec3(D.x, 0., D.y) * (8. + 9. * rnd.y) + vec3(0., 2.5 + 7. * rnd.z, 0.) + (hash3(aSeed.x * 3.1) - .5) * 5.;
+    float sz0 = 1.4 + 2.2 * aSeed.y, alpha0 = .2 * smoothstep(.4, 1.05, uRg2.x) * smoothstep(12., 28., uRg.w) * lat;`, '1.3'));
+  m3.material.vertexShader = m3.material.vertexShader.replace('uniform sampler2D tEv;', 'uniform sampler2D tEv; uniform vec4 uRg, uRg2;');
+  m3.material.uniforms.uRg = OU.uRg; m3.material.uniforms.uRg2 = OU.uRg2;
+  m3.frustumCulled = false; m3.renderOrder = 17; overScene.add(m3);
+  // the watched points on the rock's waterline, facing every way
+  for (let k = 0; k < 22; k++) {
+    const a = k / 22 * Math.PI * 2, c = Math.cos(a), s = Math.sin(a);
+    // walk out from the middle until outside the rock's waterline
+    let r = 8; while (r < 40 && ((Math.hypot(c * r / 20.5, s * r / 15.8) - 1) * 17 + 1.6 * Math.sin(a * 5 + 1.3) + 1.1 * Math.sin(a * 9 + 0.4)) < 0) r += 0.5;
+    SPRAY.ring.push({ x: c * (r + 1), z: s * (r + 1), nx: c, nz: s, cool: 0, last: 0 });
+  }
+}
+const _w = { y: 0, vy: 0 };
+function addBurst(x, y, z, nx, nz, s, t) {
+  const e = SPRAY.next; SPRAY.next = (e + 1) % SPRAY.E;
+  SPRAY.tex.image.data.set([x, y, z, t, nx, nz, s, Math.random() * 100], e * 8);
+  SPRAY.tex.needsUpdate = true;
+  SPRAY.wash.unshift([x, z, t, Math.min(1, s)]); SPRAY.wash.length = Math.min(SPRAY.wash.length, 8);
+  // for the sound (which takes them as it comes round, and keeps only the last few)
+  SPRAY.audioQ.push({ x, z, s, t }); if (SPRAY.audioQ.length > 12) SPRAY.audioQ.shift();
+}
+// once a frame: where the sea is climbing the rock hard enough to throw spray
+function updateSpray(t, T, dt) {
+  if (dt > 0) for (const P of SPRAY.ring) {
+    waterAt(P.x, P.z, t, _w);
+    // the windward side takes the sea; the lee gets little
+    const face = 0.35 + 0.65 * Math.max(0, -(P.nx * WIND[0] + P.nz * WIND[1]));
+    const hit = _w.y > 1.1 && _w.vy > 0.9 && t > P.cool;
+    if (hit) {
+      const s = clamp((_w.vy - 0.6) / 3 * (_w.y - 0.6) / 3, 0.25, 1.6) * face;
+      if (s > 0.2) addBurst(P.x - P.nx * 2, _w.y * 0.5, P.z - P.nz * 2, P.nx, P.nz, s, t);
+      P.cool = t + 1.6 + Math.random();
+    }
+  }
+  // the close pass: big seas, one after another, break on the windward face and the spray goes up past the gallery
+  if (dt > 0) for (const ts of SPRAY.sets) if (SPRAY.lastT < ts && T >= ts) {
+    const k0 = Math.round((WIND_A + Math.PI) / (2 * Math.PI) * 22 + (Math.random() - 0.5) * 2);
+    for (let j = -2; j <= 2; j++) {
+      const P = SPRAY.ring[((k0 + j) % 22 + 22) % 22];
+      addBurst(P.x - P.nx * 2, 1.6, P.z - P.nz * 2, P.nx, P.nz, (1.25 - 0.28 * Math.abs(j)) * (0.85 + 0.3 * Math.random()), t + Math.abs(j) * 0.12);
+      P.cool = t + 1.5;
+    }
+  }
+  SPRAY.lastT = T;
+  const W = OU.uWash.value;
+  for (let i = 0; i < 8; i++) { const w = SPRAY.wash[i]; if (w) W[i].set(w[0], w[1], w[2], w[3]); else W[i].set(0, 0, -99, 0); }
+  // the great wave's burst: when, and how much
+  const tHit = t - T + CYC.hit, on = T > CYC.hit - 2 && T < CYC.hit + 11 ? 1 : 0;
+  SPRAY.climaxMat.uniforms.uHit.value.set(0, 0, tHit, on);
+  OU.uRogFoam.value.set(-ROG.dir[0] * 12, -ROG.dir[1] * 12, tHit, on * smooth(CYC.hit - 1, CYC.hit, T));
+  // the spray hangs in the air as a mist the beam can light
+  let mist = 0;
+  for (const w of SPRAY.wash) mist += w[3] * Math.exp(-(t - w[2]) / 2.5) * 0.012;
+  mist += on * 0.05 * smooth(CYC.hit - 0.6, CYC.hit + 0.8, T) * Math.exp(-Math.max(0, T - CYC.hit - 2) / 3);
+  AIR.spray = mist; AIR.sprayP.set(-WIND[0] * 12, 12 + 18 * on, -WIND[1] * 12);
+}
+
+// =====================================================================
+// The film. Exposure for a night storm, a bloom so the lamp and the
+// lightning bleed into the rain the way they do to the eye, a filmic
+// curve, a vignette, grain.
+// =====================================================================
+const POST = { exposure: 7, bloom: 0.42, fade: 1 };
+const PP = {
+  pre: pass(/* glsl */`
+    uniform sampler2D tSrc; uniform vec2 uTexel; uniform float uExp; varying vec2 vUv;
+    void main() {
+      vec2 o = uTexel;
+      vec3 c = (texture2D(tSrc, vUv + vec2(-o.x, -o.y)).rgb + texture2D(tSrc, vUv + vec2(o.x, -o.y)).rgb + texture2D(tSrc, vUv + vec2(-o.x, o.y)).rgb + texture2D(tSrc, vUv + vec2(o.x, o.y)).rgb) * .25 * uExp;
+      float l = max(c.r, max(c.g, c.b)), k = max(l - 1.2, 0.); k = k * k / (k + 2.);
+      gl_FragColor = vec4(min(c * k / max(l, 1e-4), vec3(500.)), 1.);
+    }`, { tSrc: { value: null }, uTexel: { value: new THREE.Vector2() }, uExp: { value: 1 } }),
+  down: pass(/* glsl */`
+    uniform sampler2D tSrc; uniform vec2 uTexel; varying vec2 vUv;
+    void main() {
+      vec2 o = uTexel;
+      vec3 c = texture2D(tSrc, vUv).rgb * .5;
+      c += (texture2D(tSrc, vUv + vec2(-o.x, -o.y)).rgb + texture2D(tSrc, vUv + vec2(o.x, -o.y)).rgb + texture2D(tSrc, vUv + vec2(-o.x, o.y)).rgb + texture2D(tSrc, vUv + vec2(o.x, o.y)).rgb) * .125;
+      gl_FragColor = vec4(c, 1.);
+    }`, { tSrc: { value: null }, uTexel: { value: new THREE.Vector2() } }),
+  up: pass(/* glsl */`
+    uniform sampler2D tSrc, tAdd; uniform vec2 uTexel; varying vec2 vUv;
+    void main() {
+      vec2 o = uTexel;
+      vec3 c = texture2D(tSrc, vUv).rgb * 4.;
+      c += (texture2D(tSrc, vUv + vec2(-o.x, 0.)).rgb + texture2D(tSrc, vUv + vec2(o.x, 0.)).rgb + texture2D(tSrc, vUv + vec2(0., -o.y)).rgb + texture2D(tSrc, vUv + vec2(0., o.y)).rgb) * 2.;
+      c += texture2D(tSrc, vUv + vec2(-o.x, -o.y)).rgb + texture2D(tSrc, vUv + vec2(o.x, -o.y)).rgb + texture2D(tSrc, vUv + vec2(-o.x, o.y)).rgb + texture2D(tSrc, vUv + vec2(o.x, o.y)).rgb;
+      gl_FragColor = vec4(texture2D(tAdd, vUv).rgb + c / 16., 1.);
+    }`, { tSrc: { value: null }, tAdd: { value: null }, uTexel: { value: new THREE.Vector2() } }),
+  fin: pass(/* glsl */`
+    uniform sampler2D tSrc, tBloom; uniform float uExp, uBloom, uTime, uFade; uniform vec2 uRes; varying vec2 vUv;
+    vec3 aces(vec3 x) { return clamp((x * (2.51 * x + .03)) / (x * (2.43 * x + .59) + .14), 0., 1.); }
+    float h12(vec2 p) { vec3 q = fract(vec3(p.xyx) * .1031); q += dot(q, q.yzx + 33.33); return fract((q.x + q.y) * q.z); }
+    void main() {
+      vec2 q = vUv - .5; q.x *= uRes.x / uRes.y;
+      // a touch of colour parting toward the corners, as an old lens does
+      vec2 off = (vUv - .5) * .0007;
+      vec3 c = vec3(texture2D(tSrc, vUv + off).r, texture2D(tSrc, vUv).g, texture2D(tSrc, vUv - off).b) * uExp + texture2D(tBloom, vUv).rgb * uBloom;
+      c = aces(c);
+      c *= 1. - .42 * smoothstep(.3, 1.05, length(q));
+      c = pow(c, vec3(1. / 2.2));
+      c += (h12(gl_FragCoord.xy + fract(uTime) * 517.) - .5) * .03;
+      gl_FragColor = vec4(c * uFade, 1.);
+    }`, { tSrc: { value: null }, tBloom: { value: null }, uExp: { value: 1 }, uBloom: { value: 0.4 }, uTime: { value: 0 }, uFade: { value: 1 }, uRes: { value: new THREE.Vector2() } }),
+};
+function postRender(time) {
+  const P = PP;
+  P.pre.material.uniforms.tSrc.value = RT.comp.texture; P.pre.material.uniforms.uTexel.value.set(1 / RT.W, 1 / RT.H); P.pre.material.uniforms.uExp.value = POST.exposure;
+  renderer.setRenderTarget(RT.bloom[0]); P.pre.render(renderer);
+  for (let i = 1; i < RT.bloom.length; i++) {
+    P.down.material.uniforms.tSrc.value = RT.bloom[i - 1].texture; P.down.material.uniforms.uTexel.value.set(1 / RT.bloom[i - 1].width, 1 / RT.bloom[i - 1].height);
+    renderer.setRenderTarget(RT.bloom[i]); P.down.render(renderer);
+  }
+  let src = RT.bloom[RT.bloom.length - 1];
+  for (let i = RT.bloom.length - 2; i >= 0; i--) {
+    const u = P.up.material.uniforms; u.tSrc.value = src.texture; u.tAdd.value = RT.bloom[i].texture; u.uTexel.value.set(1 / src.width, 1 / src.height);
+    renderer.setRenderTarget(RT.up[i]); P.up.render(renderer); src = RT.up[i];
+  }
+  const f = P.fin.material.uniforms;
+  f.tSrc.value = RT.comp.texture; f.tBloom.value = src.texture; f.uExp.value = POST.exposure; f.uBloom.value = POST.bloom; f.uTime.value = time; f.uFade.value = POST.fade; f.uRes.value.set(RT.W, RT.H);
+  renderer.setRenderTarget(null); P.fin.render(renderer);
+}
+
+// =====================================================================
+// The sound. Always: the wind (a roar, a howl that rises in the gusts, a
+// thin whistle through the gallery rail), the rain (a hiss and the patter
+// of drops on the water), the sea (a deep roar that breathes with the
+// swell under the camera). Then what the picture does: every time a wave
+// strikes the rock and throws spray, a crash, placed where it strikes;
+// every flash, its thunder, late by as long as sound takes to cross the
+// distance (a crack and a roll when close, a long low grumble from far);
+// the lighthouse's foghorn as the story opens and again once the great wave
+// has passed; somewhere off in the dark, a bell buoy rocked by the sea.
+// The great wave comes in as a growing roar and breaks with a crash bigger
+// than all the rest.
+// Under it all a quiet score: a low drone that tightens as the wave
+// gathers, falls silent when it breaks, and opens into a major chord when
+// the spray falls and the light is still turning.
+// Everything is made in small pieces from the moment the page opens and
+// plays once the button turns the sound on.
+// =====================================================================
+const SYNC = { clock: 0, wall: 0, hold: false };
+const ASR = 32000;
+const AJ = { q: [], busy: false };
+function ajob(g, front) { if (front) AJ.q.unshift(g); else AJ.q.push(g); if (!AJ.busy) { AJ.busy = true; setTimeout(ajRun, 0); } }
+function ajRun() {
+  const t0 = performance.now(), budget = document.hidden ? 25 : AUD.ctx ? 6 : 3;
+  while (AJ.q.length && performance.now() - t0 < budget) {
+    let done = true;
+    try { done = AJ.q[0].next().done; } catch (e) { audioFault(e); }
+    if (done) AJ.q.shift();
+  }
+  if (AJ.q.length) setTimeout(ajRun, AUD.ctx ? 4 : 9); else AJ.busy = false;
+}
+const SND = {}, SNDW = [];
+function sndPut(k, v) {
+  SND[k] = v;
+  const ready = SNDW.filter((w) => w.keys.every((q) => q in SND));
+  for (const w of ready) { SNDW.splice(SNDW.indexOf(w), 1); try { w.f(); } catch (e) { audioFault(e); } }
+}
+function sndWhen(keys, f) { if (keys.every((q) => q in SND)) { try { f(); } catch (e) { audioFault(e); } } else SNDW.push({ keys, f }); }
+function audioFault(e) { if (!AUD.fault) { AUD.fault = true; console.warn('audio', e); } }
+const peakTo = (chs, p) => { let m = 1e-6; for (const x of chs) for (let i = 0; i < x.length; i++) m = Math.max(m, Math.abs(x[i])); for (const x of chs) for (let i = 0; i < x.length; i++) x[i] *= p / m; return chs; };
+
+// ---- made sounds ----
+function* noiseJob(sec, seed, out) {
+  const r = mulberry32(seed), n = Math.floor(sec * ASR), F = Math.floor(0.25 * ASR);
+  for (const kind of ['brown', 'pink', 'white']) {
+    const x = new Float32Array(n + F);
+    let p0 = 0, p1 = 0, p2 = 0, p3 = 0, p4 = 0, p5 = 0, p6 = 0, br = 0;
+    for (let i = 0; i < n + F; i++) {
+      const w = r() * 2 - 1;
+      if (kind === 'pink') {
+        p0 = 0.99886 * p0 + w * 0.0555179; p1 = 0.99332 * p1 + w * 0.0750759; p2 = 0.969 * p2 + w * 0.153852;
+        p3 = 0.8665 * p3 + w * 0.3104856; p4 = 0.55 * p4 + w * 0.5329522; p5 = -0.7616 * p5 - w * 0.016898;
+        x[i] = (p0 + p1 + p2 + p3 + p4 + p5 + p6 + w * 0.5362) * 0.11; p6 = w * 0.115926;
+      } else if (kind === 'brown') { br = (br + 0.02 * w) / 1.02; x[i] = br * 3.5; }
+      else x[i] = w * 0.5;
+      if ((i & 16383) === 16383) yield;
+    }
+    const y = x.slice(0, n);
+    for (let i = 0; i < F; i++) { const a = i / F; y[i] = x[i] * Math.sqrt(a) + x[n + i] * Math.sqrt(1 - a); }
+    out[kind] = y;
+  }
+}
+// rain on the sea: thousands of tiny ticks, none of them ringing at a pitch
+function* patterJob(out) {
+  const sec = 6, n = sec * ASR, F = Math.floor(0.2 * ASR);
+  for (let c = 0; c < 2; c++) {
+    const r = mulberry32(303 + c), x = new Float32Array(n + F);
+    const drops = Math.floor(sec * 2600);
+    for (let d = 0; d < drops; d++) {
+      const at = Math.floor(r() * n), len = Math.floor(ASR * (0.00015 + 0.0007 * r() * r())), a = Math.exp(gauss(r) * 0.7) * 0.12;
+      for (let i = 0; i < len; i++) x[at + i] += (r() * 2 - 1) * a * Math.exp(-i / (len * 0.3));
+      if ((d & 2047) === 2047) yield;
+    }
+    // a gentle high-pass: the water takes the thud out of them
+    let lp = 0; for (let i = 0; i < n + F; i++) { lp += (x[i] - lp) * 0.08; x[i] -= lp; }
+    const y = x.slice(0, n);
+    for (let i = 0; i < F; i++) { const a = i / F; y[i] = x[i] * Math.sqrt(a) + x[n + i] * Math.sqrt(1 - a); }
+    out.push(y);
+  }
+  peakTo(out, 0.9);
+}
+// a wave on the rock: a thump, a roar of broken water darkening as it falls, the fizz of spray coming down
+function* crashJob(seed, big, out) {
+  const r = mulberry32(seed), sec = big ? 9 : 3.8, n = Math.floor(sec * ASR), L = new Float32Array(n), R = new Float32Array(n);
+  const k = big ? 1 : 0;
+  for (let c = 0; c < 2; c++) {
+    const X = c ? R : L, rr = mulberry32(seed * 7 + c);
+    let ph = 0, lp = 0, lp2 = 0, hp = 0, hpl = 0, bp1 = 0, bp2 = 0, gE = 0, gT = 0, gN = 0;
+    const thump = big ? 1.4 : 0.45 + 0.2 * r(), bodyT = big ? 2.4 : 0.8 + 0.5 * r(), fizzT = big ? 4.5 : 1.8 + 0.8 * r(), fizzA = big ? 0.5 : 0.28;
+    for (let i = 0; i < n; i++) {
+      const t = i / ASR, w = rr() * 2 - 1;
+      ph += 2 * Math.PI * ((big ? 30 : 42) + (big ? 30 : 34) * Math.exp(-t / (big ? 0.5 : 0.18))) / ASR;
+      const sub = Math.sin(ph) * thump * Math.exp(-t / (big ? 1.2 : 0.32)) * Math.min(1, t / 0.012);
+      // the body: noise through a low-pass that closes as the water falls
+      const kk = 0.03 + 0.25 * Math.exp(-t / (big ? 1.5 : 0.45)); lp += (w - lp) * kk; lp2 += (lp - lp2) * kk;
+      const body = lp2 * 3.2 * Math.exp(-t / bodyT) * Math.min(1, t / (big ? 0.05 : 0.025));
+      // the fizz: high noise rising a moment after, then a long fall
+      hpl += (w - hpl) * 0.35; hp = w - hpl;
+      const fz = hp * fizzA * Math.min(1, t / 0.25) * Math.exp(-Math.max(0, t - 0.25) / fizzT);
+      // gurgling of water pouring off the rock: blips of it, at no steady rate
+      if (t >= gN) { gT = rr() < 0.55 ? 0.3 + 0.7 * rr() : 0; gN = t + 0.02 + 0.11 * rr(); }
+      gE += (gT - gE) * 0.004;
+      bp1 += (w - bp1) * 0.12; bp2 += (bp1 - bp2) * 0.12;
+      const gur = (bp1 - bp2) * 1.6 * gE * Math.exp(-t / (big ? 3 : 1.3)) * Math.min(1, t / 0.2);
+      X[i] = sub + body + fz + gur;
+      if ((i & 16383) === 16383) yield;
+    }
+  }
+  const fo = Math.floor(0.3 * ASR); for (let i = 0; i < fo; i++) { const a = i / fo; L[n - 1 - i] *= a; R[n - 1 - i] *= a; }
+  peakTo([L, R], 0.95); out.push(L, R);
+}
+// thunder: a crack (only when close), a boom, then the roll: low noise heaved about by bursts that die away
+function* thunderJob(seed, kind, out) {
+  const r = mulberry32(seed), sec = kind === 0 ? 8 : kind === 1 ? 9 : 10, n = Math.floor(sec * ASR), L = new Float32Array(n), R = new Float32Array(n);
+  const bumps = []; let tb = kind === 0 ? 0.05 : 0.2 + r() * 0.3;
+  // each bump of the roll: when, how strong, how long it dies, how fast it swells (sharper the closer)
+  const atk = kind === 0 ? [0.015, 0.03] : kind === 1 ? [0.04, 0.12] : [0.12, 0.3];
+  while (tb < sec - 1.5) { bumps.push([tb, (0.4 + 0.6 * r()) * Math.exp(-tb / (kind === 2 ? 4 : 2.6)), 0.15 + r() * 0.5, atk[0] + atk[1] * r()]); tb += 0.12 + r() * (kind === 2 ? 0.8 : 0.5); }
+  for (let c = 0; c < 2; c++) {
+    const X = c ? R : L, rr = mulberry32(seed * 13 + c);
+    let lp = 0, lp2 = 0, lp3 = 0, hpl = 0;
+    const cut = kind === 0 ? 0.08 : kind === 1 ? 0.045 : 0.025;
+    for (let i = 0; i < n; i++) {
+      const t = i / ASR, w = rr() * 2 - 1;
+      lp += (w - lp) * cut; lp2 += (lp - lp2) * cut; lp3 += (lp2 - lp3) * cut * 1.5;
+      let env = 0; for (const [b0, a, d, at] of bumps) if (t >= b0) { const u = (t - b0) / at; env += a * Math.exp(-(t - b0) / d) * (u < 1 ? u * u * (3 - 2 * u) : 1); }
+      let v = lp3 * 14 * env * Math.min(1, t / (kind === 2 ? 0.6 : 0.02));
+      if (kind === 0 && t < 0.5) { hpl += (w - hpl) * 0.3; v += (w - hpl) * 1.6 * Math.exp(-t / 0.09) * (0.6 + 0.4 * Math.sin(t * 220 + rr())); }
+      X[i] = v;
+      if ((i & 8191) === 8191) yield;
+    }
+  }
+  const fo = Math.floor(1 * ASR); for (let i = 0; i < fo; i++) { const a = i / fo; L[n - 1 - i] *= a; R[n - 1 - i] *= a; }
+  peakTo([L, R], 0.95); out.push(L, R);
+}
+// the foghorn: a diaphone, a hoarse high note that scoops up to pitch, and the grunt as it drops
+function* hornJob(out) {
+  const sec = 4.8, n = Math.floor(sec * ASR), x = new Float32Array(n), r = mulberry32(77);
+  let ph = 0, lp = 0;
+  for (let i = 0; i < n; i++) {
+    const t = i / ASR, drop = smooth(2.4, 2.85, t);
+    const f = lerp(180, 121, drop) * (1 - 0.05 * Math.exp(-t / 0.09)) * (1 + 0.003 * Math.sin(t * 29));
+    ph += 2 * Math.PI * f / ASR;
+    let v = 0;
+    for (let h = 1; h <= 16; h++) {
+      const fh = f * h, form = Math.exp(-Math.pow((fh - 500) / 240, 2)) + 0.6 * Math.exp(-Math.pow((fh - 1100) / 360, 2)) + 0.2;
+      v += Math.sin(ph * h + h * 0.7) * form / Math.pow(h, 0.65);
+    }
+    // the grunt is rougher: a pulse at half the pitch creeps in, and the air rushing through
+    v *= 1 + drop * 0.3 * Math.sin(ph * 0.5);
+    lp += (r() * 2 - 1 - lp) * 0.18;
+    const env = Math.min(1, t / 0.15) * (1 - 0.4 * drop) * (t > 3.8 ? Math.exp(-(t - 3.8) / 0.22) : 1);
+    x[i] = (v + lp * 0.9) * env;
+    if ((i & 8191) === 8191) yield;
+  }
+  peakTo([x], 0.9); out.push(x);
+}
+// a bell buoy somewhere off in the dark, rung by the sea: a bronze bell's partials (hum, prime,
+// minor third, fifth, nominal and above), each beating slowly, the knock of the clapper on top
+function* bellJob(out) {
+  const sec = 6, n = Math.floor(sec * ASR), x = new Float32Array(n), r = mulberry32(41), fp = 293.66;
+  const P = [[0.5, 0.4, 5.5, 0.7], [1, 0.5, 3.8, 1.3], [1.19, 0.42, 2.8, 2.1], [1.5, 0.22, 2.1, 0.9], [2, 0.5, 2, 1.7], [2.51, 0.18, 1.2, 2.6], [2.66, 0.15, 1, 3.1], [3.01, 0.1, 0.75, 1.1], [4.07, 0.05, 0.45, 2.3]];
+  const ph = P.map(() => r() * 6.28);
+  for (let i = 0; i < n; i++) {
+    const t = i / ASR;
+    let v = 0;
+    for (let k = 0; k < P.length; k++) { const [m, a, d, b] = P[k]; v += Math.sin(2 * Math.PI * fp * m * t + ph[k]) * a * Math.exp(-t / d) * (1 + 0.22 * Math.sin(t * b * 6.283 + k)); }
+    if (t < 0.03) v += (r() * 2 - 1) * 0.5 * Math.exp(-t / 0.005);
+    x[i] = v * Math.min(1, t / 0.002);
+    if ((i & 8191) === 8191) yield;
+  }
+  const fo = Math.floor(0.5 * ASR); for (let i = 0; i < fo; i++) x[n - 1 - i] *= i / fo;
+  peakTo([x], 0.9); out.push(x);
+}
+function* irGen(sr, sec, out) {
+  const r = mulberry32(19), n = Math.floor(sec * sr), pre = Math.floor(sr * 0.03);
+  for (let c = 0; c < 2; c++) {
+    const x = new Float32Array(n), dk = Math.pow(10, -3 / (2.8 * sr));
+    for (let i = pre, lp = 0, env = 1; i < n; i++, env *= dk) {
+      const t = (i - pre) / sr, k = 0.2 + 0.7 * Math.min(1, t / sec);
+      lp = lp * k + (r() * 2 - 1) * (1 - k);
+      x[i] = lp * env * Math.min(1, t / 0.05);
+      if ((i & 16383) === 16383) yield;
+    }
+    out.push(x);
+  }
+  let e = 0; for (let i = 0; i < n; i++) e += out[0][i] * out[0][i];
+  e = Math.sqrt(e) * 1.3; for (const x of out) for (let i = 0; i < n; i++) x[i] /= e;
+}
+function* soundCore() {
+  const beds = {}; yield* noiseJob(7, 101, beds); sndPut('beds', beds);
+  const pat = []; yield* patterJob(pat); sndPut('patter', pat);
+  for (let k = 0; k < 4; k++) { const c = []; yield* crashJob(500 + k * 37, false, c); sndPut('crash' + k, c); }
+  for (let k = 0; k < 3; k++) { const c = []; yield* thunderJob(900 + k * 51, k, c); sndPut('thunder' + k, c); }
+  const h = []; yield* hornJob(h); sndPut('horn', h);
+  const bc = []; yield* crashJob(777, true, bc); sndPut('bigcrash', bc);
+  const bl = []; yield* bellJob(bl); sndPut('bell', bl);
+}
+// each time round's thunder, worked out once: when it arrives (the flash, then as long as the sound
+// takes to come from it), which kind (a crack and a roll when close, a long grumble from far) and how loud
+const THC = new Map();
+function thunderOf(c) {
+  let out = THC.get(c); if (out) return out;
+  const K = camKeys(c);
+  out = planStorm(c).map((e, i) => {
+    const p = e.kind === 'bolt' ? e.p.clone().lerp(e.bot, 0.5) : e.p.clone(), cam = hermite(K, e.T, (k) => k[1]);
+    const d = Math.hypot(p.x - cam[0], p.y - cam[1], p.z - cam[2]);
+    const kind = e.kind === 'bolt' && d < 2400 ? 0 : d < 4200 ? 1 : 2;
+    const lvl = (e.kind === 'bolt' ? 1 : 0.4 * e.amp) * clamp(2600 / d, 0.3, 1.3) * 0.75;
+    return { at: e.T + d / 343, p, kind, lvl, rate: 0.9 + (i % 5) * 0.04, k: 'th' + i };
+  });
+  THC.set(c, out); if (THC.size > 6) THC.delete(THC.keys().next().value);
+  return out;
+}
+// the bell buoy's strokes this time round: whenever the sea rocks it hard enough, now and then twice
+const BELLC = new Map();
+const BUOY = V3(Math.cos(WIND_A + 2.3) * 640, 2, Math.sin(WIND_A + 2.3) * 640);
+function bellsOf(c) {
+  let out = BELLC.get(c); if (out) return out;
+  const r = mulberry32(4400 + c * 31); out = [];
+  for (let T = 2 + r() * 4; T < CYC.len; T += 3.5 + r() * 7) {
+    const lvl = 0.55 + 0.45 * r(); out.push([T, lvl]);
+    if (r() < 0.35) out.push([T + 0.24 + 0.12 * r(), lvl * (0.45 + 0.3 * r())]);
+  }
+  BELLC.set(c, out); if (BELLC.size > 6) BELLC.delete(BELLC.keys().next().value);
+  return out;
+}
+
+// ---- runtime ----
+const AUD = { ctx: null };
+let PREP = false;
+function audioPrep() { if (!PREP) { PREP = true; ajob(soundCore()); } }
+setTimeout(audioPrep, 2500);
+function audioAttach(ctx) {
+  if (AUD.ctx === ctx) return;
+  if (AUD.ctx) audioForget();
+  audioPrep();
+  AUD.ctx = ctx; AUD.fired = new Set(); AUD.lastA = -1; AUD.srcs = []; AUD.crashK = 0; AUD.crashT = 0;
+  try {
+    const G = (v = 1) => { const g = ctx.createGain(); g.gain.value = v; return g; };
+    const F = (type, f, q = 0.7) => { const b = ctx.createBiquadFilter(); b.type = type; b.frequency.value = f; b.Q.value = q; return b; };
+    const mk = (chs, sr = ASR) => { const b = ctx.createBuffer(chs.length, chs[0].length, sr); chs.forEach((x, i) => b.getChannelData(i).set(x)); return b; };
+    const master = G(0), glue = ctx.createDynamicsCompressor(), lim = ctx.createDynamicsCompressor();
+    glue.threshold.value = -16; glue.knee.value = 10; glue.ratio.value = 2.2; glue.attack.value = 0.02; glue.release.value = 0.4;
+    lim.threshold.value = -3; lim.knee.value = 0; lim.ratio.value = 20; lim.attack.value = 0.002; lim.release.value = 0.15;
+    const soft = ctx.createWaveShaper(), sc = new Float32Array(4097);
+    for (let i = 0; i < 4097; i++) { const x = (i / 2048 - 1) * 2, ax = Math.abs(x); sc[i] = Math.sign(x) * (ax < 0.6 ? ax : 0.6 + 0.4 * Math.tanh((ax - 0.6) / 0.4)) / 2; }
+    soft.curve = sc; soft.oversample = '2x';
+    const out = G(1);
+    master.connect(glue).connect(lim).connect(G(0.5)).connect(soft).connect(G(2)).connect(out).connect(ctx.destination);
+    const verb = ctx.createConvolver(); verb.normalize = false; verb.connect(G(1)).connect(master);
+    const dry = G(1); dry.connect(master);
+    const mus = G(1); mus.connect(dry); mus.connect(G(0.6)).connect(verb);
+    Object.assign(AUD, { G, F, mk, master, out, verb, dry, mus });
+    sndWhen(['beds', 'patter'], bedsOn);
+    ajob(irJob(ctx, LOW ? 2.4 : 3.4), true);
+    audioWant(window.__stormAudio ? window.__stormAudio.want : true);
+  } catch (e) { audioFault(e); }
+}
+function* irJob(ctx, sec) { const ir = []; yield* irGen(ctx.sampleRate, sec, ir); if (AUD.ctx === ctx) AUD.verb.buffer = AUD.mk(ir, ctx.sampleRate); }
+function audioForget() {
+  const old = AUD.ctx;
+  for (const k of Object.keys(AUD)) delete AUD[k];
+  AUD.ctx = null; SNDW.length = 0;
+  try { const p = old.close(); if (p && p.catch) p.catch(() => { }); } catch (e) { }
+}
+function audioWant(on) {
+  const A = AUD, c = A.ctx; if (!c || !A.master) return;
+  const g = A.master.gain, t = c.currentTime;
+  clearTimeout(A.sleepT);
+  try { g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(on ? 1 : 0, t + (on ? 1.5 : 0.4)); } catch (e) { g.value = on ? 1 : 0; }
+  if (on) {
+    if (A.slept) { A.slept = false; audioResync(); }
+    if (c.state !== 'running') { try { const p = c.resume(); if (p && p.catch) p.catch(() => { }); } catch (e) { } }
+  } else A.sleepT = setTimeout(() => { const S = window.__stormAudio; if (S && !S.want && c.state === 'running') audioSleep(c); }, 600);
+}
+function audioSleep(c) { AUD.slept = true; try { const p = c.suspend(); if (p && p.catch) p.catch(() => { }); } catch (e) { } }
+// drop what was sounding; the next tick picks the story up where the picture is
+function audioResync() {
+  const A = AUD, ct = A.ctx.currentTime;
+  for (const s of A.srcs || []) { try { s.g.gain.cancelScheduledValues(ct); s.g.gain.setTargetAtTime(0, ct, 0.04); s.src.stop(ct + 0.25); } catch (e) { } }
+  A.srcs = []; A.fired.clear(); SPRAY.audioQ.length = 0;
+}
+document.addEventListener('visibilitychange', () => {
+  const A = AUD, c = A.ctx, S = window.__stormAudio; if (!c || !A.master || !S || !S.want) return;
+  clearTimeout(A.hideT);
+  if (document.hidden) {
+    const g = A.master.gain, t = c.currentTime;
+    try { g.cancelScheduledValues(t); g.setValueAtTime(g.value, t); g.linearRampToValueAtTime(0, t + 0.2); } catch (e) { }
+    A.hideT = setTimeout(() => { if (document.hidden && c.state === 'running') audioSleep(c); }, 300);
+  } else audioWant(true);
+});
+// the beds: wind, rain, sea, and the score's voices, their levels set each tick by the story
+function bedsOn() {
+  const A = AUD, ctx = A.ctx, { G, F, mk } = A, D = SND.beds;
+  const loop = (x, rate = 1) => { const s = ctx.createBufferSource(); s.buffer = Array.isArray(x) ? mk(x) : mk([x]); s.loop = true; s.playbackRate.value = rate; s.start(ctx.currentTime + 0.02, Math.random() * 5); return s; };
+  const bed = (src, chain, g0) => { const g = G(g0); let n = src; for (const f of chain) n = n.connect(f); n.connect(g).connect(A.dry); return g; };
+  // the wind: its roar, the howl that rises with the gusts, a whistle in the rail
+  A.windRoar = bed(loop(D.brown, 0.9), [F('highpass', 45, 0.7), F('lowpass', 500, 0.6)], 0);
+  A.howlF = F('bandpass', 650, 3); A.howl = bed(loop(D.pink, 1.03), [A.howlF], 0);
+  A.howl2F = F('bandpass', 1150, 5); A.howl2 = bed(loop(D.pink, 0.94), [A.howl2F], 0);
+  A.whisF = F('bandpass', 2100, 16); A.whis = bed(loop(D.pink, 0.97), [A.whisF], 0);
+  // the rain: a hiss, and drops on the water close by
+  A.rain = bed(loop(D.pink, 1.1), [F('highpass', 1300, 0.6), F('lowpass', 7500, 0.5)], 0);
+  A.pat = bed(loop(SND.patter), [], 0);
+  // the sea: a deep roar, and the wash of broken water
+  A.seaDeep = bed(loop(D.brown, 0.75), [F('highpass', 35, 0.7), F('lowpass', 220, 0.7)], 0);
+  A.washF = F('bandpass', 700, 0.7); A.wash = bed(loop(D.white, 0.9), [A.washF, F('lowpass', 3000, 0.5)], 0);
+  // the great wave coming: low noise rising, and something under it you feel more than hear
+  A.roarF = F('lowpass', 180, 0.8); A.roar = bed(loop(D.brown, 0.6), [F('highpass', 40, 0.7), A.roarF], 0);
+  A.rushF = F('bandpass', 300, 0.8); A.rush = bed(loop(D.pink, 0.9), [A.rushF], 0);
+  A.subO = ctx.createOscillator(); A.subO.frequency.value = 38; A.subG = G(0); A.subO.connect(A.subG).connect(A.dry); A.subO.start();
+  // the score: five string voices, retuned as the story moves (two detuned saws each, softened)
+  A.voices = [0, 1, 2, 3, 4].map(() => {
+    const o1 = ctx.createOscillator(), o2 = ctx.createOscillator(), f = F('lowpass', 700, 0.5), g = G(0);
+    o1.type = o2.type = 'sawtooth'; o1.frequency.value = o2.frequency.value = 110; o2.detune.value = 7;
+    o1.connect(f); o2.connect(f); f.connect(g).connect(A.mus); o1.start(); o2.start();
+    return { o1, o2, f, g };
+  });
+  A.beds = true;
+}
+function playBuf(key, t, offset, lvl, verb, pan = 0, rate = 1) {
+  const A = AUD, ctx = A.ctx;
+  if (!SND[key]) return;
+  if (!A.bufs) A.bufs = {};
+  const b = A.bufs[key] || (A.bufs[key] = A.mk(SND[key]));
+  if (offset >= b.duration - 0.05) return;
+  const s = ctx.createBufferSource(), g = A.G(lvl); s.buffer = b; s.playbackRate.value = rate;
+  let n = g;
+  if (pan) { const p = ctx.createStereoPanner(); p.pan.value = clamp(pan, -1, 1); g.connect(p); n = p; }
+  s.connect(g); n.connect(A.dry); if (verb) n.connect(A.G(verb)).connect(A.verb);
+  if (offset > 0) { g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(lvl, t + 0.2); }
+  s.start(t, offset);
+  A.srcs.push({ src: s, g, end: t + (b.duration - offset) / rate, key, at: t, lvl });
+  A.srcs = A.srcs.filter((x) => x.end > ctx.currentTime);
+}
+// how a sound at p sits for the listener: how loud for its distance, and left or right
+const _ar = V3(), _ad = V3();
+function placeAt(x, y, z, ref) {
+  _ad.set(x - camera.position.x, y - camera.position.y, z - camera.position.z);
+  const d = Math.max(1, _ad.length());
+  _ar.setFromMatrixColumn(camera.matrixWorld, 0);
+  return { g: ref / (ref + d), pan: clamp(_ad.dot(_ar) / d, -1, 1) * 0.8, d };
+}
+// the score: which notes are held at story time T, and how strongly
+const mtof = (m) => 440 * Math.pow(2, (m - 69) / 12);
+function scoreAt(T) {
+  const H = CYC.hit;
+  if (T >= H - 0.6 && T < H + 1.6) return { notes: [38, 45, 50, 53, 57], lvl: 0, cut: 400 };   // silence: the wave has the stage
+  if (T >= H + 1.6 && T < H + 13) return { notes: [38, 45, 54, 57, 62], lvl: 0.024 * smooth(H + 1.6, H + 5, T) * (1 - smooth(H + 9, H + 13, T)), cut: 900 };   // D major: the light is still turning
+  if (T >= 40 && T < H - 0.6) { const u = smooth(40, H - 1, T); return { notes: [38, 45, u > 0.45 ? 46 : 50, 53, u > 0.7 ? 52 : 57], lvl: 0.012 + 0.032 * u * u, cut: 480 + 900 * u }; }
+  return { notes: [38, 45, 50, 53, 57], lvl: 0.012, cut: 480 };
+}
+// every 50 ms: the story's time (a little ahead of the last frame), the beds, and what is due
+function audioTick() {
+  const A = AUD, ctx = A.ctx; if (!ctx || ctx.state !== 'running' || !A.beds) return;
+  try {
+    const now = performance.now(), gap = (now - SYNC.wall) / 1000, frozen = SYNC.hold || document.hidden || gap > 0.25;
+    const At = SYNC.clock + (frozen ? 0 : gap), ct = ctx.currentTime, T = ((At % CYC.len) + CYC.len) % CYC.len, c0 = Math.floor(At / CYC.len);
+    // the wind gusts
+    const gust = clamp(0.5 + 0.28 * Math.sin(At * 0.13) + 0.18 * Math.sin(At * 0.37 + 1) + 0.12 * Math.sin(At * 0.91 + 2), 0, 1);
+    const tc = 0.3;
+    const gust2 = clamp(0.45 + 0.3 * Math.sin(At * 0.21 + 4) + 0.2 * Math.sin(At * 0.53 + 3) + 0.15 * Math.sin(At * 1.31), 0, 1);
+    A.windRoar.gain.setTargetAtTime(0.1 + 0.08 * gust, ct, tc);
+    A.howl.gain.setTargetAtTime(0.1 + 0.25 * gust * gust, ct, tc); A.howlF.frequency.setTargetAtTime(480 + 520 * gust, ct, 0.5);
+    A.howl2.gain.setTargetAtTime(0.03 + 0.15 * Math.pow(gust2, 3), ct, tc); A.howl2F.frequency.setTargetAtTime(900 + 600 * gust2, ct, 0.5);
+    // the whistle in the gallery rail is only heard near the tower
+    const near = clamp(1 - (Math.hypot(camera.position.x, camera.position.z) - 60) / 160, 0, 1);
+    A.whis.gain.setTargetAtTime((0.003 + 0.03 * Math.pow(gust, 3)) * (0.25 + 0.75 * near), ct, tc); A.whisF.frequency.setTargetAtTime(1800 + 700 * gust, ct, 0.6);
+    A.rain.gain.setTargetAtTime(0.11 + 0.03 * gust, ct, tc); A.pat.gain.setTargetAtTime(0.12, ct, tc);
+    // the sea under the camera: louder as the water heaves
+    const w = waterAt(camera.position.x, camera.position.z, At), heave = clamp(Math.abs(w.vy) / 3, 0, 1);
+    A.seaDeep.gain.setTargetAtTime(0.12 + 0.1 * heave, ct, 0.4);
+    A.wash.gain.setTargetAtTime(0.02 + 0.08 * heave * heave, ct, 0.3); A.washF.frequency.setTargetAtTime(500 + 600 * heave, ct, 0.4);
+    // the great wave's roar
+    const H = CYC.hit, rise = smooth(41, H - 0.4, T) * (1 - smooth(H - 0.2, H + 1.5, T));
+    A.roar.gain.setTargetAtTime(0.36 * rise * rise, ct, 0.25); A.roarF.frequency.setTargetAtTime(180 + 620 * rise, ct, 0.4);
+    A.rush.gain.setTargetAtTime(0.11 * Math.pow(rise, 2.5), ct, 0.25); A.rushF.frequency.setTargetAtTime(300 + 1100 * rise * rise, ct, 0.4);
+    A.subG.gain.setTargetAtTime(0.06 * rise, ct, 0.4);
+    // the score
+    const S = scoreAt(T);
+    A.voices.forEach((v, i) => {
+      const f = mtof(S.notes[i]);
+      v.o1.frequency.setTargetAtTime(f, ct, 0.8); v.o2.frequency.setTargetAtTime(f, ct, 0.8);
+      v.f.frequency.setTargetAtTime(S.cut * (1 + i * 0.15), ct, 1);
+      v.g.gain.setTargetAtTime(S.lvl * (i === 0 ? 1.3 : i === 1 ? 1 : 0.7), ct, S.lvl > 0.001 ? 1.2 : 0.15);
+    });
+    // spray thrown on the rock: one crash for each sea that strikes (a crest wrapping the rock sets off
+    // several watched points at once), placed where the hardest of them struck
+    const Q_ = SPRAY.audioQ;
+    if (Q_.length && ct >= (A.crashT || 0)) {
+      let best = null, n = 0;
+      for (const e of Q_) if (At - e.t < 0.6 && e.t <= At + 0.1) { n++; if (!best || e.s > best.s) best = e; }
+      Q_.length = 0;
+      if (best) {
+        const P = placeAt(best.x, 4, best.z, 70), quiet = 1 - 0.6 * smooth(H - 1.5, H - 0.8, T) * (1 - smooth(H + 3, H + 6, T));
+        const s = clamp(best.s + 0.12 * (n - 1), 0.2, 1.4);
+        playBuf('crash' + A.crashK, ct + 0.02, 0, s * 1.9 * P.g * quiet, 0.25, P.pan, 0.8 + 0.25 * Math.random() + 0.1 * (1.6 - s));
+        A.crashK = (A.crashK + 1 + Math.floor(Math.random() * 3)) % 4; A.crashT = ct + 0.35 + 0.25 * Math.random();
+      }
+    }
+    if (frozen) return;
+    if (At < A.lastA - 1) { A.fired.clear(); }
+    A.lastA = At;
+    const ahead = 0.3;
+    for (let c = c0 - 1; c <= c0 + 1; c++) {
+      const base = c * CYC.len, due = (k) => { const key = c + ':' + k; if (A.fired.has(key)) return false; A.fired.add(key); return true; };
+      const when = (t) => ct + Math.max(0, t - At);
+      if (c < 0) continue;
+      // thunder, as late as the sound takes to come
+      for (const e of thunderOf(c)) {
+        const at = base + e.at;
+        if (at - At > ahead || At > at + 6 || !due(e.k)) continue;
+        const P = placeAt(e.p.x, e.p.y, e.p.z, 1);
+        playBuf('thunder' + e.kind, when(at), Math.max(0, At - at), e.lvl, 0.35, P.pan * 0.6, e.rate);
+      }
+      // the foghorn: once as the story opens, once more when the great wave has gone and the light still turns
+      for (const th of [8, 63.5]) {
+        const at = base + th;
+        if (at - At > ahead || At > at + 0.2 || !due('horn' + th)) continue;
+        const P = placeAt(0, 32, 0, 90);
+        playBuf('horn', when(at), 0, 0.4 * P.g * 2.2, 0.8, P.pan * 0.7);
+      }
+      // the bell buoy, far off
+      bellsOf(c).forEach(([th, lvl], i) => {
+        const at = base + th;
+        if (at - At > ahead || At > at + 0.2 || !due('bell' + i)) return;
+        const P = placeAt(BUOY.x, BUOY.y, BUOY.z, 300);
+        playBuf('bell', when(at), 0, 0.075 * lvl * P.g * 2.4, 1.1, P.pan * 0.8, 1 + 0.004 * (i % 3));
+      });
+      // the great wave breaks over the rock
+      const bt = base + H - 0.75;
+      if (bt - At < ahead && At < bt + 7 && due('big')) { const P = placeAt(0, 10, 0, 160); playBuf('bigcrash', when(bt), Math.max(0, At - bt), 1.5 * P.g * 2.2, 0.5, P.pan * 0.5); }
+    }
+    if (A.fired.size > 500) A.fired = new Set([...A.fired].filter((k) => +k.split(':')[0] >= c0 - 1));
+  } catch (e) { audioFault(e); }
+}
+setInterval(audioTick, 50);
+{
+  const S = window.__stormAudio;
+  if (S) { S.on.push(audioAttach); S.set = audioWant; if (S.ctx) audioAttach(S.ctx); }
+}
+
+// =====================================================================
+// Putting it together: build, then every frame set the time, move what
+// moves, aim the camera, draw the solid world, the air over it, what is
+// drawn over the air, and develop the picture.
+// =====================================================================
+resize();
+buildNoise3();
+buildOcean();
+buildIsland();
+buildSky();
+buildLightning();
+buildRain();
+buildSpray();
+const DIRECTOR = { cycle: -1, keys: null, sway: V3() };
+// (where a computer too slow to play this is left: one held moment from the close pass, a sea just thrown up the rock)
+let clock = SOFT ? 32 : 0, last = performance.now(), frame = 0;
+function update(dt) {
+  clock += dt;
+    const T = clock % CYC.len, cyc = Math.floor(clock / CYC.len), t = clock;
+  if (cyc !== DIRECTOR.cycle) { DIRECTOR.cycle = cyc; DIRECTOR.keys = camKeys(cyc); }
+  LU.uT.value = t;
+  updateBeams(t);
+  rogueAt(T);
+  // the camera, swaying a little in the wind, never down in the water
+  const K = DIRECTOR.keys, p = hermite(K, T, (k) => k[1]), l = hermite(K, T, (k) => k[2]), fov = hermite(K, T, (k) => [k[3]])[0];
+  const w = waterAt(p[0], p[2], t);
+  camera.position.set(p[0], Math.max(p[1], w.y + 4.5), p[2]);
+  const sw = DIRECTOR.sway.set(Math.sin(t * 0.71) + 0.5 * Math.sin(t * 1.93 + 1), Math.sin(t * 0.53 + 2) + 0.4 * Math.sin(t * 2.3), Math.sin(t * 0.61 + 4)).multiplyScalar(0.25);
+  camera.lookAt(l[0] + sw.x, l[1] + sw.y, l[2] + sw.z);
+  camera.fov = camera.aspect >= 1.2 ? fov : 2 * Math.atan(Math.tan(fov * Math.PI / 360) * Math.pow(1.2 / camera.aspect, 0.6)) * 180 / Math.PI;
+  camera.updateProjectionMatrix(); camera.updateMatrixWorld();
+  updateOcean();
+  updateLightning(T, cyc);
+  updateSpray(t, T, dt);
+  SPRAY.rainMat.uniforms.uRes.value.set(RT.W, RT.H);
+  // the sound follows the picture's clock
+  SYNC.clock = clock; SYNC.wall = performance.now(); SYNC.hold = SOFT;
+  frame++;
+}
+function draw() {
+  renderer.setRenderTarget(RT.scene); renderer.setClearColor(0x000000, 1); renderer.clear(true, true, false);
+  renderer.render(scene, camera);
+  renderAir();
+  renderer.setRenderTarget(RT.comp); renderer.render(overScene, camera);
+  postRender(clock);
+}
+if (SOFT) while (clock < 35.2) update(1 / 30);
+function adapt(real) {
+  if (real > 0.25 || SOFT) return;
+  PERF.acc += real; PERF.n++; PERF.cool -= real;
+  if (PERF.acc < 2) return;
+  const avg = PERF.acc / PERF.n; PERF.acc = 0; PERF.n = 0;
+  if (PERF.cool > 0) return;
+  let k = 1;
+  if (avg > 1 / 38 && PERF.scale > 0.55) k = 0.86; else if (avg < 1 / 57 && PERF.scale < 1) k = 1.08; else return;
+  PERF.scale = clamp(PERF.scale * k, 0.55, 1); PERF.cool = 4; resize();
+}
+renderer.setAnimationLoop(() => {
+  const now = performance.now(), real = (now - last) / 1000; last = now;
+  adapt(real);
+  let dt = Math.min(real, 1 / 20);
+  if (SOFT) dt = 0;
+    update(dt);
+  draw();
+});
+</script>

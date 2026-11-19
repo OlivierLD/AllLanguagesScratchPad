@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Open Sea Map</title>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/leaflet-providers@1.13.0/leaflet-providers.min.js"></script>
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.3/leaflet.js"></script> -->
+
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-providers/1.13.0/leaflet-providers.min.js"></script> -->
+    <style type="text/css">
+body {
+  margin: 0;
+  padding: 0;
+}
+
+#map {
+  width: 800px;
+  height: 500px;
+}
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+</body>
+<script type="text/javascript">
+const map = L.map("map", { scrollWheelZoom: true }).setView([37.5, 18], 4.5);
+
+const defaultLayer = L.tileLayer.provider("OpenStreetMap.Mapnik").addTo(map);
+
+// Topography: L.tileLayer.wms('http://ows.mundialis.de/services/service?', {layers: 'TOPO-WMS'}),
+// Places: L.tileLayer.wms('http://ows.mundialis.de/services/service?', {layers: 'OSM-Overlay-WMS'}),
+
+//   StreetView: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {attribution: ''}),
+const basemaps = {
+  OpenStreet: defaultLayer,
+  Bicycle: L.tileLayer(
+    "https://tile.thunderforest.com/cycle/{z}/{x}/{y}.png?apikey=d82ac236808b4df7a5c73279d0775a7b"
+  ),
+  Airport: L.tileLayer(
+    "https://tileserver.memomaps.de/tilegen/{z}/{x}/{y}.png",
+    { maxZoom: 18, attribution: "s" }
+  ),
+  Topography: L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", {
+    maxZoom: 17,
+    attribution: "topography"
+  }),
+  HotPlaces: L.tileLayer(
+    "https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png",
+    { maxZoom: 19, attribution: "openstreetmap" }
+  ),
+  Geo: L.tileLayer(
+    "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    { maxZoom: 19, attribution: "openstreetmap" }
+  ),
+  Outdoors: L.tileLayer(
+    "https://tiles.stadiamaps.com/tiles/outdoors/{z}/{x}/{y}{r}.png",
+    {
+      maxZoom: 20,
+      attribution: "outdoors"
+    }
+  ),
+  Landscape: L.tileLayer(
+    "https://{s}.tile.thunderforest.com/landscape/{z}/{x}/{y}.png?apikey={apikey}",
+    {
+      attribution: "outdoors",
+      apikey: "d82ac236808b4df7a5c73279d0775a7b",
+      maxZoom: 22
+    }
+  ),
+  Watercolor: L.tileLayer(
+    "https://stamen-tiles-{s}.a.ssl.fastly.net/watercolor/{z}/{x}/{y}.{ext}",
+    {
+      attribution:
+        'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      subdomains: "abcd",
+      minZoom: 1,
+      maxZoom: 16,
+      ext: "jpg"
+    }
+  )
+};
+
+const overlayLayers = {
+  OpenSeaMap: L.tileLayer.provider("OpenSeaMap")
+};
+
+L.control.layers(basemaps, overlayLayers).addTo(map);
+
+// add Stamen Watercolor to map.
+// L.tileLayer.provider('Stamen.Watercolor').addTo(map);
+
+// basemaps.StreetView.addTo(map);
+
+const basicBeachIcon = L.icon({
+  iconUrl: "https://raw.githubusercontent.com/shacheeswadia/leaflet-map/main/beach-icon-colorful.svg",
+  iconSize: [25, 25] // size of the icon
+});
+
+const marker1 = L.marker([-37.69945, 176.27942], { icon: basicBeachIcon })
+  .bindPopup("Whitehaven Beach, Whitsunday Island")
+  .addTo(map);
+const marker2 = L.marker([-27.64331, 153.30514], { icon: basicBeachIcon })
+  .bindPopup("Turquoise Bay Exmouth, Australia")
+  .addTo(map);
+const marker3 = L.marker([-33.95633, 122.15027], { icon: basicBeachIcon })
+  .bindPopup("Cape Le Grand National Park Esperance, Australia")
+  .addTo(map);
+const marker4 = L.marker([-34.96239, 117.39122], { icon: basicBeachIcon })
+  .bindPopup("Greens Pool Denmark, Australia")
+  .addTo(map);
+const marker5 = L.marker([-17.96121, 122.21482], { icon: basicBeachIcon })
+  .bindPopup("Cable Beach Broome, Australia")
+  .addTo(map);
+const marker6 = L.marker([-16.50596, 151.75152], { icon: basicBeachIcon })
+  .bindPopup("Matira Beach, Society Islands")
+  .addTo(map);
+const marker7 = L.marker([-22.5944, 167.48444], { icon: basicBeachIcon })
+  .bindPopup("Piscine Naturelle Ile Des Pins, New Caledonia")
+  .addTo(map);
+const marker8 = L.marker([-37.977, 177.057], { icon: basicBeachIcon })
+  .bindPopup("Ohope Beach Whakatane, New Zealand")
+  .addTo(map);
+const marker9 = L.marker([-41.0376, 173.017], { icon: basicBeachIcon })
+  .bindPopup("Kaiteriteri Beach, New Zealand")
+  .addTo(map);
+const marker10 = L.marker([-37.6703, 176.212], { icon: basicBeachIcon })
+  .bindPopup("Mt Maunganui Main Beach, New Zealand")
+  .addTo(map);
+    </script>
+</html>
