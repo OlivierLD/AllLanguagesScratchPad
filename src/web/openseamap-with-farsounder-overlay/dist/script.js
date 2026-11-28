@@ -26,7 +26,7 @@ if (false) { // Boat tracks (around Newport RI)
     L.imageOverlay(imageUrlHillshade, imageBoundsHillshade).addTo(map);
 }
 
-if (false) {
+if (false) { // Boat tracks (around Newport RI)
     var imageUrlColor = 'https://farsounder.github.io/webmap/all_the_grids_rasterized_3000x5000color_3.png';
     var imageBoundsColor = [[41.671457779, -71.457633569], [41.383995775, -71.288330215]];
     L.imageOverlay(imageUrlColor, imageBoundsColor).addTo(map);
